@@ -1,0 +1,5 @@
+---
+description: Use USDT for all calculations, and support many formats for currency display (VND, USD, EUR, etc.)
+globs:
+alwaysApply: true
+---

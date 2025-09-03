@@ -1,0 +1,5 @@
+---
+description: use tailwindcss for styling, shadcn/ui for components, always prioritize clean modular code
+globs:
+alwaysApply: true
+---
