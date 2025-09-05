@@ -21,16 +21,17 @@ export type SuccessPaginationRes<Item> = SuccessResponse<Item[]> & {
   }
 }
 
-export enum ErrorKey {
-  INTERNAL = 'INTERNAL',
-  UNAUTHORIZED = 'UNAUTHORIZED',
-  EMAIL_NOT_FOUND = 'EMAIL_NOT_FOUND',
-  PASSWORD_NOT_MATCH = 'PASSWORD_NOT_MATCH',
+export enum ErrorCode {
+  "auth.invalid_credentials",
+  "auth.account_not_found",
+  "auth.missing_identifier"
 }
 
-export type TErrorResponse = {
-  error: {
-    code: ErrorKey
-    message: string
+export class ResponseError extends Error {
+  constructor(public code: ErrorCode, public message: string) {
+      super(message);
+
+      // Set the prototype explicitly.
+      Object.setPrototypeOf(this, ResponseError.prototype);
   }
 }

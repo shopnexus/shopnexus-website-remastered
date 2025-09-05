@@ -1,56 +1,35 @@
 enum AccountType {
-  ADMIN = 'ACCOUNT_TYPE_ADMIN',
-  USER = 'ACCOUNT_TYPE_USER',
+  Customer = "Customer",
+  Vendor = "Vendor",
 }
 
-export type Account = {
-  id: number
-  type: AccountType
-  username: string
-  created_at: number
+enum AccountStatus {
+  Active = "Active",
+  Suspended = "Suspended",
 }
 
-export type AccountUser = {
-  id: number
-  first_name: string
-  last_name: string
-  email?: string
-  phone?: string
-  company?: string
-  address?: string
+export type AccountBase = {
+  code: string;
+  type: AccountType;      // db.AccountType -> string enum likely
+  status: AccountStatus;    // db.AccountStatus -> string enum likely
+  phone?: string | null;
+  email?: string | null;
+  username?: string | null;
+  date_created: number;  // Unix timestamp (int64)
+  date_updated: number;  // Unix timestamp (int64)
 }
 
-export type PatchAccountParams = Partial<Omit<Account, 'created_at' | 'id' | 'type'> & {
+export type PatchAccountParams = Partial<Omit<AccountBase, 'date_created' | 'date_updated' | 'type' | 'code' | 'status'> & {
   new_password: string
 }> & {
   current_password: string
 }
 
-export type LoginUserParams = {
-  id?: number
-  username?: string
-  email?: string
-  phone?: string
+export type LoginParams = {
+  id: string
   password: string
 }
 
-export type LoginUserResult = {
-  token: string
-  account: Account
+export type LoginResult = {
+  access_token: string
 }
-
-export type RegisterUserParams = {
-  username: string
-  password: string
-  first_name: string
-  last_name: string
-  email?: string
-  phone?: string
-}
-
-export type RegisterUserResult = {
-  token: string
-  account: Account
-}
-
-export type PatchUserParams = Partial<Omit<AccountUser, 'id'>>

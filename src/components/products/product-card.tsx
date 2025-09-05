@@ -19,8 +19,8 @@ interface ProductCardProps {
 		reviewCount: number
 		inStock: boolean
 		minOrderQuantity: number
-		bulkPrice?: number
-		bulkThreshold?: number
+		// bulkPrice?: number
+		// bulkThreshold?: number
 	}
 }
 
@@ -54,11 +54,11 @@ export function ProductCard({ product }: ProductCardProps) {
 							Out of Stock
 						</Badge>
 					)}
-					{product.bulkPrice && product.bulkThreshold && (
+					{/* {product.bulkPrice && product.bulkThreshold && (
 						<Badge className="absolute right-2 bottom-2 bg-green-600 text-xs">
 							Bulk
 						</Badge>
-					)}
+					)} */}
 				</div>
 
 				<CardContent className="p-3">
@@ -105,11 +105,11 @@ export function ProductCard({ product }: ProductCardProps) {
 								)}
 							</div>
 
-							{product.bulkPrice && product.bulkThreshold && (
+							{/* {product.bulkPrice && product.bulkThreshold && (
 								<p className="text-xs text-green-600">
 									${product.bulkPrice.toFixed(2)} for {product.bulkThreshold}+
 								</p>
-							)}
+							)} */}
 
 							{/* <p className="text-xs text-muted-foreground">Min: {product.minOrderQuantity}</p> */}
 						</div>

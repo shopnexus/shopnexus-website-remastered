@@ -7,9 +7,9 @@ import {
 } from '@tanstack/react-query'
 
 function handleErrorQuery(error: Error) {
-  if (error.message == 'Unauthorized') {
-    window.location.href = '/login'
-  }
+  // if (error.message == 'Unauthorized') {
+  //   window.location.href = '/login'
+  // }
 }
 
 function handleErrorMutation(_error: Error) {

@@ -1,4 +1,4 @@
-import { SuccessPaginationRes, SuccessResponse, TErrorResponse } from './response.type'
+import { ErrorCode, ResponseError, SuccessPaginationRes, SuccessResponse, TErrorResponse } from './response.type'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api'
 
@@ -19,6 +19,8 @@ export async function customFetch<TResponse = any>(
   if (token?.length) {
     headers.Authorization = `Bearer ${token}`
     console.log('Using token from local storage:', token)
+  } else {
+    headers.Authorization = ''
   }
 
   const resolvedUrl = resolveUrl(BASE_URL, url)
@@ -33,8 +35,13 @@ export async function customFetch<TResponse = any>(
   const data = await response.json()
 
   if (!response.ok || data?.error?.code) {
-    const res = data as TErrorResponse
-    throw new Error(res.error.message)
+    const res = data as {
+      error: {
+        code: ErrorCode
+        message: string
+      }
+    }
+    throw new ResponseError(res.error.code, res.error.message)
   }
 
   return data as Promise<TResponse>
