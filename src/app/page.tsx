@@ -1,10 +1,19 @@
+"use client"
+
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { HeroSection } from "@/components/home/hero-section"
 import { FeaturedCategories } from "@/components/home/featured-categories"
 import { ProductGrid } from "@/components/products/product-grid"
+import { useListProductCards } from "@/core/product/product.customer"
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
 
 export default function HomePage() {
+	const infiniteProductCards = useListProductCards({
+		limit: 8,
+	})
+	const { ref, items: products } = useInfiniteScroll(infiniteProductCards)
+
 	return (
 		<div className="min-h-screen flex flex-col">
 			<Header />
@@ -23,12 +32,12 @@ export default function HomePage() {
 								Free shipping on orders over $50!
 							</p>
 						</div>
-						<ProductGrid />
+						<ProductGrid products={products} />
 					</div>
 				</section>
 
 				{/* Why Choose Us */}
-				<section className="py-16 bg-muted/50">
+				<section className="py-16 bg-muted/50" ref={ref}>
 					<div className="container">
 						<div className="text-center space-y-4 mb-12">
 							<h2 className="text-3xl font-bold text-balance">

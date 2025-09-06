@@ -5,6 +5,9 @@ import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Star } from "lucide-react"
+import { useEffect, useRef } from "react"
+import { TippyGroup } from "@/lib/tippy/tippy-group"
+import { Tippy } from "@/lib/tippy/tippy"
 
 interface ProductCardProps {
 	product: {
@@ -12,22 +15,33 @@ interface ProductCardProps {
 		name: string
 		description: string
 		price: number
-		originalPrice?: number
+		original_price: number
 		image: string
-		category: string
-		rating: number
-		reviewCount: number
-		inStock: boolean
-		minOrderQuantity: number
+		rating: {
+			score: number
+			total: number
+		}
+		promo?: {
+			id: string
+			title: string
+			description: string
+		}
+		// reviewCount: number
+		// inStock: boolean
+		// minOrderQuantity: number
 		// bulkPrice?: number
 		// bulkThreshold?: number
 	}
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-	const discount = product.originalPrice
+	// const {data: }
+	const ref = useRef<HTMLElement>(null)
+
+	const discountPercent = product.original_price
 		? Math.round(
-				((product.originalPrice - product.price) / product.originalPrice) * 100
+				((product.original_price - product.price) / product.original_price) *
+					100
 		  )
 		: 0
 
@@ -41,19 +55,19 @@ export function ProductCard({ product }: ProductCardProps) {
 						fill
 						className="object-cover transition-transform group-hover:scale-105"
 					/>
-					{discount > 0 && (
+					{discountPercent > 0 && (
 						<Badge className="absolute left-2 top-2 bg-destructive text-xs">
-							-{discount}%
+							-{discountPercent}%
 						</Badge>
 					)}
-					{!product.inStock && (
+					{/* {!product.inStock && (
 						<Badge
 							variant="secondary"
 							className="absolute right-2 top-2 text-xs"
 						>
 							Out of Stock
 						</Badge>
-					)}
+					)} */}
 					{/* {product.bulkPrice && product.bulkThreshold && (
 						<Badge className="absolute right-2 bottom-2 bg-green-600 text-xs">
 							Bulk
@@ -63,17 +77,15 @@ export function ProductCard({ product }: ProductCardProps) {
 
 				<CardContent className="p-3">
 					<div className="space-y-2">
-						<Badge variant="outline" className="text-xs h-5">
-							flashsale 8% off
-						</Badge>
-
+						{product.promo && (
+							<Badge variant="outline" className="text-xs h-5">
+								{product.promo.title}{" "}
+								{discountPercent > 0 && `- ${discountPercent}%`}
+							</Badge>
+						)}
 						<h3 className="font-semibold text-sm leading-tight group-hover:text-primary transition-colors line-clamp-2">
 							{product.name}
 						</h3>
-
-						<p className="text-xs text-muted-foreground line-clamp-1">
-							{product.description}
-						</p>
 
 						<div className="flex items-center space-x-1">
 							<div className="flex items-center">
@@ -81,7 +93,7 @@ export function ProductCard({ product }: ProductCardProps) {
 									<Star
 										key={i}
 										className={`h-3 w-3 ${
-											i < Math.floor(product.rating)
+											i < Math.floor(product.rating.score)
 												? "fill-yellow-400 text-yellow-400"
 												: "text-gray-300"
 										}`}
@@ -89,7 +101,7 @@ export function ProductCard({ product }: ProductCardProps) {
 								))}
 							</div>
 							<span className="text-xs text-muted-foreground">
-								({product.reviewCount})
+								({product.rating.total})
 							</span>
 						</div>
 
@@ -98,9 +110,9 @@ export function ProductCard({ product }: ProductCardProps) {
 								<span className="text-base font-bold">
 									${product.price.toFixed(2)}
 								</span>
-								{product.originalPrice && (
+								{product.original_price > product.price && (
 									<span className="text-xs text-muted-foreground line-through">
-										${product.originalPrice.toFixed(2)}
+										${product.original_price.toFixed(2)}
 									</span>
 								)}
 							</div>

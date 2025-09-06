@@ -26,7 +26,82 @@ import {
 	MoreHorizontal,
 } from "lucide-react"
 
-const getProduct = (id: string) => ({
+interface Product {
+	id: string
+	name: string
+	description: string
+	detailedDescription: string
+	price: number
+	originalPrice: number
+	images: string[]
+	category: string
+	rating: number
+	reviewCount: number
+	soldCount: number
+	inStock: boolean
+	promoID?: string
+	// isFlashSale: boolean
+	// flashSaleEndTime: Date
+	variants: Variant[]
+	specifications: Specifications
+	reviews: Review[]
+	ratingBreakdown: Record<string, number>
+	seller: Seller
+	relatedProducts: RelatedProduct[]
+	sameShopProducts: RelatedProduct[]
+}
+
+interface Variant {
+	id: string
+	name: string
+	price: number
+	popular: boolean
+}
+
+interface Specifications {
+	dimensions: Record<string, string>
+	materials: Record<string, string>
+	features: Record<string, string>
+}
+
+interface Review {
+	id: number
+	user: string
+	avatar: string
+	rating: number
+	date: string
+	title: string
+	comment: string
+	helpful: number
+	verified: boolean
+	images: string[]
+}
+
+interface Seller {
+	name: string
+	rating: number
+	responseRate: number
+	joinedYears: number
+	totalProducts: number
+	followers: number
+	avatar: string
+}
+
+interface RelatedProduct {
+	id: string
+	name: string
+	description: string
+	price: number
+	originalPrice: number
+	image: string
+	category: string
+	rating: number
+	reviewCount: number
+	inStock: boolean
+	minOrderQuantity: number
+}
+
+const getProduct = (id: string): Product => ({
 	id,
 	name: "Professional Office Chair - Ergonomic Design with Lumbar Support",
 	description:
@@ -291,6 +366,7 @@ export default function ProductDetailPage({
 	const [selectedImage, setSelectedImage] = useState(0)
 	const [selectedVariant, setSelectedVariant] = useState(product.variants[0])
 	const [quantity, setQuantity] = useState(1)
+	const { data: promo } = useGetPromotion(product.promoID)
 
 	const discount = product.originalPrice
 		? Math.round(
@@ -341,10 +417,10 @@ export default function ProductDetailPage({
 								fill
 								className="object-cover"
 							/>
-							{product.isFlashSale && (
+							{product.promoID && (
 								<div className="absolute top-4 left-4">
 									<Badge className="bg-red-600 text-white px-3 py-1 text-sm font-bold">
-										FLASH SALE
+										{/* TODO: promo.title */}
 									</Badge>
 								</div>
 							)}
@@ -429,7 +505,7 @@ export default function ProductDetailPage({
 							</span>
 						</div>
 
-						{product.isFlashSale && (
+						{product.promoID && (
 							<div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-3 rounded flex items-center justify-between">
 								<div className="flex items-center space-x-2">
 									<span className="font-bold">FLASH SALE</span>

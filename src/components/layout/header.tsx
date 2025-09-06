@@ -30,7 +30,7 @@ import {
 	Settings,
 	BarChart3,
 } from "lucide-react"
-import { useGetMe, useSignOut } from "@/core/account/account.query"
+import { useGetMe, useSignOut } from "@/core/account/account.customer"
 import { useRouter } from "next/navigation"
 import { Logo } from "../shared/logo"
 

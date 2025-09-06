@@ -1,4 +1,4 @@
-import { ErrorCode, ResponseError, SuccessPaginationRes, SuccessResponse, TErrorResponse } from './response.type'
+import { ErrorCode, ResponseError, SuccessPaginationRes, SuccessResponse } from './response.type'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api'
 
