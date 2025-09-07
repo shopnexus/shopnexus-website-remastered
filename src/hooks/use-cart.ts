@@ -12,8 +12,8 @@ const sampleCartItems: CartItem[] = [
     minOrderQuantity: 5,
     image: "/professional-office-chair.jpg",
     category: "Furniture",
-    bulkPrice: 249.99,
-    bulkThreshold: 10,
+    bulk_price: 249.99,
+    bulk_threshold: 10,
   },
   {
     id: "2",
@@ -23,8 +23,8 @@ const sampleCartItems: CartItem[] = [
     minOrderQuantity: 10,
     image: "/office-paper-stack.jpg",
     category: "Office Supplies",
-    bulkPrice: 39.99,
-    bulkThreshold: 20,
+    bulk_price: 39.99,
+    bulk_threshold: 20,
   },
   {
     id: "3",
@@ -34,8 +34,8 @@ const sampleCartItems: CartItem[] = [
     minOrderQuantity: 1,
     image: "/standing-desk-converter.png",
     category: "Furniture",
-    bulkPrice: 159.99,
-    bulkThreshold: 5,
+    bulk_price: 159.99,
+    bulk_threshold: 5,
   },
 ]
 
@@ -77,8 +77,8 @@ export function useCart() {
   }, [])
 
   const getItemPrice = useCallback((item: CartItem) => {
-    if (item.bulkPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold) {
-      return item.bulkPrice
+    if (item.bulk_price && item.bulk_threshold && item.quantity >= item.bulk_threshold) {
+      return item.bulk_price
     }
     return item.price
   }, [])
@@ -93,8 +93,8 @@ export function useCart() {
 
   const getBulkSavings = useCallback(() => {
     return cartItems.reduce((sum, item) => {
-      if (item.bulkPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold) {
-        return sum + (item.price - item.bulkPrice) * item.quantity
+      if (item.bulk_price && item.bulk_threshold && item.quantity >= item.bulk_threshold) {
+        return sum + (item.price - item.bulk_price) * item.quantity
       }
       return sum
     }, 0)

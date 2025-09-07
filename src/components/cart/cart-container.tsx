@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { CartItemList } from "./cart-item-list"
 import { CartSummary } from "./cart-summary"
 import { EmptyCart } from "./empty-cart"
 import { CartItem } from "./cart-types"
+import { useGetCart } from "@/core/account/cart.customer"
 
 const sampleCartItems: CartItem[] = [
 	{
@@ -15,8 +16,8 @@ const sampleCartItems: CartItem[] = [
 		minOrderQuantity: 5,
 		image: "/professional-office-chair.jpg",
 		category: "Furniture",
-		bulkPrice: 10.4, // Bulk price in USDT
-		bulkThreshold: 10,
+		bulk_price: 10.4, // Bulk price in USDT
+		bulk_threshold: 10,
 	},
 	{
 		id: "2",
@@ -26,8 +27,8 @@ const sampleCartItems: CartItem[] = [
 		minOrderQuantity: 10,
 		image: "/office-paper-stack.jpg",
 		category: "Office Supplies",
-		bulkPrice: 1.67, // Bulk price in USDT
-		bulkThreshold: 20,
+		bulk_price: 1.67, // Bulk price in USDT
+		bulk_threshold: 20,
 	},
 	{
 		id: "3",
@@ -37,20 +38,28 @@ const sampleCartItems: CartItem[] = [
 		minOrderQuantity: 1,
 		image: "/standing-desk-converter.png",
 		category: "Furniture",
-		bulkPrice: 6.67, // Bulk price in USDT
-		bulkThreshold: 5,
+		bulk_price: 6.67, // Bulk price in USDT
+		bulk_threshold: 5,
 	},
 ]
 
 export function CartContainer() {
+	const { data: cartData } = useGetCart()
+
 	const [cartItems, setCartItems] = useState<CartItem[]>(sampleCartItems)
+
+	useEffect(() => {
+		if (cartData) {
+			setCartItems(cartData)
+		}
+	}, [cartData])
 
 	const updateQuantity = (id: string, newQuantity: number) => {
 		setCartItems((items) =>
 			items.map((item) => {
 				if (item.id === id) {
-					const quantity = Math.max(item.minOrderQuantity, newQuantity)
-					return { ...item, quantity }
+					// const quantity = Math.max(item.minOrderQuantity, newQuantity)
+					return { ...item, quantity: newQuantity }
 				}
 				return item
 			})

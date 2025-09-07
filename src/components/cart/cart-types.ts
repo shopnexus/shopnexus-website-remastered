@@ -1,19 +1,20 @@
 export interface CartItem {
   id: string
   name: string
+  original_price: number // Original price in USDT for showing discounts
   price: number // Price in USDT (base currency)
   quantity: number
-  minOrderQuantity: number
+  // minOrderQuantity: number
   image: string
   category: string
-  bulkPrice?: number // Bulk price in USDT
-  bulkThreshold?: number
+  bulk_price?: number // Bulk price in USDT
+  bulk_threshold?: number
 }
 
 export interface CartSummaryData {
-  totalItems: number
+  total_items: number
   subtotal: number
-  bulkSavings: number
+  bulk_savings: number
   total: number
 }
 

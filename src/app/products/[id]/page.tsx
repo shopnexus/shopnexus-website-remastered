@@ -98,7 +98,7 @@ interface RelatedProduct {
 	rating: number
 	reviewCount: number
 	inStock: boolean
-	minOrderQuantity: number
+	// minOrderQuantity: number
 }
 
 const getProduct = (id: string): Product => ({

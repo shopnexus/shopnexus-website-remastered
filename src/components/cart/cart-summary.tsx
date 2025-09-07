@@ -25,11 +25,11 @@ export function CartSummary({ items }: CartSummaryProps) {
 
 	const getItemPrice = (item: CartItem) => {
 		if (
-			item.bulkPrice &&
-			item.bulkThreshold &&
-			item.quantity >= item.bulkThreshold
+			item.bulk_price &&
+			item.bulk_threshold &&
+			item.quantity >= item.bulk_threshold
 		) {
-			return item.bulkPrice
+			return item.bulk_price
 		}
 		return item.price
 	}
@@ -43,11 +43,11 @@ export function CartSummary({ items }: CartSummaryProps) {
 	const getBulkSavings = () =>
 		items.reduce((sum, item) => {
 			if (
-				item.bulkPrice &&
-				item.bulkThreshold &&
-				item.quantity >= item.bulkThreshold
+				item.bulk_price &&
+				item.bulk_threshold &&
+				item.quantity >= item.bulk_threshold
 			) {
-				return sum + (item.price - item.bulkPrice) * item.quantity
+				return sum + (item.price - item.bulk_price) * item.quantity
 			}
 			return sum
 		}, 0)

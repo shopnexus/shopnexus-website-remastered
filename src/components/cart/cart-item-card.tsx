@@ -31,11 +31,11 @@ export function CartItemCard({
 
 	const getItemPrice = () => {
 		if (
-			item.bulkPrice &&
-			item.bulkThreshold &&
-			item.quantity >= item.bulkThreshold
+			item.bulk_price &&
+			item.bulk_threshold &&
+			item.quantity >= item.bulk_threshold
 		) {
-			return item.bulkPrice
+			return item.bulk_price
 		}
 		return item.price
 	}
@@ -94,9 +94,9 @@ export function CartItemCard({
 								<Badge variant="outline" className="text-xs">
 									{item.category}
 								</Badge>
-								<span className="text-xs text-muted-foreground">
+								{/* <span className="text-xs text-muted-foreground">
 									Min order: {item.minOrderQuantity} items
-								</span>
+								</span> */}
 							</div>
 						</div>
 
@@ -174,7 +174,7 @@ export function CartItemCard({
 									size="sm"
 									className="h-9 w-9 p-0 hover:bg-muted"
 									onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
-									disabled={item.quantity <= item.minOrderQuantity}
+									// disabled={item.quantity <= item.minOrderQuantity}
 								>
 									<Minus className="h-3 w-3" />
 								</Button>
@@ -182,13 +182,10 @@ export function CartItemCard({
 									type="number"
 									value={item.quantity}
 									onChange={(e) =>
-										onUpdateQuantity(
-											item.id,
-											Number.parseInt(e.target.value) || item.minOrderQuantity
-										)
+										onUpdateQuantity(item.id, Number.parseInt(e.target.value))
 									}
 									className="w-16 h-9 text-center border-0 focus-visible:ring-0"
-									min={item.minOrderQuantity}
+									// min={item.minOrderQuantity}
 								/>
 								<Button
 									variant="ghost"
@@ -214,14 +211,14 @@ export function CartItemCard({
 					</div>
 
 					{/* Bulk Discount Info */}
-					{item.bulkPrice &&
-						item.bulkThreshold &&
-						item.quantity < item.bulkThreshold && (
+					{item.bulk_price &&
+						item.bulk_threshold &&
+						item.quantity < item.bulk_threshold && (
 							<div className="bg-blue-50 border border-blue-200 rounded-md p-3">
 								<p className="text-sm text-blue-700">
-									💡 Buy {item.bulkThreshold - item.quantity} more items to get{" "}
+									💡 Buy {item.bulk_threshold - item.quantity} more items to get{" "}
 									<span className="font-semibold">
-										{formatCurrency(item.bulkPrice)}
+										{formatCurrency(item.bulk_price)}
 									</span>{" "}
 									per item!
 								</p>
