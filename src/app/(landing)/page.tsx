@@ -2,9 +2,9 @@
 
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
-import { HeroSection } from "@/components/home/hero-section"
-import { FeaturedCategories } from "@/components/home/featured-categories"
-import { ProductGrid } from "@/components/products/product-grid"
+import { HeroSection } from "./components/hero-section"
+import { FeaturedCategories } from "./components/featured-categories"
+import { ProductGrid } from "@/components/product/product-grid"
 import { useListProductCards } from "@/core/product/product.customer"
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
 

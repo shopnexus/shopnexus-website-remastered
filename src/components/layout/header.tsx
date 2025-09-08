@@ -20,7 +20,7 @@ import {
 	NavigationMenuList,
 	NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu"
-import { CartSidebar } from "@/components/cart/cart-sidebar"
+import { CartSidebar } from "@/app/(app)/cart/components/cart-sidebar"
 import {
 	Search,
 	User,
@@ -185,7 +185,7 @@ export function Header() {
 						</DropdownMenu>
 					) : (
 						<Button variant="ghost" size="icon" asChild>
-							<Link href="/auth/login">
+							<Link href="/login">
 								<User className="h-5 w-5" />
 							</Link>
 						</Button>

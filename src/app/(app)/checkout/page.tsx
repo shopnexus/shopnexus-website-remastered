@@ -1,6 +1,6 @@
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
-import { CheckoutForm } from "@/components/checkout/checkout-form"
+import { CheckoutForm } from "./components/checkout-form"
 
 export default function CheckoutPage() {
 	return (

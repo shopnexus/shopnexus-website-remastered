@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ProductCard } from "@/components/products/product-card"
+import { ProductCard } from "@/components/product/product-card"
 import {
 	ShoppingCart,
 	Star,
@@ -25,6 +25,7 @@ import {
 	ThumbsDown,
 	MoreHorizontal,
 } from "lucide-react"
+import { useGetPromotion } from "@/core/promotion/promotion.customer"
 
 interface Product {
 	id: string
@@ -39,7 +40,7 @@ interface Product {
 	reviewCount: number
 	soldCount: number
 	inStock: boolean
-	promoID?: string
+	promoID?: number
 	// isFlashSale: boolean
 	// flashSaleEndTime: Date
 	variants: Variant[]
@@ -688,12 +689,12 @@ export default function ProductDetailPage({
 								</div>
 							</div>
 
-							<div className="flex space-x-2">
-								<Button variant="outline" size="sm">
-									<MessageCircle className="h-4 w-4 mr-2" />
+							<div className="flex lg:flex-row flex-col gap-2">
+								<Button variant="outline" size="sm" className="lg:w-fit w-full">
+									<MessageCircle className="h-4 w-4 mr-2 hidden lg:block" />
 									Chat Now
 								</Button>
-								<Button variant="outline" size="sm">
+								<Button variant="outline" size="sm" className="lg:w-fit w-full">
 									View Shop
 								</Button>
 							</div>

@@ -122,7 +122,7 @@ export function Footer() {
 						<ul className="space-y-2 text-sm text-muted-foreground">
 							<li>
 								<Link
-									href="/auth/login"
+									href="/login"
 									className="hover:text-foreground transition-colors"
 								>
 									Sign In

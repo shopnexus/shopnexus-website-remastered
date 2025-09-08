@@ -7,14 +7,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import {
 	Select,
 	SelectContent,
@@ -24,9 +17,9 @@ import {
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Eye, EyeOff, Building2, Store, User } from "lucide-react"
-import { ButtonLoading } from "../ui/button-loading"
-import { Logo } from "../shared/logo"
+import { Eye, EyeOff, Store, User } from "lucide-react"
+import { ButtonLoading } from "@/components/ui/button-loading"
+import { Logo } from "@/components/shared/logo"
 
 type AccountType = "vendor" | "customer"
 
@@ -498,7 +491,7 @@ export function RegisterForm() {
 
 				<div className="text-center text-sm text-muted-foreground">
 					<Link
-						href={`/auth/login?type=${accountType}`}
+						href={`/login?type=${accountType}`}
 						className="text-primary hover:underline font-medium transition-colors"
 					>
 						{config.loginText}

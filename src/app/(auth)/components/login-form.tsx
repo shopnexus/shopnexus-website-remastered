@@ -10,14 +10,14 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Eye, EyeOff, Building2, Store, User } from "lucide-react"
-import { ButtonLoading } from "../ui/button-loading"
+import { Eye, EyeOff, Store, User } from "lucide-react"
+import { ButtonLoading } from "@/components/ui/button-loading"
 import { useLoginBasic } from "@/core/account/account.customer"
 import { useRouter } from "next/navigation"
 import { ResponseError } from "@/lib/queryclient/response.type"
 import { toast } from "sonner"
-import { useShake, useStrongShake } from "@/hooks/use-shake"
-import { Logo } from "../shared/logo"
+import { useShake } from "@/hooks/use-shake"
+import { Logo } from "@/components/shared/logo"
 
 type AccountType = "vendor" | "customer"
 
@@ -256,7 +256,7 @@ export function LoginForm() {
 									</Label>
 								</div>
 								<Link
-									href="/auth/forgot-password"
+									href="/forgot-password"
 									className="text-sm text-primary hover:underline transition-colors"
 								>
 									Forgot password?
@@ -356,7 +356,7 @@ export function LoginForm() {
 				<div className="text-center text-sm text-muted-foreground">
 					Don&apos;t have an account?{" "}
 					<Link
-						href={`/auth/register?type=${accountType}`}
+						href={`/register?type=${accountType}`}
 						className="text-primary hover:underline font-medium transition-colors"
 					>
 						Create one!

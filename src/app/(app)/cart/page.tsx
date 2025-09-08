@@ -1,7 +1,7 @@
 "use client"
 
 import { Metadata } from "next"
-import { CartContainer } from "@/components/cart/cart-container"
+import { CartContainer } from "./components/cart-container"
 import { CurrencyProvider } from "@/components/currency/currency-context"
 import { CurrencySwitcher } from "@/components/currency/currency-switcher"
 import {
