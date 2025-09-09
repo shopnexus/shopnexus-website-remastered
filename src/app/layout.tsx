@@ -8,7 +8,7 @@ import Providers from "./providers"
 import { Toaster } from "@/components/ui/sonner"
 
 export const metadata: Metadata = {
-	title: "ShopNexus - Your Trusted B2B Marketplace",
+	title: "ShopNexus - Buy and Sell Anything!",
 	description:
 		"Connect with verified suppliers and grow your business with confidence. Professional B2B ecommerce platform for bulk orders, office supplies, and business solutions.",
 }

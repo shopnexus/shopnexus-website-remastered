@@ -47,7 +47,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
 	return (
 		<Link href={`/products/${product.id}`}>
-			<Card className="group overflow-hidden transition-all hover:shadow-md cursor-pointer h-full py-0 gap-y-2">
+			<Card className="group overflow-hidden transition-all hover:shadow-md cursor-pointer h-full py-0 gap-y-2 ">
 				<div className="relative aspect-square overflow-hidden">
 					<Image
 						src={product.image || "/placeholder.svg"}

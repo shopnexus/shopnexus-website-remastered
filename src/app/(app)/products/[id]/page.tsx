@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { use, useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -25,44 +25,43 @@ import {
 	ThumbsDown,
 	MoreHorizontal,
 } from "lucide-react"
-import { useGetPromotion } from "@/core/promotion/promotion.customer"
+import { useGetProductDetail } from "@/core/product/product.customer"
+import {
+	Carousel,
+	CarouselContent,
+	CarouselItem,
+} from "@/components/ui/carousel"
+import { cn } from "@/lib/utils"
 
 interface Product {
-	id: string
+	id: number
 	name: string
 	description: string
-	detailedDescription: string
-	price: number
-	originalPrice: number
 	images: string[]
 	category: string
-	rating: number
-	reviewCount: number
-	soldCount: number
-	inStock: boolean
-	promoID?: number
-	// isFlashSale: boolean
-	// flashSaleEndTime: Date
-	variants: Variant[]
-	specifications: Specifications
-	reviews: Review[]
-	ratingBreakdown: Record<string, number>
-	seller: Seller
-	relatedProducts: RelatedProduct[]
-	sameShopProducts: RelatedProduct[]
+	rating: RatingDetail
+	sold: number
+	promo_id?: number
+	skus: SkuDetail[]
+	specifications: Record<string, string>
+	// Optional fields that might not be in API response
+	reviews?: Review[]
+	seller?: Seller
+	relatedProducts?: RelatedProduct[]
+	sameShopProducts?: RelatedProduct[]
 }
 
-interface Variant {
-	id: string
-	name: string
+interface RatingDetail {
+	score: number
+	total: number
+	breakdown: Record<string, number>
+}
+
+interface SkuDetail {
+	id: number
 	price: number
-	popular: boolean
-}
-
-interface Specifications {
-	dimensions: Record<string, string>
-	materials: Record<string, string>
-	features: Record<string, string>
+	original_price: number
+	attributes: Record<string, string>
 }
 
 interface Review {
@@ -93,286 +92,144 @@ interface RelatedProduct {
 	name: string
 	description: string
 	price: number
-	originalPrice: number
+	original_price: number
 	image: string
 	category: string
-	rating: number
-	reviewCount: number
-	inStock: boolean
+	rating: {
+		score: number
+		total: number
+	}
 	// minOrderQuantity: number
 }
 
-const getProduct = (id: string): Product => ({
-	id,
-	name: "Professional Office Chair - Ergonomic Design with Lumbar Support",
-	description:
-		"Premium ergonomic office chair designed for all-day comfort and productivity",
-	detailedDescription: `
-		This professional office chair combines cutting-edge ergonomic design with premium materials to deliver exceptional comfort and support for long working hours. 
-		
-		**Key Features:**
-		- Advanced lumbar support system that adjusts to your spine's natural curve
-		- Breathable mesh backrest for optimal air circulation
-		- High-density foam cushioning for lasting comfort
-		- 360-degree swivel with smooth-rolling casters
-		- Height-adjustable seat with pneumatic lift
-		- Armrests with multiple adjustment options
-		
-		**Perfect for:**
-		- Office professionals spending 8+ hours at desk
-		- Home office setups
-		- Executive offices and conference rooms
-		- Co-working spaces
-		
-		**Quality Assurance:**
-		- Tested for 40+ hours of continuous use
-		- Weight capacity up to 300 lbs
-		- 5-year manufacturer warranty
-		- BIFMA certified for safety and durability
-	`,
-	price: 299.99,
-	originalPrice: 399.99,
-	images: [
-		"/professional-office-chair.jpg",
-		"/office-chair-side-view.png",
-		"/office-chair-back-view.png",
-		"/office-chair-detail-view.jpg",
-		"/office-chair-assembly.jpg",
-	],
-	category: "Office Furniture",
-	rating: 4.7,
-	reviewCount: 2847,
-	soldCount: 8432,
-	inStock: true,
-	isFlashSale: true,
-	flashSaleEndTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
-	variants: [
-		{ id: "single", name: "1 Chair", price: 299.99, popular: false },
-		{ id: "set-3", name: "3 Chairs", price: 249.99, popular: true },
-		{ id: "set-5", name: "5 Chairs", price: 229.99, popular: false },
-		{ id: "bulk-10", name: "10+ Chairs", price: 199.99, popular: false },
-	],
-	specifications: {
-		dimensions: {
-			"Overall Height": "42-46 inches",
-			"Seat Width": "20 inches",
-			"Seat Depth": "20 inches",
-			"Seat Height": "17-21 inches (adjustable)",
-			"Backrest Height": "26 inches",
-		},
-		materials: {
-			Frame: "Heavy-duty steel",
-			Upholstery: "Premium mesh and fabric",
-			Base: "Reinforced nylon with chrome finish",
-			Casters: "Smooth-rolling polyurethane",
-			Cushioning: "High-density foam",
-		},
-		features: {
-			"Weight Capacity": "300 lbs",
-			Adjustments: "Height, tilt, lumbar, armrests",
-			Warranty: "5 years manufacturer",
-			Assembly: "30 minutes (tools included)",
-			Certification: "BIFMA approved",
+// Mock data for fields not provided by API
+const mockReviews: Review[] = [
+	{
+		id: 1,
+		user: "Sarah Chen",
+		avatar: "/placeholder-user.jpg",
+		rating: 5,
+		date: "2024-10-15",
+		title: "Excellent product",
+		comment: "Great quality and fast delivery. Highly recommended!",
+		helpful: 24,
+		verified: true,
+		images: [],
+	},
+	{
+		id: 2,
+		user: "Michael Rodriguez",
+		avatar: "/placeholder-user.jpg",
+		rating: 4,
+		date: "2024-10-12",
+		title: "Good value for money",
+		comment: "Solid build quality. Assembly was straightforward.",
+		helpful: 18,
+		verified: true,
+		images: [],
+	},
+]
+
+const mockSeller: Seller = {
+	name: "TechStore Pro",
+	rating: 4.8,
+	responseRate: 98,
+	joinedYears: 5,
+	totalProducts: 156,
+	followers: 12500,
+	avatar: "/placeholder-logo.png",
+}
+
+const mockRelatedProducts: RelatedProduct[] = [
+	{
+		id: "2",
+		name: "Related Product 1",
+		description: "Similar product description",
+		price: 199.99,
+		original_price: 249.99,
+		image: "/placeholder.jpg",
+		category: "Electronics",
+		rating: {
+			score: 4.5,
+			total: 74,
 		},
 	},
-	reviews: [
-		{
-			id: 1,
-			user: "Sarah Chen",
-			avatar: "/placeholder-user.jpg",
-			rating: 5,
-			date: "2024-10-15",
-			title: "Excellent chair for long work hours",
-			comment:
-				"I've been using this chair for 6 months now and it's been a game-changer for my back pain. The lumbar support is fantastic and the mesh keeps me cool during long meetings.",
-			helpful: 24,
-			verified: true,
-			images: ["/review-1-1.jpg", "/review-1-2.jpg"],
+	{
+		id: "3",
+		name: "Related Product 2",
+		description: "Another similar product",
+		price: 299.99,
+		original_price: 399.99,
+		image: "/placeholder.jpg",
+		category: "Electronics",
+		rating: {
+			score: 4.6,
+			total: 45,
 		},
-		{
-			id: 2,
-			user: "Michael Rodriguez",
-			avatar: "/placeholder-user.jpg",
-			rating: 4,
-			date: "2024-10-12",
-			title: "Good value for money",
-			comment:
-				"Solid build quality and comfortable. Assembly was straightforward. Only minor complaint is that the armrests could be a bit more padded.",
-			helpful: 18,
-			verified: true,
-			images: [],
-		},
-		{
-			id: 3,
-			user: "Jennifer Kim",
-			avatar: "/placeholder-user.jpg",
-			rating: 5,
-			date: "2024-10-08",
-			title: "Perfect for my home office",
-			comment:
-				"Bought this for my home office setup. The chair looks professional and feels premium. The height adjustment is smooth and the tilt mechanism works perfectly.",
-			helpful: 31,
-			verified: true,
-			images: ["/review-3-1.jpg"],
-		},
-		{
-			id: 4,
-			user: "David Thompson",
-			avatar: "/placeholder-user.jpg",
-			rating: 4,
-			date: "2024-10-05",
-			title: "Great ergonomics",
-			comment:
-				"As someone who works 10+ hours a day, this chair has been a lifesaver. The ergonomic design really helps with posture. Highly recommend for office workers.",
-			helpful: 15,
-			verified: true,
-			images: [],
-		},
-	],
-	ratingBreakdown: {
-		"5": 1456,
-		"4": 892,
-		"3": 298,
-		"2": 124,
-		"1": 77,
-	} as Record<string, number>,
-	seller: {
-		name: "OfficePro Solutions",
-		rating: 4.8,
-		responseRate: 98,
-		joinedYears: 5,
-		totalProducts: 156,
-		followers: 12500,
-		avatar: "/placeholder-logo.png",
 	},
-	relatedProducts: [
-		{
-			id: "2",
-			name: "Standing Desk Converter",
-			description:
-				"Adjustable standing desk converter for healthier work habits",
-			price: 199.99,
-			originalPrice: 249.99,
-			image: "/standing-desk-converter.png",
-			category: "Furniture",
-			rating: 4.5,
-			reviewCount: 74,
-			inStock: true,
-			minOrderQuantity: 2,
-		},
-		{
-			id: "3",
-			name: "Modern Office Furniture Set",
-			description:
-				"Complete modern office furniture set for professional environments",
-			price: 899.99,
-			originalPrice: 1199.99,
-			image: "/modern-office-furniture.png",
-			category: "Furniture",
-			rating: 4.6,
-			reviewCount: 45,
-			inStock: true,
-			minOrderQuantity: 1,
-		},
-		{
-			id: "4",
-			name: "Office Supplies Kit",
-			description:
-				"Complete starter kit with pens, notebooks, and essential supplies",
-			price: 49.99,
-			originalPrice: 69.99,
-			image: "/office-supplies-kit.png",
-			category: "Office Supplies",
-			rating: 4.3,
-			reviewCount: 167,
-			inStock: true,
-			minOrderQuantity: 5,
-		},
-		{
-			id: "5",
-			name: "Business Laptop Computer",
-			description: "High-performance laptop perfect for business applications",
-			price: 1299.99,
-			originalPrice: 1499.99,
-			image: "/business-laptop-computer.jpg",
-			category: "Technology",
-			rating: 4.7,
-			reviewCount: 89,
-			inStock: true,
-			minOrderQuantity: 1,
-		},
-	],
-	sameShopProducts: [
-		{
-			id: "6",
-			name: "Executive Desk Lamp",
-			description: "Premium LED desk lamp with adjustable brightness",
-			price: 89.99,
-			originalPrice: 119.99,
-			image: "/placeholder.jpg",
-			category: "Office Supplies",
-			rating: 4.4,
-			reviewCount: 93,
-			inStock: true,
-			minOrderQuantity: 3,
-		},
-		{
-			id: "7",
-			name: "Conference Room System",
-			description: "Professional wireless conference system for meeting rooms",
-			price: 2499.99,
-			originalPrice: 2999.99,
-			image: "/conference-room-system.jpg",
-			category: "Technology",
-			rating: 4.8,
-			reviewCount: 28,
-			inStock: true,
-			minOrderQuantity: 1,
-		},
-		{
-			id: "8",
-			name: "Office Paper Stack Organizer",
-			description: "Stackable paper organizer for office document management",
-			price: 24.99,
-			originalPrice: 34.99,
-			image: "/office-paper-stack.jpg",
-			category: "Office Supplies",
-			rating: 4.2,
-			reviewCount: 156,
-			inStock: true,
-			minOrderQuantity: 10,
-		},
-		{
-			id: "9",
-			name: "Technology Office Equipment",
-			description: "Essential technology equipment bundle for modern offices",
-			price: 599.99,
-			originalPrice: 799.99,
-			image: "/technology-office-equipment.jpg",
-			category: "Technology",
-			rating: 4.6,
-			reviewCount: 67,
-			inStock: true,
-			minOrderQuantity: 1,
-		},
-	],
-})
+]
 
 export default function ProductDetailPage({
 	params,
 }: {
-	params: { id: string }
+	params: Promise<{ id: string }>
 }) {
-	const product = getProduct(params.id)
+	const { id } = use(params)
+	const { data: productData, isLoading, error } = useGetProductDetail(id)
 	const [selectedImage, setSelectedImage] = useState(0)
-	const [selectedVariant, setSelectedVariant] = useState(product.variants[0])
+	const [selectedSku, setSelectedSku] = useState<SkuDetail | null>(null)
 	const [quantity, setQuantity] = useState(1)
-	const { data: promo } = useGetPromotion(product.promoID)
+	// const { data: promo } = useGetPromotion(productData?.promo_id)
 
-	const discount = product.originalPrice
+	// Set default selected SKU when product data loads
+	useEffect(() => {
+		if (productData?.skus && productData.skus.length > 0 && !selectedSku) {
+			setSelectedSku(productData.skus[0])
+		}
+	}, [productData, selectedSku])
+
+	if (isLoading) {
+		return (
+			<div className="min-h-screen bg-gray-50 flex items-center justify-center">
+				<div className="text-center">
+					<div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+					<p className="mt-4 text-gray-600">Loading product details...</p>
+				</div>
+			</div>
+		)
+	}
+
+	if (error || !productData) {
+		return (
+			<div className="min-h-screen bg-gray-50 flex items-center justify-center">
+				<div className="text-center">
+					<h1 className="text-2xl font-bold text-gray-900 mb-2">
+						Product Not Found
+					</h1>
+					<p className="text-gray-600 mb-4">
+						The product you&apos;re looking for doesn&apos;t exist.
+					</p>
+					<Link href="/" className="text-blue-600 hover:underline">
+						Return to Home
+					</Link>
+				</div>
+			</div>
+		)
+	}
+
+	// Combine API data with mock data for missing fields
+	const product: Product = {
+		...productData,
+		reviews: mockReviews,
+		seller: mockSeller,
+		relatedProducts: mockRelatedProducts,
+		sameShopProducts: mockRelatedProducts,
+	}
+
+	const discount = selectedSku?.original_price
 		? Math.round(
-				((product.originalPrice - selectedVariant.price) /
-					product.originalPrice) *
+				((selectedSku.original_price - selectedSku.price) /
+					selectedSku.original_price) *
 					100
 		  )
 		: 0
@@ -418,7 +275,7 @@ export default function ProductDetailPage({
 								fill
 								className="object-cover"
 							/>
-							{product.promoID && (
+							{product.promo_id && (
 								<div className="absolute top-4 left-4">
 									<Badge className="bg-red-600 text-white px-3 py-1 text-sm font-bold">
 										{/* TODO: promo.title */}
@@ -484,13 +341,15 @@ export default function ProductDetailPage({
 
 						<div className="flex items-center space-x-4">
 							<div className="flex items-center space-x-1">
-								<span className="text-lg font-medium">{product.rating}</span>
+								<span className="text-lg font-medium">
+									{product.rating.score}
+								</span>
 								<div className="flex">
 									{[...Array(5)].map((_, i) => (
 										<Star
 											key={i}
 											className={`h-4 w-4 ${
-												i < Math.floor(product.rating)
+												i < Math.floor(product.rating.score)
 													? "fill-yellow-400 text-yellow-400"
 													: "text-gray-300"
 											}`}
@@ -499,14 +358,14 @@ export default function ProductDetailPage({
 								</div>
 							</div>
 							<span className="text-gray-600">
-								{product.reviewCount.toLocaleString()} Ratings
+								{product.rating.total.toLocaleString()} Ratings
 							</span>
 							<span className="text-gray-600">
-								{product.soldCount.toLocaleString()}+ Sold
+								{product.sold.toLocaleString()}+ Sold
 							</span>
 						</div>
 
-						{product.promoID && (
+						{product.promo_id && (
 							<div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-3 rounded flex items-center justify-between">
 								<div className="flex items-center space-x-2">
 									<span className="font-bold">FLASH SALE</span>
@@ -532,18 +391,22 @@ export default function ProductDetailPage({
 						<div className="space-y-2">
 							<div className="flex items-center space-x-3">
 								<span className="text-3xl font-bold text-red-600">
-									${selectedVariant.price.toFixed(2)}
+									$
+									{selectedSku?.price
+										? (selectedSku.price / 100).toFixed(2)
+										: "0.00"}
 								</span>
-								{product.originalPrice && (
-									<>
-										<span className="text-lg text-gray-500 line-through">
-											${product.originalPrice.toFixed(2)}
-										</span>
-										<Badge variant="destructive" className="text-sm">
-											-{discount}%
-										</Badge>
-									</>
-								)}
+								{selectedSku?.original_price &&
+									selectedSku.original_price !== selectedSku.price && (
+										<>
+											<span className="text-lg text-gray-500 line-through">
+												${(selectedSku.original_price / 100).toFixed(2)}
+											</span>
+											<Badge variant="destructive" className="text-sm">
+												-{discount}%
+											</Badge>
+										</>
+									)}
 							</div>
 						</div>
 
@@ -565,30 +428,34 @@ export default function ProductDetailPage({
 						</div>
 
 						<div className="space-y-3">
-							<span className="text-sm text-gray-600">Quantity Options</span>
-							<div className="grid grid-cols-2 gap-2">
-								{product.variants.map((variant) => (
+							<span className="text-sm text-gray-600">Available Options</span>
+							<div className="grid grid-cols-1 gap-2">
+								{product.skus.map((sku) => (
 									<button
-										key={variant.id}
-										onClick={() => setSelectedVariant(variant)}
+										key={sku.id}
+										onClick={() => setSelectedSku(sku)}
 										className={`p-3 border rounded-lg text-left transition-colors ${
-											selectedVariant.id === variant.id
+											selectedSku?.id === sku.id
 												? "border-blue-600 bg-blue-50"
 												: "border-gray-200 hover:border-gray-300"
 										}`}
 									>
 										<div className="flex items-center justify-between">
-											<span className="text-sm font-medium">
-												{variant.name}
-											</span>
-											{variant.popular && (
-												<Badge variant="secondary" className="text-xs">
-													Popular
-												</Badge>
-											)}
-										</div>
-										<div className="text-sm text-gray-600">
-											${variant.price}
+											<div className="flex flex-col">
+												<span className="text-sm font-medium">
+													{Object.entries(sku.attributes)
+														.map(([key, value]) => `${key}: ${value}`)
+														.join(", ")}
+												</span>
+												<span className="text-sm text-gray-600">
+													${(sku.price / 100).toFixed(2)}
+													{sku.original_price !== sku.price && (
+														<span className="ml-2 text-xs text-gray-500 line-through">
+															${(sku.original_price / 100).toFixed(2)}
+														</span>
+													)}
+												</span>
+											</div>
 										</div>
 									</button>
 								))}
@@ -631,76 +498,88 @@ export default function ProductDetailPage({
 				</div>
 
 				{/* Seller Information */}
-				<Card>
-					<CardContent className="p-6">
-						<div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-							<div className="flex items-center space-x-4">
-								<Avatar className="w-12 h-12">
-									<AvatarImage src={product.seller.avatar} />
-									<AvatarFallback className="bg-blue-600 text-white">
-										{product.seller.name.charAt(0)}
-									</AvatarFallback>
-								</Avatar>
-								<div>
-									<div className="flex items-center space-x-2">
-										<h3 className="font-medium">{product.seller.name}</h3>
-										<Badge className="bg-red-600 text-white text-xs">
-											Preferred
-										</Badge>
+				{product.seller && (
+					<Card>
+						<CardContent className="p-6">
+							<div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+								<div className="flex items-center space-x-4">
+									<Avatar className="w-12 h-12">
+										<AvatarImage src={product.seller.avatar} />
+										<AvatarFallback className="bg-blue-600 text-white">
+											{product.seller.name.charAt(0)}
+										</AvatarFallback>
+									</Avatar>
+									<div>
+										<div className="flex items-center space-x-2">
+											<h3 className="font-medium">{product.seller.name}</h3>
+											<Badge className="bg-red-600 text-white text-xs">
+												Preferred
+											</Badge>
+										</div>
+										<p className="text-sm text-gray-600">
+											Active 3 Minutes Ago
+										</p>
 									</div>
-									<p className="text-sm text-gray-600">Active 3 Minutes Ago</p>
 								</div>
-							</div>
 
-							<div className="grid grid-cols-3 lg:grid-cols-6 gap-4 lg:gap-8 text-center">
-								<div>
-									<div className="text-sm text-gray-600">Ratings</div>
-									<div className="font-medium text-red-600">
-										{(product.seller.rating * 5.7).toFixed(1)}k
+								<div className="grid grid-cols-3 lg:grid-cols-6 gap-4 lg:gap-8 text-center">
+									<div>
+										<div className="text-sm text-gray-600">Ratings</div>
+										<div className="font-medium text-red-600">
+											{(product.seller.rating * 5.7).toFixed(1)}k
+										</div>
+									</div>
+									<div>
+										<div className="text-sm text-gray-600">Response Rate</div>
+										<div className="font-medium text-red-600">
+											{product.seller.responseRate}%
+										</div>
+									</div>
+									<div>
+										<div className="text-sm text-gray-600">Joined</div>
+										<div className="font-medium">
+											{product.seller.joinedYears} years ago
+										</div>
+									</div>
+									<div>
+										<div className="text-sm text-gray-600">Products</div>
+										<div className="font-medium">
+											{product.seller.totalProducts}
+										</div>
+									</div>
+									<div>
+										<div className="text-sm text-gray-600">Response Time</div>
+										<div className="font-medium text-red-600">within hours</div>
+									</div>
+									<div>
+										<div className="text-sm text-gray-600">Follower</div>
+										<div className="font-medium">
+											{(product.seller.followers / 1000).toFixed(1)}k
+										</div>
 									</div>
 								</div>
-								<div>
-									<div className="text-sm text-gray-600">Response Rate</div>
-									<div className="font-medium text-red-600">
-										{product.seller.responseRate}%
-									</div>
-								</div>
-								<div>
-									<div className="text-sm text-gray-600">Joined</div>
-									<div className="font-medium">
-										{product.seller.joinedYears} years ago
-									</div>
-								</div>
-								<div>
-									<div className="text-sm text-gray-600">Products</div>
-									<div className="font-medium">
-										{product.seller.totalProducts}
-									</div>
-								</div>
-								<div>
-									<div className="text-sm text-gray-600">Response Time</div>
-									<div className="font-medium text-red-600">within hours</div>
-								</div>
-								<div>
-									<div className="text-sm text-gray-600">Follower</div>
-									<div className="font-medium">
-										{(product.seller.followers / 1000).toFixed(1)}k
-									</div>
-								</div>
-							</div>
 
-							<div className="flex lg:flex-row flex-col gap-2">
-								<Button variant="outline" size="sm" className="lg:w-fit w-full">
-									<MessageCircle className="h-4 w-4 mr-2 hidden lg:block" />
-									Chat Now
-								</Button>
-								<Button variant="outline" size="sm" className="lg:w-fit w-full">
-									View Shop
-								</Button>
+								<div className="flex lg:flex-row flex-col gap-2">
+									<Button
+										variant="outline"
+										size="sm"
+										className="lg:w-fit w-full"
+									>
+										<MessageCircle className="h-4 w-4 mr-2 hidden lg:block" />
+										Chat Now
+									</Button>
+									<Button
+										variant="outline"
+										size="sm"
+										className="lg:w-fit w-full"
+									>
+										View Shop
+									</Button>
+								</div>
 							</div>
-						</div>
-					</CardContent>
-				</Card>
+						</CardContent>
+					</Card>
+				)}
 
 				{/* Product Description & Specifications */}
 				<Card className="px-4 py-10">
@@ -714,23 +593,15 @@ export default function ProductDetailPage({
 								Product Specifications
 							</h4>
 							<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
-								{Object.entries(product.specifications).map(
-									([category, specs]) =>
-										Object.entries(specs as Record<string, string>).map(
-											([key, value]) => (
-												<div
-													key={`${category}-${key}`}
-													className="bg-gray-50 p-3 rounded-lg"
-												>
-													<div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-														{key}
-													</div>
-													<div className="font-medium text-gray-900">
-														{value}
-													</div>
-												</div>
-											)
-										)
+								{Object.entries(product.specifications ?? {}).map(
+									([key, value]) => (
+										<div key={key} className="bg-gray-50 p-3 rounded-lg">
+											<div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+												{key}
+											</div>
+											<div className="font-medium text-gray-900">{value}</div>
+										</div>
+									)
 								)}
 							</div>
 						</div>
@@ -741,7 +612,7 @@ export default function ProductDetailPage({
 								Product Description
 							</h4>
 							<div className="whitespace-pre-line text-gray-700 leading-relaxed">
-								{product.detailedDescription}
+								{product.description}
 							</div>
 						</div>
 					</CardContent>
@@ -751,7 +622,7 @@ export default function ProductDetailPage({
 				<Card>
 					<CardHeader>
 						<CardTitle>
-							Customer Reviews ({product.reviewCount.toLocaleString()})
+							Customer Reviews ({product.rating.total.toLocaleString()})
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
@@ -760,14 +631,14 @@ export default function ProductDetailPage({
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 								<div className="text-center">
 									<div className="text-4xl font-bold text-gray-900 mb-2">
-										{product.rating}
+										{product.rating.score}
 									</div>
 									<div className="flex justify-center mb-2">
 										{[...Array(5)].map((_, i) => (
 											<Star
 												key={i}
 												className={`h-5 w-5 ${
-													i < Math.floor(product.rating)
+													i < Math.floor(product.rating.score)
 														? "fill-yellow-400 text-yellow-400"
 														: "text-gray-300"
 												}`}
@@ -775,7 +646,7 @@ export default function ProductDetailPage({
 										))}
 									</div>
 									<p className="text-gray-600">
-										{product.reviewCount.toLocaleString()} reviews
+										{product.rating.total.toLocaleString()} reviews
 									</p>
 								</div>
 
@@ -786,14 +657,14 @@ export default function ProductDetailPage({
 											<Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
 											<Progress
 												value={
-													(product.ratingBreakdown[rating.toString()] /
-														product.reviewCount) *
+													((product.rating.breakdown[rating.toString()] || 0) /
+														product.rating.total) *
 													100
 												}
 												className="flex-1 h-2"
 											/>
 											<span className="text-sm text-gray-600 w-12">
-												{product.ratingBreakdown[rating.toString()]}
+												{product.rating.breakdown[rating.toString()] || 0}
 											</span>
 										</div>
 									))}
@@ -804,7 +675,7 @@ export default function ProductDetailPage({
 
 							{/* Individual Reviews */}
 							<div className="space-y-6">
-								{product.reviews.map((review) => (
+								{product.reviews?.map((review) => (
 									<div
 										key={review.id}
 										className="border-b border-gray-100 pb-6 last:border-b-0"
@@ -900,11 +771,30 @@ export default function ProductDetailPage({
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+						{/* <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 							{product.sameShopProducts.map((p) => (
 								<ProductCard key={p.id} product={p} />
 							))}
-						</div>
+						</div> */}
+						<Carousel
+							className={cn("w-full")}
+							opts={{ loop: false, dragFree: true }}
+						>
+							<CarouselContent>
+								{product.sameShopProducts?.map((p) => (
+									<CarouselItem
+										key={p.id}
+										className="h-[380px] basis-1/2 md:basis-1/3 lg:basis-1/5"
+									>
+										<div className="h-full p-1">
+											<ProductCard key={p.id} product={p} />
+										</div>
+									</CarouselItem>
+								))}
+							</CarouselContent>
+							{/* <CarouselPrevious />
+							<CarouselNext /> */}
+						</Carousel>
 					</CardContent>
 				</Card>
 
@@ -919,11 +809,30 @@ export default function ProductDetailPage({
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+						{/* <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 							{product.relatedProducts.map((p) => (
 								<ProductCard key={p.id} product={p} />
 							))}
-						</div>
+						</div> */}
+						<Carousel
+							className={cn("w-full")}
+							opts={{ loop: false, dragFree: true }}
+						>
+							<CarouselContent>
+								{product.relatedProducts?.map((p) => (
+									<CarouselItem
+										key={p.id}
+										className="h-[380px] basis-1/2 md:basis-1/3 lg:basis-1/5"
+									>
+										<div className="h-full p-1">
+											<ProductCard key={p.id} product={p} />
+										</div>
+									</CarouselItem>
+								))}
+							</CarouselContent>
+							{/* <CarouselPrevious />
+							<CarouselNext /> */}
+						</Carousel>
 					</CardContent>
 				</Card>
 			</div>

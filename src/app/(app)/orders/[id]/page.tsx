@@ -1,5 +1,3 @@
-import { Header } from "@/components/layout/header"
-import { Footer } from "@/components/layout/footer"
 import { OrderTracking } from "../components/order-tracking"
 
 const sampleOrder = {
@@ -32,15 +30,11 @@ const sampleOrder = {
 export default function OrderDetailPage() {
 	return (
 		<div className="min-h-screen flex flex-col">
-			<Header />
-
 			<main className="flex-1 py-8">
 				<div className="container max-w-4xl">
 					<OrderTracking order={sampleOrder} />
 				</div>
 			</main>
-
-			<Footer />
 		</div>
 	)
 }

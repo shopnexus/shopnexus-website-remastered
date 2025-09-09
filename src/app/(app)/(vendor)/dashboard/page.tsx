@@ -1,5 +1,3 @@
-import { Header } from "@/components/layout/header"
-import { Footer } from "@/components/layout/footer"
 import { DashboardOverview } from "./components/dashboard-overview"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SpendingAnalytics } from "./components/spending-analytics"
@@ -7,8 +5,6 @@ import { SpendingAnalytics } from "./components/spending-analytics"
 export default function DashboardPage() {
 	return (
 		<div className="min-h-screen flex flex-col">
-			<Header />
-
 			<main className="flex-1 py-8 mx-auto">
 				<div className="container max-w-7xl">
 					<div className="mb-8">
@@ -49,8 +45,6 @@ export default function DashboardPage() {
 					</Tabs>
 				</div>
 			</main>
-
-			<Footer />
 		</div>
 	)
 }

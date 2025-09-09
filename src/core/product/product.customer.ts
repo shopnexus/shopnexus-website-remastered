@@ -1,10 +1,32 @@
-import { useInfiniteQuery, useMutation } from "@tanstack/react-query"
+import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query"
 import { getQueryClient } from "../../lib/queryclient/query-client"
-import { customFetchPagination } from "../../lib/queryclient/custom-fetch"
+import { customFetchPagination, customFetchStandard } from "../../lib/queryclient/custom-fetch"
 import qs from "qs"
 import { PaginationParams } from "../../lib/queryclient/response.type"
 
 const queryClient = getQueryClient()
+
+export type TProductDetail = {
+  id: number
+	name: string
+	description: string
+	images: string[]
+	category: string
+	rating: {
+		score: number
+		total: number
+		breakdown: Record<string, number>
+	}
+	sold: number
+	promo_id?: number
+	skus: {
+		id: number
+    price: number
+		original_price: number
+		attributes: Record<string, string>
+	}[]
+	specifications: Record<string, string>
+}
 
 export type TProductCard = {
   id: string
@@ -55,4 +77,12 @@ export const useListProductCards = (params: ListProductCardsParams) =>
       }
     },
     initialPageParam: params,
+  })
+
+
+
+export const useGetProductDetail = (id: string) =>
+  useQuery({
+    queryKey: ['product', 'detail', id],
+    queryFn: () => customFetchStandard<TProductDetail>(`catalog/product-detail?id=${id}`),
   })

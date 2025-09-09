@@ -87,7 +87,7 @@ export function EmptyCart() {
 				<div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
 					{suggestedCategories.map((category) => (
 						<Link key={category.name} href={category.href}>
-							<Card className="hover:shadow-md transition-shadow cursor-pointer group">
+							<Card className="hover:shadow-md transition-shadow cursor-pointer group h-full">
 								<CardContent className="p-6 text-center space-y-3">
 									<div className="text-3xl">{category.icon}</div>
 									<h4 className="font-medium text-sm group-hover:text-primary transition-colors">
