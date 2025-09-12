@@ -1,127 +1,110 @@
-import * as React from "react"
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  MoreHorizontalIcon,
-} from "lucide-react"
+"use client"
 
-import { cn } from "@/lib/utils"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
-function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
-  return (
-    <nav
-      role="navigation"
-      aria-label="pagination"
-      data-slot="pagination"
-      className={cn("mx-auto flex w-full justify-center", className)}
-      {...props}
-    />
-  )
+interface PaginationProps {
+	currentPage: number
+	totalPages: number
+	onPageChange: (page: number) => void
+	className?: string
 }
 
-function PaginationContent({
-  className,
-  ...props
-}: React.ComponentProps<"ul">) {
-  return (
-    <ul
-      data-slot="pagination-content"
-      className={cn("flex flex-row items-center gap-1", className)}
-      {...props}
-    />
-  )
-}
+export function Pagination({
+	currentPage,
+	totalPages,
+	onPageChange,
+	className = "",
+}: PaginationProps) {
+	if (totalPages <= 1) return null
 
-function PaginationItem({ ...props }: React.ComponentProps<"li">) {
-  return <li data-slot="pagination-item" {...props} />
-}
+	const getVisiblePages = () => {
+		const delta = 2 // Number of pages to show on each side of current page
+		const range = []
+		const rangeWithDots = []
 
-type PaginationLinkProps = {
-  isActive?: boolean
-} & Pick<React.ComponentProps<typeof Button>, "size"> &
-  React.ComponentProps<"a">
+		for (
+			let i = Math.max(2, currentPage - delta);
+			i <= Math.min(totalPages - 1, currentPage + delta);
+			i++
+		) {
+			range.push(i)
+		}
 
-function PaginationLink({
-  className,
-  isActive,
-  size = "icon",
-  ...props
-}: PaginationLinkProps) {
-  return (
-    <a
-      aria-current={isActive ? "page" : undefined}
-      data-slot="pagination-link"
-      data-active={isActive}
-      className={cn(
-        buttonVariants({
-          variant: isActive ? "outline" : "ghost",
-          size,
-        }),
-        className
-      )}
-      {...props}
-    />
-  )
-}
+		if (currentPage - delta > 2) {
+			rangeWithDots.push(1, "...")
+		} else {
+			rangeWithDots.push(1)
+		}
 
-function PaginationPrevious({
-  className,
-  ...props
-}: React.ComponentProps<typeof PaginationLink>) {
-  return (
-    <PaginationLink
-      aria-label="Go to previous page"
-      size="default"
-      className={cn("gap-1 px-2.5 sm:pl-2.5", className)}
-      {...props}
-    >
-      <ChevronLeftIcon />
-      <span className="hidden sm:block">Previous</span>
-    </PaginationLink>
-  )
-}
+		rangeWithDots.push(...range)
 
-function PaginationNext({
-  className,
-  ...props
-}: React.ComponentProps<typeof PaginationLink>) {
-  return (
-    <PaginationLink
-      aria-label="Go to next page"
-      size="default"
-      className={cn("gap-1 px-2.5 sm:pr-2.5", className)}
-      {...props}
-    >
-      <span className="hidden sm:block">Next</span>
-      <ChevronRightIcon />
-    </PaginationLink>
-  )
-}
+		if (currentPage + delta < totalPages - 1) {
+			rangeWithDots.push("...", totalPages)
+		} else {
+			rangeWithDots.push(totalPages)
+		}
 
-function PaginationEllipsis({
-  className,
-  ...props
-}: React.ComponentProps<"span">) {
-  return (
-    <span
-      aria-hidden
-      data-slot="pagination-ellipsis"
-      className={cn("flex size-9 items-center justify-center", className)}
-      {...props}
-    >
-      <MoreHorizontalIcon className="size-4" />
-      <span className="sr-only">More pages</span>
-    </span>
-  )
-}
+		return rangeWithDots
+	}
 
-export {
-  Pagination,
-  PaginationContent,
-  PaginationLink,
-  PaginationItem,
-  PaginationPrevious,
-  PaginationNext,
-  PaginationEllipsis,
+	const visiblePages = getVisiblePages()
+
+	return (
+		<div
+			className={`flex items-center justify-center space-x-2 pt-6 ${className}`}
+		>
+			{/* Previous Button */}
+			<Button
+				variant="outline"
+				size="sm"
+				onClick={() => onPageChange(currentPage - 1)}
+				disabled={currentPage === 1}
+				className="flex items-center space-x-1"
+			>
+				<ChevronLeft className="h-4 w-4" />
+				<span>Previous</span>
+			</Button>
+
+			{/* Page Numbers */}
+			<div className="flex items-center space-x-1">
+				{visiblePages.map((page, index) => {
+					if (page === "...") {
+						return (
+							<span
+								key={`dots-${index}`}
+								className="px-2 py-1 text-sm text-muted-foreground"
+							>
+								...
+							</span>
+						)
+					}
+
+					return (
+						<Button
+							key={page}
+							variant={currentPage === page ? "default" : "outline"}
+							size="sm"
+							onClick={() => onPageChange(page as number)}
+							className="w-10 h-10"
+						>
+							{page}
+						</Button>
+					)
+				})}
+			</div>
+
+			{/* Next Button */}
+			<Button
+				variant="outline"
+				size="sm"
+				onClick={() => onPageChange(currentPage + 1)}
+				disabled={currentPage === totalPages}
+				className="flex items-center space-x-1"
+			>
+				<span>Next</span>
+				<ChevronRight className="h-4 w-4" />
+			</Button>
+		</div>
+	)
 }

@@ -35,6 +35,7 @@ export function Header({ hideSearch = false }: { hideSearch?: boolean }) {
 
 	const [isScrolled, setIsScrolled] = useState(false)
 	const [isSearchOpen, setIsSearchOpen] = useState(false)
+	const [searchQuery, setSearchQuery] = useState("")
 
 	useEffect(() => {
 		const onScroll = () => setIsScrolled(window.scrollY > 4)
@@ -46,6 +47,21 @@ export function Header({ hideSearch = false }: { hideSearch?: boolean }) {
 	const handleSignOut = () => {
 		mutateSignOut()
 		router.refresh()
+	}
+
+	const handleSearch = (e: React.FormEvent) => {
+		e.preventDefault()
+		if (searchQuery.trim()) {
+			router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+		}
+	}
+
+	const handleMobileSearch = (e: React.FormEvent) => {
+		e.preventDefault()
+		if (searchQuery.trim()) {
+			router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+			setIsSearchOpen(false)
+		}
 	}
 
 	return (
@@ -66,13 +82,15 @@ export function Header({ hideSearch = false }: { hideSearch?: boolean }) {
 				{/* Search */}
 				{!hideSearch ? (
 					<div className="hidden md:flex flex-1 items-center justify-center px-6 ">
-						<div className="relative w-full max-w-sm">
+						<form onSubmit={handleSearch} className="relative w-full max-w-sm">
 							<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 							<Input
 								placeholder="What are you looking for today?"
 								className="pl-10 pr-4 border-none"
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.target.value)}
 							/>
-						</div>
+						</form>
 					</div>
 				) : (
 					<div className="hidden md:flex flex-1 items-center justify-center px-6 ">
@@ -218,14 +236,16 @@ export function Header({ hideSearch = false }: { hideSearch?: boolean }) {
 			{isSearchOpen && (
 				<div className="md:hidden border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
 					<div className="container mx-auto px-4 py-3">
-						<div className="relative">
+						<form onSubmit={handleMobileSearch} className="relative">
 							<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 							<Input
 								placeholder="Search products, categories..."
 								className="pl-10 pr-4"
 								autoFocus
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.target.value)}
 							/>
-						</div>
+						</form>
 					</div>
 				</div>
 			)}

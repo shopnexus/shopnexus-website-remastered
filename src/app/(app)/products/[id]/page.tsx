@@ -33,11 +33,21 @@ import {
 } from "@/components/ui/carousel"
 import { cn } from "@/lib/utils"
 
+interface Resource {
+	id: number
+	mime: string
+	url: string
+	file_size: number
+	width: number
+	height: number
+	duration: number
+}
+
 interface Product {
 	id: number
 	name: string
 	description: string
-	images: string[]
+	resources: Resource[]
 	category: string
 	rating: RatingDetail
 	sold: number
@@ -270,7 +280,7 @@ export default function ProductDetailPage({
 					<div className="space-y-4">
 						<div className="relative aspect-square bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg overflow-hidden">
 							<Image
-								src={product.images[selectedImage] || "/placeholder.svg"}
+								src={product.resources[selectedImage].url || "/placeholder.svg"}
 								alt={product.name}
 								fill
 								className="object-cover"
@@ -285,7 +295,7 @@ export default function ProductDetailPage({
 						</div>
 
 						<div className="flex space-x-2 overflow-x-auto">
-							{product.images.map((image, index) => (
+							{product.resources.map((resource, index) => (
 								<button
 									key={index}
 									onClick={() => setSelectedImage(index)}
@@ -296,7 +306,7 @@ export default function ProductDetailPage({
 									}`}
 								>
 									<Image
-										src={image || "/placeholder.svg"}
+										src={resource.url || "/placeholder.svg"}
 										alt={`View ${index + 1}`}
 										width={64}
 										height={64}
