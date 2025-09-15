@@ -1,0 +1,5 @@
+export { ProductMainSection } from "./ProductMainSection"
+export { SellerInfo } from "./SellerInfo"
+export { ProductSpecifications } from "./ProductSpecifications"
+export { ReviewsSection } from "./ReviewsSection"
+export { RelatedProducts } from "./RelatedProducts"
