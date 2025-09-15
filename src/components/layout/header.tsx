@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,124 +12,106 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { CartSidebar } from "@/app/(app)/cart/components/cart-sidebar"
+import { Search, User, Menu, LogOut, Settings, BarChart3 } from "lucide-react"
 import {
-	NavigationMenu,
-	NavigationMenuContent,
-	NavigationMenuItem,
-	NavigationMenuLink,
-	NavigationMenuList,
-	NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu"
-import { CartSidebar } from "@/components/cart/cart-sidebar"
-import {
-	Search,
-	User,
-	Menu,
-	Building2,
-	LogOut,
-	Settings,
-	BarChart3,
-} from "lucide-react"
+	Sheet,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+	SheetTrigger,
+} from "@/components/ui/sheet"
+import { Separator } from "@/components/ui/separator"
+import { useGetMe, useSignOut } from "@/core/account/account.customer"
+import { useRouter } from "next/navigation"
+import { Logo } from "../shared/logo"
+import { cn } from "@/lib/utils"
 
-export function Header() {
-	const [isLoggedIn] = useState(true) // Added dashboard link to user dropdown
+export function Header({ hideSearch = false }: { hideSearch?: boolean }) {
+	const router = useRouter()
+	const { data: account } = useGetMe()
+	const { mutateAsync: mutateSignOut } = useSignOut()
+	const isLoggedIn = !!account
+
+	const [isScrolled, setIsScrolled] = useState(false)
+	const [isSearchOpen, setIsSearchOpen] = useState(false)
+	const [searchQuery, setSearchQuery] = useState("")
+
+	useEffect(() => {
+		const onScroll = () => setIsScrolled(window.scrollY > 4)
+		onScroll()
+		window.addEventListener("scroll", onScroll)
+		return () => window.removeEventListener("scroll", onScroll)
+	}, [])
+
+	const handleSignOut = () => {
+		mutateSignOut()
+		router.refresh()
+	}
+
+	const handleSearch = (e: React.FormEvent) => {
+		e.preventDefault()
+		if (searchQuery.trim()) {
+			router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+		}
+	}
+
+	const handleMobileSearch = (e: React.FormEvent) => {
+		e.preventDefault()
+		if (searchQuery.trim()) {
+			router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+			setIsSearchOpen(false)
+		}
+	}
 
 	return (
-		<header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ">
-			<div className="container flex h-16 items-center justify-between mx-auto">
+		<header
+			className={`sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${
+				isScrolled ? "shadow-sm" : ""
+			}`}
+		>
+			<div
+				className={cn(
+					"container flex h-16 items-center mx-auto justify-between"
+				)}
+			>
 				{/* Logo */}
-				<Link href="/" className="flex items-center space-x-2">
-					<Building2 className="h-8 w-8 text-primary" />
-					<span className="text-xl font-bold text-primary">B2B Commerce</span>
-				</Link>
+				<Logo />
 
 				{/* Navigation */}
-				<NavigationMenu className="hidden md:flex">
-					<NavigationMenuList>
-						<NavigationMenuItem>
-							<NavigationMenuTrigger>Products</NavigationMenuTrigger>
-							<NavigationMenuContent>
-								<div className="grid gap-3 p-6 w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
-									<div className="row-span-3">
-										<NavigationMenuLink asChild>
-											<Link
-												className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md"
-												href="/products"
-											>
-												<div className="mb-2 mt-4 text-lg font-medium">
-													All Products
-												</div>
-												<p className="text-sm leading-tight text-muted-foreground">
-													Browse our complete catalog of business solutions
-												</p>
-											</Link>
-										</NavigationMenuLink>
-									</div>
-									<div className="grid gap-2">
-										<Link
-											href="/products/office-supplies"
-											className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-										>
-											<div className="text-sm font-medium leading-none">
-												Office Supplies
-											</div>
-											<p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-												Essential office equipment and supplies
-											</p>
-										</Link>
-										<Link
-											href="/products/technology"
-											className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-										>
-											<div className="text-sm font-medium leading-none">
-												Technology
-											</div>
-											<p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-												Computers, software, and tech solutions
-											</p>
-										</Link>
-										<Link
-											href="/products/furniture"
-											className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-										>
-											<div className="text-sm font-medium leading-none">
-												Furniture
-											</div>
-											<p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-												Office furniture and workspace solutions
-											</p>
-										</Link>
-									</div>
-								</div>
-							</NavigationMenuContent>
-						</NavigationMenuItem>
-						<NavigationMenuItem>
-							<Link href="/bulk-orders" legacyBehavior passHref>
-								<NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
-									Bulk Orders
-								</NavigationMenuLink>
-							</Link>
-						</NavigationMenuItem>
-						<NavigationMenuItem>
-							<Link href="/solutions" legacyBehavior passHref>
-								<NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
-									Solutions
-								</NavigationMenuLink>
-							</Link>
-						</NavigationMenuItem>
-					</NavigationMenuList>
-				</NavigationMenu>
-
 				{/* Search */}
-				<div className="flex flex-1 items-center justify-center px-6">
-					<div className="relative w-full max-w-sm">
-						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-						<Input placeholder="Search products..." className="pl-10 pr-4" />
+				{!hideSearch ? (
+					<div className="hidden md:flex flex-1 items-center justify-center px-6 ">
+						<form onSubmit={handleSearch} className="relative w-full max-w-sm">
+							<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<Input
+								placeholder="What are you looking for today?"
+								className="pl-10 pr-4 border-none"
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.target.value)}
+							/>
+						</form>
 					</div>
-				</div>
+				) : (
+					<div className="hidden md:flex flex-1 items-center justify-center px-6 ">
+						<div className="w-full"></div>
+					</div>
+				)}
 
 				{/* Actions */}
-				<div className="flex items-center space-x-4">
+				<div className="flex items-center space-x-2 md:space-x-4">
+					{/* Mobile search toggle */}
+					{!hideSearch && (
+						<Button
+							variant="ghost"
+							size="icon"
+							className="md:hidden"
+							onClick={() => setIsSearchOpen((v) => !v)}
+							aria-label="Toggle search"
+						>
+							<Search className="h-5 w-5" />
+						</Button>
+					)}
 					<CartSidebar />
 
 					{isLoggedIn ? (
@@ -140,28 +122,31 @@ export function Header() {
 								</Button>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="end" className="w-56">
-								<DropdownMenuLabel>John Doe</DropdownMenuLabel>
+								<DropdownMenuLabel>My Account</DropdownMenuLabel>
 								<DropdownMenuSeparator />
+								<DropdownMenuItem asChild>
+									<Link href="/account" className="flex items-center">
+										<Settings className="mr-2 h-4 w-4" />
+										Profile & Settings
+									</Link>
+								</DropdownMenuItem>
+								<DropdownMenuItem asChild>
+									<Link href="/orders" className="flex items-center">
+										<BarChart3 className="mr-2 h-4 w-4" />
+										My Orders
+									</Link>
+								</DropdownMenuItem>
 								<DropdownMenuItem asChild>
 									<Link href="/dashboard" className="flex items-center">
 										<BarChart3 className="mr-2 h-4 w-4" />
 										Dashboard
 									</Link>
 								</DropdownMenuItem>
-								<DropdownMenuItem asChild>
-									<Link href="/account" className="flex items-center">
-										<Settings className="mr-2 h-4 w-4" />
-										Account Settings
-									</Link>
-								</DropdownMenuItem>
-								<DropdownMenuItem asChild>
-									<Link href="/orders" className="flex items-center">
-										<Settings className="mr-2 h-4 w-4" />
-										Order History
-									</Link>
-								</DropdownMenuItem>
 								<DropdownMenuSeparator />
-								<DropdownMenuItem className="text-destructive">
+								<DropdownMenuItem
+									className="text-destructive"
+									onClick={handleSignOut}
+								>
 									<LogOut className="mr-2 h-4 w-4" />
 									Sign Out
 								</DropdownMenuItem>
@@ -169,17 +154,101 @@ export function Header() {
 						</DropdownMenu>
 					) : (
 						<Button variant="ghost" size="icon" asChild>
-							<Link href="/auth/login">
+							<Link href="/login">
 								<User className="h-5 w-5" />
 							</Link>
 						</Button>
 					)}
 
-					<Button variant="ghost" size="icon" className="md:hidden">
-						<Menu className="h-5 w-5" />
-					</Button>
+					{/* Mobile menu */}
+					<Sheet>
+						<SheetTrigger asChild>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="md:hidden"
+								aria-label="Open menu"
+							>
+								<Menu className="h-5 w-5" />
+							</Button>
+						</SheetTrigger>
+						<SheetContent side="right" className="w-80">
+							<SheetHeader>
+								<SheetTitle>Menu</SheetTitle>
+							</SheetHeader>
+							<div className="mt-4 space-y-4">
+								<div className="grid gap-2">
+									<Link href="/products" className="text-sm font-medium">
+										All Products
+									</Link>
+									<Link href="/products/office-supplies" className="text-sm">
+										Office Supplies
+									</Link>
+									<Link href="/products/technology" className="text-sm">
+										Technology
+									</Link>
+									<Link href="/products/furniture" className="text-sm">
+										Furniture
+									</Link>
+								</div>
+								<Separator />
+								<div className="grid gap-2">
+									<Link href="/bulk-orders" className="text-sm font-medium">
+										Bulk Orders
+									</Link>
+									<Link href="/orders" className="text-sm">
+										Orders
+									</Link>
+									<Link href="/checkout" className="text-sm">
+										Checkout
+									</Link>
+								</div>
+								<Separator />
+								<div className="grid gap-2">
+									{isLoggedIn ? (
+										<>
+											<Link href="/account" className="text-sm">
+												Profile & Settings
+											</Link>
+											<Link href="/dashboard" className="text-sm">
+												Dashboard
+											</Link>
+											<button
+												onClick={handleSignOut}
+												className="text-left text-sm text-destructive"
+											>
+												Sign Out
+											</button>
+										</>
+									) : (
+										<Link href="/login" className="text-sm">
+											Sign In
+										</Link>
+									)}
+								</div>
+							</div>
+						</SheetContent>
+					</Sheet>
 				</div>
 			</div>
+
+			{/* Mobile search bar overlay */}
+			{isSearchOpen && (
+				<div className="md:hidden border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+					<div className="container mx-auto px-4 py-3">
+						<form onSubmit={handleMobileSearch} className="relative">
+							<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<Input
+								placeholder="Search products, categories..."
+								className="pl-10 pr-4"
+								autoFocus
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.target.value)}
+							/>
+						</form>
+					</div>
+				</div>
+			)}
 		</header>
 	)
 }

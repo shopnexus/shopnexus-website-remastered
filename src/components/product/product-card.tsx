@@ -5,6 +5,9 @@ import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Star } from "lucide-react"
+import { useEffect, useRef } from "react"
+import { TippyGroup } from "@/lib/tippy/tippy-group"
+import { Tippy } from "@/lib/tippy/tippy"
 
 interface ProductCardProps {
 	product: {
@@ -12,68 +15,86 @@ interface ProductCardProps {
 		name: string
 		description: string
 		price: number
-		originalPrice?: number
-		image: string
-		category: string
-		rating: number
-		reviewCount: number
-		inStock: boolean
-		minOrderQuantity: number
-		bulkPrice?: number
-		bulkThreshold?: number
+		original_price: number
+		resource: {
+			id: number
+			mime: string
+			url: string
+			file_size: number
+			width: number
+			height: number
+			duration: number
+		}
+
+		rating: {
+			score: number
+			total: number
+		}
+		promo?: {
+			id: string
+			title: string
+			description: string
+		}
+		// reviewCount: number
+		// inStock: boolean
+		// minOrderQuantity: number
+		// bulkPrice?: number
+		// bulkThreshold?: number
 	}
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-	const discount = product.originalPrice
+	// const {data: }
+	const ref = useRef<HTMLElement>(null)
+
+	const discountPercent = product.original_price
 		? Math.round(
-				((product.originalPrice - product.price) / product.originalPrice) * 100
+				((product.original_price - product.price) / product.original_price) *
+					100
 		  )
 		: 0
 
 	return (
 		<Link href={`/products/${product.id}`}>
-			<Card className="group overflow-hidden transition-all hover:shadow-md cursor-pointer h-full py-0 gap-y-2">
+			<Card className="group overflow-hidden transition-all hover:shadow-md cursor-pointer h-full py-0 gap-y-2 ">
 				<div className="relative aspect-square overflow-hidden">
 					<Image
-						src={product.image || "/placeholder.svg"}
+						src={product.resource.url || "/placeholder.svg"}
 						alt={product.name}
 						fill
 						className="object-cover transition-transform group-hover:scale-105"
 					/>
-					{discount > 0 && (
+					{discountPercent > 0 && (
 						<Badge className="absolute left-2 top-2 bg-destructive text-xs">
-							-{discount}%
+							-{discountPercent}%
 						</Badge>
 					)}
-					{!product.inStock && (
+					{/* {!product.inStock && (
 						<Badge
 							variant="secondary"
 							className="absolute right-2 top-2 text-xs"
 						>
 							Out of Stock
 						</Badge>
-					)}
-					{product.bulkPrice && product.bulkThreshold && (
+					)} */}
+					{/* {product.bulkPrice && product.bulkThreshold && (
 						<Badge className="absolute right-2 bottom-2 bg-green-600 text-xs">
 							Bulk
 						</Badge>
-					)}
+					)} */}
 				</div>
 
 				<CardContent className="p-3">
 					<div className="space-y-2">
-						<Badge variant="outline" className="text-xs h-5">
-							flashsale 8% off
-						</Badge>
-
+						{product.promo && (
+							<Badge variant="outline" className="text-xs h-5">
+								{product.promo.title}{" "}
+								{discountPercent > 0 && `- ${discountPercent}%`}
+							</Badge>
+						)}
 						<h3 className="font-semibold text-sm leading-tight group-hover:text-primary transition-colors line-clamp-2">
 							{product.name}
 						</h3>
-
-						<p className="text-xs text-muted-foreground line-clamp-1">
-							{product.description}
-						</p>
 
 						<div className="flex items-center space-x-1">
 							<div className="flex items-center">
@@ -81,7 +102,7 @@ export function ProductCard({ product }: ProductCardProps) {
 									<Star
 										key={i}
 										className={`h-3 w-3 ${
-											i < Math.floor(product.rating)
+											i < Math.floor(product.rating.score)
 												? "fill-yellow-400 text-yellow-400"
 												: "text-gray-300"
 										}`}
@@ -89,7 +110,7 @@ export function ProductCard({ product }: ProductCardProps) {
 								))}
 							</div>
 							<span className="text-xs text-muted-foreground">
-								({product.reviewCount})
+								({product.rating.total})
 							</span>
 						</div>
 
@@ -98,18 +119,18 @@ export function ProductCard({ product }: ProductCardProps) {
 								<span className="text-base font-bold">
 									${product.price.toFixed(2)}
 								</span>
-								{product.originalPrice && (
+								{product.original_price > product.price && (
 									<span className="text-xs text-muted-foreground line-through">
-										${product.originalPrice.toFixed(2)}
+										${product.original_price.toFixed(2)}
 									</span>
 								)}
 							</div>
 
-							{product.bulkPrice && product.bulkThreshold && (
+							{/* {product.bulkPrice && product.bulkThreshold && (
 								<p className="text-xs text-green-600">
 									${product.bulkPrice.toFixed(2)} for {product.bulkThreshold}+
 								</p>
-							)}
+							)} */}
 
 							{/* <p className="text-xs text-muted-foreground">Min: {product.minOrderQuantity}</p> */}
 						</div>

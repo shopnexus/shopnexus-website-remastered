@@ -1,34 +1,31 @@
 import Link from "next/link"
 import { Building2, Phone } from "lucide-react"
+import { Logo } from "../shared/logo"
+import { cn } from "@/lib/utils"
 
-export function Footer() {
+export function Footer({ className }: { className?: string }) {
 	return (
-		<footer className="border-t bg-muted/50 mx-auto">
-			<div className="container py-12">
+		<footer className={cn("border-t bg-muted/50 mx-auto")}>
+			<div className={cn("container py-12", className)}>
 				<div className="grid gap-8 lg:grid-cols-4">
 					{/* Company Info */}
 					<div className="space-y-4">
-						<Link href="/" className="flex items-center space-x-2">
-							<Building2 className="h-6 w-6 text-primary" />
-							<span className="text-lg font-bold text-primary">
-								B2B Commerce
-							</span>
-						</Link>
+						<Logo />
 						<p className="text-sm text-muted-foreground max-w-xs">
-							Your trusted partner for business procurement solutions. Quality
-							products, competitive pricing, and exceptional service.
+							Your one-stop shop for quality products at unbeatable prices. Fast
+							shipping, easy returns, and 24/7 customer support.
 						</p>
 						<div className="flex space-x-4">
 							<div className="flex items-center space-x-2 text-sm text-muted-foreground">
 								<Phone className="h-4 w-4" />
-								<span>1-800-B2B-SHOP</span>
+								<span>1-800-SHOPNOW</span>
 							</div>
 						</div>
 					</div>
 
-					{/* Products */}
+					{/* Shop */}
 					<div className="space-y-4">
-						<h3 className="text-sm font-semibold">Products</h3>
+						<h3 className="text-sm font-semibold">Shop</h3>
 						<ul className="space-y-2 text-sm text-muted-foreground">
 							<li>
 								<Link
@@ -56,19 +53,106 @@ export function Footer() {
 							</li>
 							<li>
 								<Link
-									href="/products/industrial"
+									href="/products/new-arrivals"
 									className="hover:text-foreground transition-colors"
 								>
-									Industrial Equipment
+									New Arrivals
+								</Link>
+							</li>
+							<li>
+								<Link
+									href="/products/bestsellers"
+									className="hover:text-foreground transition-colors"
+								>
+									Best Sellers
 								</Link>
 							</li>
 						</ul>
 					</div>
 
-					{/* Services */}
+					{/* Customer Care */}
 					<div className="space-y-4 ">
-						<h3 className="text-sm font-semibold">Services</h3>
+						<h3 className="text-sm font-semibold">Customer Care</h3>
 						<ul className="space-y-2 text-sm text-muted-foreground">
+							<li>
+								<Link
+									href="/shipping-info"
+									className="hover:text-foreground transition-colors"
+								>
+									Shipping & Delivery
+								</Link>
+							</li>
+							<li>
+								<Link
+									href="/returns"
+									className="hover:text-foreground transition-colors"
+								>
+									Returns & Exchanges
+								</Link>
+							</li>
+							<li>
+								<Link
+									href="/size-guide"
+									className="hover:text-foreground transition-colors"
+								>
+									Size Guide
+								</Link>
+							</li>
+							<li>
+								<Link
+									href="/support"
+									className="hover:text-foreground transition-colors"
+								>
+									Help & Support
+								</Link>
+							</li>
+							<li>
+								<Link
+									href="/contact"
+									className="hover:text-foreground transition-colors"
+								>
+									Contact Us
+								</Link>
+							</li>
+						</ul>
+					</div>
+
+					{/* My Account */}
+					<div className="space-y-4">
+						<h3 className="text-sm font-semibold">My Account </h3>
+						<ul className="space-y-2 text-sm text-muted-foreground">
+							<li>
+								<Link
+									href="/login"
+									className="hover:text-foreground transition-colors"
+								>
+									Sign In
+								</Link>
+							</li>
+							<li>
+								<Link
+									href="/orders"
+									className="hover:text-foreground transition-colors"
+								>
+									Track My Order
+								</Link>
+							</li>
+							<li>
+								<Link
+									href="/account"
+									className="hover:text-foreground transition-colors"
+								>
+									My Profile
+								</Link>
+							</li>
+							<li>
+								<Link
+									href="/wishlist"
+									className="hover:text-foreground transition-colors"
+								>
+									Wishlist
+								</Link>
+							</li>
 							<li>
 								<Link
 									href="/bulk-orders"
@@ -77,76 +161,12 @@ export function Footer() {
 									Bulk Orders
 								</Link>
 							</li>
-							<li>
-								<Link
-									href="/custom-quotes"
-									className="hover:text-foreground transition-colors"
-								>
-									Custom Quotes
-								</Link>
-							</li>
-							<li>
-								<Link
-									href="/account-management"
-									className="hover:text-foreground transition-colors"
-								>
-									Account Management
-								</Link>
-							</li>
-							<li>
-								<Link
-									href="/support"
-									className="hover:text-foreground transition-colors"
-								>
-									Customer Support
-								</Link>
-							</li>
-						</ul>
-					</div>
-
-					{/* Business Tools */}
-					<div className="space-y-4">
-						<h3 className="text-sm font-semibold">Business Tools</h3>
-						<ul className="space-y-2 text-sm text-muted-foreground">
-							<li>
-								<Link
-									href="/dashboard"
-									className="hover:text-foreground transition-colors"
-								>
-									Analytics Dashboard
-								</Link>
-							</li>
-							<li>
-								<Link
-									href="/orders"
-									className="hover:text-foreground transition-colors"
-								>
-									Order Management
-								</Link>
-							</li>
-							<li>
-								<Link
-									href="/account"
-									className="hover:text-foreground transition-colors"
-								>
-									Account Settings
-								</Link>
-							</li>
-							<li>
-								<Link
-									href="/support"
-									className="hover:text-foreground transition-colors"
-								>
-									Customer Support
-								</Link>
-							</li>
 						</ul>
 					</div>
 				</div>
-
-				<div className="mt-8 border-t pt-8 text-center text-sm text-muted-foreground">
-					<p>&copy; 2024 B2B Commerce. All rights reserved.</p>
-				</div>
+			</div>
+			<div className="border-t pt-8 text-center text-sm text-muted-foreground pb-5">
+				<p>&copy; 2024 ShopNexus. All rights reserved.</p>
 			</div>
 		</footer>
 	)
