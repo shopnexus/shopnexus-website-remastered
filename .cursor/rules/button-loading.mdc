@@ -1,0 +1,5 @@
+---
+description: Use ButtonLoading (@/components/ui/button-loading.tsx) component for button with loading state
+globs:
+alwaysApply: true
+---
