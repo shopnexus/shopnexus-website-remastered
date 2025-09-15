@@ -1,41 +1,41 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { CartItem } from "@/components/cart/cart-types"
+import { CartItem } from "@/app/(app)/cart/components/cart-types"
 
 const sampleCartItems: CartItem[] = [
   {
-    id: "1",
+    sku_id: "1",
     name: "Professional Office Chair - Ergonomic Design",
     price: 299.99,
     quantity: 8,
     minOrderQuantity: 5,
-    image: "/professional-office-chair.jpg",
+    resource: "/professional-office-chair.jpg",
     category: "Furniture",
-    bulkPrice: 249.99,
-    bulkThreshold: 10,
+    bulk_price: 249.99,
+    bulk_threshold: 10,
   },
   {
-    id: "2",
+    sku_id: "2",
     name: "Premium Paper Pack - 5000 Sheets",
     price: 49.99,
     quantity: 25,
     minOrderQuantity: 10,
-    image: "/office-paper-stack.jpg",
+    resource: "/office-paper-stack.jpg",
     category: "Office Supplies",
-    bulkPrice: 39.99,
-    bulkThreshold: 20,
+    bulk_price: 39.99,
+    bulk_threshold: 20,
   },
   {
-    id: "3",
+    sku_id: "3",
     name: "Standing Desk Converter - Height Adjustable",
     price: 189.99,
     quantity: 3,
     minOrderQuantity: 1,
-    image: "/standing-desk-converter.png",
+    resource: "/standing-desk-converter.png",
     category: "Furniture",
-    bulkPrice: 159.99,
-    bulkThreshold: 5,
+    bulk_price: 159.99,
+    bulk_threshold: 5,
   },
 ]
 
@@ -45,7 +45,7 @@ export function useCart() {
   const updateQuantity = useCallback((id: string, newQuantity: number) => {
     setCartItems((items) =>
       items.map((item) => {
-        if (item.id === id) {
+        if (item.sku_id === id) {
           const quantity = Math.max(item.minOrderQuantity, newQuantity)
           return { ...item, quantity }
         }
@@ -55,7 +55,7 @@ export function useCart() {
   }, [])
 
   const removeItem = useCallback((id: string) => {
-    setCartItems((items) => items.filter((item) => item.id !== id))
+    setCartItems((items) => items.filter((item) => item.sku_id !== id))
   }, [])
 
   const clearCart = useCallback(() => {
@@ -64,10 +64,10 @@ export function useCart() {
 
   const addItem = useCallback((newItem: CartItem) => {
     setCartItems((items) => {
-      const existingItem = items.find((item) => item.id === newItem.id)
+      const existingItem = items.find((item) => item.sku_id === newItem.sku_id)
       if (existingItem) {
         return items.map((item) =>
-          item.id === newItem.id
+          item.sku_id === newItem.sku_id
             ? { ...item, quantity: item.quantity + newItem.quantity }
             : item
         )
@@ -77,8 +77,8 @@ export function useCart() {
   }, [])
 
   const getItemPrice = useCallback((item: CartItem) => {
-    if (item.bulkPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold) {
-      return item.bulkPrice
+    if (item.bulk_price && item.bulk_threshold && item.quantity >= item.bulk_threshold) {
+      return item.bulk_price
     }
     return item.price
   }, [])
@@ -93,8 +93,8 @@ export function useCart() {
 
   const getBulkSavings = useCallback(() => {
     return cartItems.reduce((sum, item) => {
-      if (item.bulkPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold) {
-        return sum + (item.price - item.bulkPrice) * item.quantity
+      if (item.bulk_price && item.bulk_threshold && item.quantity >= item.bulk_threshold) {
+        return sum + (item.price - item.bulk_price) * item.quantity
       }
       return sum
     }, 0)
