@@ -19,6 +19,8 @@ import {
 	BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
+import { useListComments } from "@/core/comment/comment.customer"
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
 
 interface Resource {
 	id: number
@@ -63,15 +65,18 @@ interface SkuDetail {
 
 interface Review {
 	id: number
-	user: string
-	avatar: string
-	rating: number
-	date: string
+	account: {
+		id: number
+		name: string
+		avatar?: Resource
+	}
+	score: number
+	date_created: string
 	title: string
-	comment: string
-	helpful: number
+	body: string
+	upvote: number
 	verified: boolean
-	images: string[]
+	resources: Resource[]
 }
 
 interface Seller {
@@ -103,27 +108,27 @@ interface RelatedProduct {
 const mockReviews: Review[] = [
 	{
 		id: 1,
-		user: "Sarah Chen",
+		account: "Sarah Chen",
 		avatar: "/placeholder-user.jpg",
-		rating: 5,
-		date: "2024-10-15",
+		score: 5,
+		date_created: "2024-10-15",
 		title: "Excellent product",
-		comment: "Great quality and fast delivery. Highly recommended!",
-		helpful: 24,
+		body: "Great quality and fast delivery. Highly recommended!",
+		upvote: 24,
 		verified: true,
-		images: [],
+		resources: [],
 	},
 	{
 		id: 2,
-		user: "Michael Rodriguez",
+		account: "Michael Rodriguez",
 		avatar: "/placeholder-user.jpg",
-		rating: 4,
-		date: "2024-10-12",
+		score: 4,
+		date_created: "2024-10-12",
 		title: "Good value for money",
-		comment: "Solid build quality. Assembly was straightforward.",
-		helpful: 18,
+		body: "Solid build quality. Assembly was straightforward.",
+		upvote: 18,
 		verified: true,
-		images: [],
+		resources: [],
 	},
 ]
 
@@ -174,6 +179,12 @@ export default function ProductDetailPage({
 	const { id } = use(params)
 	const { data: productData, isLoading, error } = useGetProductDetail(id)
 	const [selectedSku, setSelectedSku] = useState<SkuDetail | null>(null)
+	const infiniteComments = useListComments({
+		limit: 10,
+		ref_type: "ProductSpu",
+		ref_id: [Number(id)],
+	})
+	const { items: comments } = useInfiniteScroll(infiniteComments)
 
 	// Set default selected SKU when product data loads
 	// useEffect(() => {
@@ -273,7 +284,7 @@ export default function ProductDetailPage({
 			/>
 
 			{/* Customer Reviews */}
-			<ReviewsSection rating={product.rating} reviews={product.reviews || []} />
+			<ReviewsSection rating={product.rating} reviews={comments || []} />
 
 			{/* From Same Shop */}
 			<RelatedProducts products={[]} title="From the Same Shop" />

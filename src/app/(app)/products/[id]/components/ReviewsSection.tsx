@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { Star, ThumbsUp, ThumbsDown, MoreHorizontal } from "lucide-react"
+import { Resource } from "@/core/shared/resource.type"
 
 interface RatingDetail {
 	score: number
@@ -17,15 +18,18 @@ interface RatingDetail {
 
 interface Review {
 	id: number
-	user: string
-	avatar: string
-	rating: number
-	date: string
-	title: string
-	comment: string
-	helpful: number
-	verified: boolean
-	images: string[]
+	account: {
+		id: number
+		name: string
+		avatar?: Resource
+		verified: boolean
+	}
+	score: number
+	date_created: string
+	body: string
+	upvote: number
+	downvote: number
+	resources: Resource[]
 }
 
 interface ReviewsSectionProps {
@@ -98,15 +102,17 @@ export function ReviewsSection({ rating, reviews }: ReviewsSectionProps) {
 							>
 								<div className="flex items-start space-x-4">
 									<Avatar>
-										<AvatarImage src={review.avatar} />
-										<AvatarFallback>{review.user.charAt(0)}</AvatarFallback>
+										<AvatarImage src={review.account.avatar?.url} />
+										<AvatarFallback>
+											{review.account.name.charAt(0)}
+										</AvatarFallback>
 									</Avatar>
 									<div className="flex-1">
 										<div className="flex items-center justify-between mb-2">
 											<div>
 												<div className="flex items-center space-x-2">
-													<h4 className="font-medium">{review.user}</h4>
-													{review.verified && (
+													<h4 className="font-medium">{review.account.name}</h4>
+													{review.account.verified && (
 														<Badge variant="secondary" className="text-xs">
 															Verified Purchase
 														</Badge>
@@ -118,7 +124,7 @@ export function ReviewsSection({ rating, reviews }: ReviewsSectionProps) {
 															<Star
 																key={i}
 																className={`h-3 w-3 ${
-																	i < review.rating
+																	i < review.score
 																		? "fill-yellow-400 text-yellow-400"
 																		: "text-gray-300"
 																}`}
@@ -126,7 +132,7 @@ export function ReviewsSection({ rating, reviews }: ReviewsSectionProps) {
 														))}
 													</div>
 													<span className="text-sm text-gray-600">
-														{new Date(review.date).toLocaleDateString()}
+														{new Date(review.date_created).toLocaleDateString()}
 													</span>
 												</div>
 											</div>
@@ -135,18 +141,19 @@ export function ReviewsSection({ rating, reviews }: ReviewsSectionProps) {
 											</Button>
 										</div>
 
-										<h5 className="font-medium mb-2">{review.title}</h5>
-										<p className="text-gray-700 mb-3">{review.comment}</p>
+										{/* <h5 className="font-medium mb-2">{review.title}</h5> */}
+										{/* TODO: add title */}
+										<p className="text-gray-700 mb-3">{review.body}</p>
 
-										{review.images.length > 0 && (
+										{review.resources.length > 0 && (
 											<div className="flex space-x-2 mb-3">
-												{review.images.map((img, idx) => (
+												{review.resources.map((img, idx) => (
 													<div
 														key={idx}
 														className="w-16 h-16 rounded border overflow-hidden"
 													>
 														<Image
-															src={img}
+															src={img.url}
 															alt={`Review image ${idx + 1}`}
 															width={64}
 															height={64}
@@ -160,11 +167,11 @@ export function ReviewsSection({ rating, reviews }: ReviewsSectionProps) {
 										<div className="flex items-center space-x-4">
 											<Button variant="ghost" size="sm">
 												<ThumbsUp className="h-4 w-4 mr-1" />
-												Helpful ({review.helpful})
+												Helpful ({review.upvote})
 											</Button>
 											<Button variant="ghost" size="sm">
 												<ThumbsDown className="h-4 w-4 mr-1" />
-												Not helpful
+												Not helpful ({review.downvote})
 											</Button>
 										</div>
 									</div>

@@ -32,6 +32,7 @@ export type LoginParams = {
 
 export type LoginResult = {
   access_token: string
+  refresh_token: string
 }
 
 
@@ -49,7 +50,9 @@ export const useLoginBasic = () =>
       body: JSON.stringify(params),
     }),
     onSuccess: (data) => {
+      // TODO: save to httpOnly cookie instead
       globalThis?.localStorage?.setItem?.('token', data.access_token)
+      globalThis?.localStorage?.setItem?.('refresh_token', data.refresh_token)
     }
   })
 
