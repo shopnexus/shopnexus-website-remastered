@@ -14,7 +14,8 @@ export type SuccessResponse<Data = any> = {
 export type SuccessPaginationRes<Item> = SuccessResponse<Item[]> & {
   pagination: {
     total: number
-    page: number
+    page?: number
+    cursor?: string
     limit: number
     next_page?: number
     next_cursor?: string
@@ -29,9 +30,9 @@ export enum ErrorCode {
 
 export class ResponseError extends Error {
   constructor(public code: ErrorCode, public message: string) {
-      super(message);
+    super(message)
 
-      // Set the prototype explicitly.
-      Object.setPrototypeOf(this, ResponseError.prototype);
+    // Set the prototype explicitly.
+    Object.setPrototypeOf(this, ResponseError.prototype)
   }
 }
