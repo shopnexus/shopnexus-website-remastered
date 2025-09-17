@@ -44,7 +44,7 @@ export function useInfiniteScroll<Entity, TPageParams = unknown, TError = Error>
     }
 
     const lastPage = data.pages[data.pages.length - 1]
-    const { total = currentAmount, limit = 10 } = lastPage.pagination
+    const { total = currentAmount, limit = 10 } = lastPage?.pagination ?? {}
 
     const currentEstimate = maxEstimate ?? limit
 

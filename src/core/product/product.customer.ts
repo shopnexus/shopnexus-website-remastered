@@ -3,37 +3,38 @@ import { getQueryClient } from "../../lib/queryclient/query-client"
 import { customFetchPagination, customFetchStandard } from "../../lib/queryclient/custom-fetch"
 import qs from "qs"
 import { PaginationParams } from "../../lib/queryclient/response.type"
+import { Resource } from "../shared/resource.type"
 
 const queryClient = getQueryClient()
 
 export type TProductDetail = {
   id: number
-	name: string
-	description: string
-	resources: {
-		id: number
-		mime: string
-		url: string
-		file_size: number
-		width: number
-		height: number
-		duration: number
-	}[]
-	category: string
-	rating: {
-		score: number
-		total: number
-		breakdown: Record<string, number>
-	}
-	sold: number
-	promo_id?: number
-	skus: {
-		id: number
+  name: string
+  description: string
+  resources: {
+    id: number
+    mime: string
+    url: string
+    file_size: number
+    width: number
+    height: number
+    duration: number
+  }[]
+  category: string
+  rating: {
+    score: number
+    total: number
+    breakdown: Record<string, number>
+  }
+  sold: number
+  promo_id?: number
+  skus: {
+    id: number
     price: number
-		original_price: number
-		attributes: Record<string, string>
-	}[]
-	specifications: Record<string, string>
+    original_price: number
+    attributes: Record<string, string>
+  }[]
+  specifications: Record<string, string>
 }
 
 export type TProductCard = {
@@ -56,7 +57,7 @@ export type TProductCard = {
     score: number
     total: number
   }
-  image: string
+  resource: Resource
   promo?: {
     id: string
     title: string
@@ -87,6 +88,29 @@ export const useListProductCards = (params: ListProductCardsParams) =>
     initialPageParam: params,
   })
 
+
+export type ListProductCardsRecommendedParams = {
+  limit: number
+}
+
+export const useListProductCardsRecommended = (params: ListProductCardsRecommendedParams) =>
+  useInfiniteQuery({
+    queryKey: ['product', 'cards', 'recommended', params],
+    queryFn: async ({ pageParam }) => customFetchPagination<TProductCard>(`catalog/product-card/recommended?${qs.stringify(pageParam)}`),
+    getNextPageParam: (lastPageRes, _, lastPageParam) => {
+      return {
+        ...lastPageParam,
+        limit: lastPageParam.limit,
+      }
+    },
+    initialPageParam: params,
+  })
+
+// export const useListProductCardsRecommended = (params: ListProductCardsRecommendedParams) =>
+//   useQuery({
+//     queryKey: ['product', 'cards', 'recommended', params],
+//     queryFn: () => customFetchStandard<TProductCard[]>(`catalog/product-card/recommended?${qs.stringify(params)}`),
+//   })
 
 
 export const useGetProductDetail = (id: string) =>

@@ -1,4 +1,4 @@
-import { TProductCard } from "@/core/product/product.type"
+import { TProductCard } from "@/core/product/product.customer"
 import { ProductCard } from "./product-card"
 
 export function ProductGrid({ products = [] }: { products: TProductCard[] }) {

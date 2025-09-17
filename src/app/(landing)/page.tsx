@@ -3,7 +3,10 @@
 import { HeroSection } from "./components/hero-section"
 import { FeaturedCategories } from "./components/featured-categories"
 import { ProductGrid } from "@/components/product/product-grid"
-import { useListProductCards } from "@/core/product/product.customer"
+import {
+	useListProductCards,
+	useListProductCardsRecommended,
+} from "@/core/product/product.customer"
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
 import { useGetMe } from "@/core/account/account.customer"
 import { Button } from "@/components/ui/button"
@@ -27,10 +30,11 @@ export default function HomePage() {
 	const { data: account } = useGetMe()
 	const isLoggedIn = !!account
 
-	const infiniteProductCards = useListProductCards({
+	const infiniteProductCards = useListProductCardsRecommended({
 		limit: 8,
 	})
 	const { ref, items: products } = useInfiniteScroll(infiniteProductCards)
+	console.log(infiniteProductCards.data)
 
 	return (
 		<div className="min-h-screen flex flex-col">
