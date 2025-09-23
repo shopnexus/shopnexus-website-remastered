@@ -259,12 +259,12 @@ export function CartSummary({ items, selectedItems }: CartSummaryProps) {
 					</Link>
 				</Button>
 
-				<Button variant="outline" className="w-full" asChild>
+				{/* <Button variant="outline" className="w-full" asChild>
 					<Link href="/bulk-orders">
 						<FileText className="h-4 w-4 mr-2" />
 						Request Bulk Quote
 					</Link>
-				</Button>
+				</Button> */}
 			</div>
 
 			{/* Security Badge */}

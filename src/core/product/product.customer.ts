@@ -98,11 +98,11 @@ export const useListProductCardsRecommended = (params: ListProductCardsRecommend
     queryKey: ['product', 'cards', 'recommended', params],
     queryFn: async ({ pageParam }) => customFetchPagination<TProductCard>(`catalog/product-card/recommended?${qs.stringify(pageParam)}`),
     getNextPageParam: (lastPageRes, _, lastPageParam) => {
-      if (!lastPageRes.pagination.next_page && !lastPageRes.pagination.next_cursor) return undefined
+      // if (!lastPageRes.pagination.next_page && !lastPageRes.pagination.next_cursor) return undefined
       return {
         ...lastPageParam,
-        page: lastPageRes.pagination.next_page,
-        cursor: lastPageRes.pagination.next_cursor,
+        // page: lastPageRes.pagination.next_page,
+        // cursor: lastPageRes.pagination.next_cursor,
         limit: lastPageParam.limit,
       }
     },

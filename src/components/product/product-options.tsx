@@ -189,30 +189,31 @@ export function ProductOptions({
 
 			{/* Display selected SKU info */}
 			{selectedSku ? (
-				<div className="mt-6 p-4 bg-gray-50 rounded-lg">
-					<div className="flex items-center justify-between">
-						<div>
-							<span className="text-sm font-medium text-gray-700">
-								Selected:
-							</span>
-							<span className="ml-2 text-sm text-gray-900">
-								{Object.entries(selectedSku.attributes)
-									.map(([key, value]) => `${key}: ${value}`)
-									.join(", ")}
-							</span>
-						</div>
-						<div className="flex items-center space-x-2">
-							<span className="text-lg font-semibold text-orange-600">
-								${(selectedSku.price / 100).toFixed(2)}
-							</span>
-							{selectedSku.original_price !== selectedSku.price && (
-								<span className="text-sm text-gray-500 line-through">
-									${(selectedSku.original_price / 100).toFixed(2)}
-								</span>
-							)}
-						</div>
-					</div>
-				</div>
+				// <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+				// 	<div className="flex items-center justify-between">
+				// 		<div>
+				// 			<span className="text-sm font-medium text-gray-700">
+				// 				Selected:
+				// 			</span>
+				// 			<span className="ml-2 text-sm text-gray-900">
+				// 				{Object.entries(selectedSku.attributes)
+				// 					.map(([key, value]) => `${key}: ${value}`)
+				// 					.join(", ")}
+				// 			</span>
+				// 		</div>
+				// 		<div className="flex items-center space-x-2">
+				// 			<span className="text-lg font-semibold text-orange-600">
+				// 				${(selectedSku.price / 100).toFixed(2)}
+				// 			</span>
+				// 			{selectedSku.original_price !== selectedSku.price && (
+				// 				<span className="text-sm text-gray-500 line-through">
+				// 					${(selectedSku.original_price / 100).toFixed(2)}
+				// 				</span>
+				// 			)}
+				// 		</div>
+				// 	</div>
+				// </div>
+				<></>
 			) : (
 				<div className="mt-6 p-4 bg-gray-50 rounded-lg">
 					<div className="text-center">

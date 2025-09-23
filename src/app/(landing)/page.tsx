@@ -34,7 +34,6 @@ export default function HomePage() {
 		limit: 8,
 	})
 	const { ref, items: products } = useInfiniteScroll(infiniteProductCards)
-	console.log(infiniteProductCards.data)
 
 	return (
 		<div className="min-h-screen flex flex-col">
