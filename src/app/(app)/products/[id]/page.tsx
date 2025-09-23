@@ -21,6 +21,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { useListComments } from "@/core/comment/comment.customer"
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
+import { useCreateInteraction } from "@/core/analytic/analytic.customer"
 
 interface Resource {
 	id: number
@@ -185,6 +186,7 @@ export default function ProductDetailPage({
 		ref_id: [Number(id)],
 	})
 	const { items: comments } = useInfiniteScroll(infiniteComments)
+	const { mutateAsync: mutateCreateInteraction } = useCreateInteraction()
 
 	// Set default selected SKU when product data loads
 	// useEffect(() => {
@@ -192,6 +194,15 @@ export default function ProductDetailPage({
 	// 		setSelectedSku(productData.skus[0])
 	// 	}
 	// }, [productData, selectedSku])
+
+	useEffect(() => {
+		mutateCreateInteraction({
+			event_type: "view",
+			ref_type: "Product",
+			ref_id: Number(id),
+			metadata: {},
+		})
+	}, [id])
 
 	if (isLoading) {
 		return (
