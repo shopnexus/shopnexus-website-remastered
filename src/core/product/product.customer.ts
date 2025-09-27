@@ -66,7 +66,11 @@ export type TProductCard = {
 }
 
 export type ListProductCardsParams = PaginationParams<{
-  name: string
+  search: string
+  category?: string
+  min_price?: number
+  max_price?: number
+  sort?: 'relevance' | 'price-low' | 'price-high' | 'rating' | 'newest'
 }>
 
 export const useListProductCards = (params: ListProductCardsParams) =>

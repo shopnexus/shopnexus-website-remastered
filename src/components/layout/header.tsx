@@ -242,7 +242,7 @@ export function Header({ hideSearch = false }: { hideSearch?: boolean }) {
 								placeholder="Search products, categories..."
 								className="pl-10 pr-4"
 								autoFocus
-								value={searchQuery}
+								defaultValue={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
 							/>
 						</form>

@@ -49,7 +49,6 @@ export function ProductMainSection({
 	resources,
 	promoId,
 	rating,
-	sold,
 	skus,
 	selectedSku,
 	onSelectSku,
@@ -106,7 +105,7 @@ export function ProductMainSection({
 					<span className="text-gray-600">
 						{rating.total.toLocaleString()} Ratings
 					</span>
-					<span className="text-gray-600">{sold.toLocaleString()}+ Sold</span>
+					<span className="text-gray-600">{0}+ Sold</span>
 				</div>
 
 				{promoId && (

@@ -3,10 +3,7 @@
 import { HeroSection } from "./components/hero-section"
 import { FeaturedCategories } from "./components/featured-categories"
 import { ProductGrid } from "@/components/product/product-grid"
-import {
-	useListProductCards,
-	useListProductCardsRecommended,
-} from "@/core/product/product.customer"
+import { useListProductCardsRecommended } from "@/core/product/product.customer"
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
 import { useGetMe } from "@/core/account/account.customer"
 import { Button } from "@/components/ui/button"
