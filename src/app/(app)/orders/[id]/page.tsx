@@ -8,14 +8,20 @@ const sampleOrder = {
 	trackingNumber: "1Z999AA1234567890",
 	items: [
 		{
+			sku_id: "SKU-001",
 			name: "Professional Office Chair - Ergonomic Design",
+			sku_name: "Black Leather, Adjustable Height",
 			quantity: 8,
 			price: 249.99,
+			resource: { url: "/professional-office-chair.jpg" },
 		},
 		{
+			sku_id: "SKU-002",
 			name: "Premium Paper Pack - 5000 Sheets",
+			sku_name: "A4 White, 80gsm",
 			quantity: 25,
 			price: 39.99,
+			resource: { url: "/office-paper-stack.jpg" },
 		},
 	],
 	shippingAddress: {
@@ -31,7 +37,7 @@ export default function OrderDetailPage() {
 	return (
 		<div className="min-h-screen flex flex-col">
 			<main className="flex-1 py-8">
-				<div className="container max-w-4xl">
+				<div className="container max-w-4xl mx-auto">
 					<OrderTracking order={sampleOrder} />
 				</div>
 			</main>
