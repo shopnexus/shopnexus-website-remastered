@@ -34,14 +34,14 @@ export default function HomePage() {
 
 	return (
 		<div className="min-h-screen flex flex-col">
-			<main className="flex-1 mx-auto">
+			<main className="flex-1 mx-auto gap-y-16">
 				{/* Personalized Welcome Section for Logged In Users */}
 				{!isLoggedIn && <HeroSection />}
 
 				<FeaturedCategories />
 
 				{/* Featured Products */}
-				<section className="py-16">
+				<section className="py-6">
 					<div className="container">
 						<div className="text-center space-y-4 mb-12">
 							<h2 className="text-3xl font-bold text-balance">
@@ -59,7 +59,9 @@ export default function HomePage() {
 									: "Shop our most popular items loved by thousands of customers. Free shipping on orders over $50!"}
 							</p>
 						</div>
-						<ProductGrid products={products} />
+						<div className="sm:px-16 lg:px-32 xl:px-48">
+							<ProductGrid products={products} />
+						</div>
 
 						{/* Additional CTA for logged in users */}
 						{isLoggedIn && (
