@@ -105,80 +105,13 @@ interface RelatedProduct {
 	// minOrderQuantity: number
 }
 
-// Mock data for fields not provided by API
-const mockReviews: Review[] = [
-	{
-		id: 1,
-		account: "Sarah Chen",
-		avatar: "/placeholder-user.jpg",
-		score: 5,
-		date_created: "2024-10-15",
-		title: "Excellent product",
-		body: "Great quality and fast delivery. Highly recommended!",
-		upvote: 24,
-		verified: true,
-		resources: [],
-	},
-	{
-		id: 2,
-		account: "Michael Rodriguez",
-		avatar: "/placeholder-user.jpg",
-		score: 4,
-		date_created: "2024-10-12",
-		title: "Good value for money",
-		body: "Solid build quality. Assembly was straightforward.",
-		upvote: 18,
-		verified: true,
-		resources: [],
-	},
-]
-
-const mockSeller: Seller = {
-	name: "TechStore Pro",
-	rating: 4.8,
-	responseRate: 98,
-	joinedYears: 5,
-	totalProducts: 156,
-	followers: 12500,
-	avatar: "/placeholder-logo.png",
-}
-
-const mockRelatedProducts: RelatedProduct[] = [
-	{
-		id: "2",
-		name: "Related Product 1",
-		description: "Similar product description",
-		price: 199.99,
-		original_price: 249.99,
-		image: "/placeholder.jpg",
-		category: "Electronics",
-		rating: {
-			score: 4.5,
-			total: 74,
-		},
-	},
-	{
-		id: "3",
-		name: "Related Product 2",
-		description: "Another similar product",
-		price: 299.99,
-		original_price: 399.99,
-		image: "/placeholder.jpg",
-		category: "Electronics",
-		rating: {
-			score: 4.6,
-			total: 45,
-		},
-	},
-]
-
 export default function ProductDetailPage({
 	params,
 }: {
 	params: Promise<{ id: string }>
 }) {
 	const { id } = use(params)
-	const { data: productData, isLoading, error } = useGetProductDetail(id)
+	const { data: product, isLoading, error } = useGetProductDetail(id)
 	const [selectedSku, setSelectedSku] = useState<SkuDetail | null>(null)
 	const infiniteComments = useListComments({
 		limit: 10,
@@ -195,14 +128,14 @@ export default function ProductDetailPage({
 	// 	}
 	// }, [productData, selectedSku])
 
-	useEffect(() => {
-		mutateCreateInteraction({
-			event_type: "view",
-			ref_type: "Product",
-			ref_id: Number(id),
-			metadata: {},
-		})
-	}, [id])
+	// useEffect(() => {
+	// 	mutateCreateInteraction({
+	// 		event_type: "view",
+	// 		ref_type: "Product",
+	// 		ref_id: Number(id),
+	// 		metadata: {},
+	// 	})
+	// }, [id])
 
 	if (isLoading) {
 		return (
@@ -215,7 +148,7 @@ export default function ProductDetailPage({
 		)
 	}
 
-	if (error || !productData) {
+	if (error || !product) {
 		return (
 			<div className="min-h-screen bg-card flex items-center justify-center">
 				<div className="text-center">
@@ -231,15 +164,6 @@ export default function ProductDetailPage({
 				</div>
 			</div>
 		)
-	}
-
-	// Combine API data with mock data for missing fields
-	const product: Product = {
-		...productData,
-		reviews: mockReviews,
-		seller: mockSeller,
-		relatedProducts: mockRelatedProducts,
-		sameShopProducts: mockRelatedProducts,
 	}
 
 	return (

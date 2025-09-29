@@ -9,16 +9,7 @@ import { ShoppingCart, Star, Heart, Share2, Clock } from "lucide-react"
 import { useUpdateCart } from "@/core/account/cart.customer"
 import { ButtonLoading } from "@/components/ui/button-loading"
 import { toast } from "sonner"
-
-interface Resource {
-	id: number
-	mime: string
-	url: string
-	file_size: number
-	width: number
-	height: number
-	duration: number
-}
+import { Resource } from "@/core/shared/resource.type"
 
 interface RatingDetail {
 	score: number
