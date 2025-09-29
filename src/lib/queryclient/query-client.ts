@@ -6,14 +6,21 @@ import {
   QueryClient,
 } from '@tanstack/react-query'
 
-function handleErrorQuery(error: Error) {
-  // if (error.message == 'Unauthorized') {
-  //   window.location.href = '/login'
-  // }
+type ErrorObject = {
+  code: string
+  message: string
 }
 
-function handleErrorMutation(_error: Error) {
-  console.error('Mutation Error:', _error)
+function handleErrorQuery(error: ErrorObject) {
+  if (error.code == "401") {
+    window.location.href="/login"
+  }
+}
+
+function handleErrorMutation(error: ErrorObject) {
+  if (error.code == "401") {
+    window.location.href="/login"
+  }
 }
 
 function makeQueryClient() {
@@ -40,13 +47,13 @@ function makeQueryClient() {
       },
     },
     queryCache: new QueryCache({
-      onError(error) {
-        handleErrorQuery(error)
+      onError(error: unknown) {
+        handleErrorQuery(error as ErrorObject)
       },
     }),
     mutationCache: new MutationCache({
-      onError(error) {
-        handleErrorMutation(error)
+      onError(error: unknown) {
+        handleErrorMutation(error as ErrorObject)
       },
     }),
   })
