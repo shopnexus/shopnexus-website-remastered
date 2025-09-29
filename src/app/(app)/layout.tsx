@@ -4,15 +4,6 @@ import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { CurrencyProvider } from "@/components/currency/currency-context"
 import { usePathname } from "next/navigation"
-import Link from "next/link"
-import {
-	Breadcrumb,
-	BreadcrumbItem,
-	BreadcrumbLink,
-	BreadcrumbList,
-	BreadcrumbPage,
-	BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
 	const pathname = usePathname()

@@ -17,8 +17,8 @@ export const SearchHeader = memo(
 					: "Search Products"}
 			</h1>
 			<p className="text-muted-foreground">
-				{productsCount} products found
-				{hasNextPage && <span className="ml-2">(Loading more...)</span>}
+				{productsCount} products{" "}
+				{hasNextPage ? "(scroll to load more...)" : "found"}
 			</p>
 		</div>
 	)

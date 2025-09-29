@@ -14,7 +14,12 @@ interface ResultsSectionProps {
 export const ResultsSection = memo(
 	({ products, ref, onClearFilters }: ResultsSectionProps) => {
 		if (products.length > 0) {
-			return <ProductGrid products={products} ref={ref} />
+			return (
+				<>
+					<ProductGrid products={products} />
+					<div ref={ref}></div>
+				</>
+			)
 		}
 
 		return (
