@@ -37,38 +37,33 @@ import {
 	Mail,
 	Phone,
 } from "lucide-react"
-
-interface CheckoutItem {
-	id: string
-	name: string
-	price: number
-	quantity: number
-	image: string
-}
-
-const sampleItems: CheckoutItem[] = [
-	{
-		id: "1",
-		name: "Professional Office Chair - Ergonomic Design",
-		price: 249.99,
-		quantity: 8,
-		image: "/professional-office-chair.jpg",
-	},
-	{
-		id: "2",
-		name: "Premium Paper Pack - 5000 Sheets",
-		price: 39.99,
-		quantity: 25,
-		image: "/office-paper-stack.jpg",
-	},
-]
+import { useCheckout } from "@/core/order/order.customer"
+import { toast } from "sonner"
+import { useGetCart } from "@/core/account/cart.customer"
+import { useRouter, useSearchParams } from "next/navigation"
 
 export function CheckoutForm() {
+	const router = useRouter()
+	const searchParams = useSearchParams()
 	const [isLoading, setIsLoading] = useState(false)
-	const [paymentMethod, setPaymentMethod] = useState("COD")
+	const [paymentMethod, setPaymentMethod] = useState("cod")
+	const [bankTransferMethod, setBankTransferMethod] = useState("VNPAY")
 	const [shippingMethod, setShippingMethod] = useState("standard")
 	const [sameAsBilling, setSameAsBilling] = useState(true)
 	const [showMap, setShowMap] = useState(false)
+	const { mutateAsync: mutateCheckout } = useCheckout()
+	const { data: allCartItems = [] } = useGetCart()
+
+	// Get selected item IDs from URL parameters
+	const selectedItemIds = searchParams.get("selected")?.split(",") || []
+
+	// Filter cart items based on selected IDs, or use all items if no selection
+	const items =
+		selectedItemIds.length > 0
+			? allCartItems.filter((item) =>
+					selectedItemIds.includes(String(item.sku_id))
+			  )
+			: allCartItems
 	const [formData, setFormData] = useState({
 		// Personal Information
 		firstName: "",
@@ -113,7 +108,7 @@ export function CheckoutForm() {
 		}
 	}, [])
 
-	const subtotal = sampleItems.reduce(
+	const subtotal = items.reduce(
 		(sum, item) => sum + item.price * item.quantity,
 		0
 	)
@@ -165,10 +160,36 @@ export function CheckoutForm() {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
 		setIsLoading(true)
-		// Simulate API call
-		await new Promise((resolve) => setTimeout(resolve, 2000))
-		setIsLoading(false)
-		console.log("Order submitted:", formData)
+		try {
+			// const finalPaymentMethod =
+			// 	paymentMethod === "BankTransfer" && bankTransferMethod
+			// 		? `${paymentMethod}_${bankTransferMethod}`
+			// 		: paymentMethod
+			let finalPaymentMethod = ""
+			if (paymentMethod === "BankTransfer") {
+				if (bankTransferMethod === "VNPAY") {
+					finalPaymentMethod = "vnpay_banktransfer"
+				}
+			}
+
+			if (finalPaymentMethod === "") {
+				throw new Error("Invalid payment method")
+			}
+
+			const res = await mutateCheckout({
+				address: `${formData.firstName} ${formData.lastName}, ${formData.billingAddress}, ${formData.billingCity}, ${formData.billingState}, ${formData.billingZip}, ${formData.billingCountry}`,
+				payment_gateway: finalPaymentMethod,
+				sku_ids: items.map((item) => parseInt(item.sku_id)),
+			})
+			// Handle success (e.g., show a success message, redirect, etc.)
+			toast.success("Order placed successfully!")
+
+			router.push(res.url)
+		} catch (error) {
+			toast.error("Error placing order: " + (error as Error).message)
+		} finally {
+			setIsLoading(false)
+		}
 	}
 
 	return (
@@ -440,7 +461,12 @@ export function CheckoutForm() {
 						<CardContent className="space-y-4">
 							<RadioGroup
 								value={paymentMethod}
-								onValueChange={setPaymentMethod}
+								onValueChange={(value) => {
+									setPaymentMethod(value)
+									if (value !== "BankTransfer") {
+										setBankTransferMethod("")
+									}
+								}}
 							>
 								<div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
 									<RadioGroupItem value="COD" id="COD" />
@@ -538,12 +564,122 @@ export function CheckoutForm() {
 							)}
 
 							{paymentMethod === "BankTransfer" && (
-								<div className="p-4 bg-blue-50 rounded-lg">
-									<p className="text-sm text-blue-800">
-										🏦 Please complete your bank transfer and upload the
-										receipt. Our team will verify your payment and process your
-										order.
-									</p>
+								<div className="space-y-4 pt-4">
+									<div className="space-y-3">
+										<Label className="text-base font-medium">
+											Choose Payment Provider
+										</Label>
+										<RadioGroup
+											value={bankTransferMethod}
+											onValueChange={setBankTransferMethod}
+											className="grid grid-cols-1 md:grid-cols-3 gap-3"
+										>
+											<div className="flex flex-col items-center space-y-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+												<RadioGroupItem
+													value="VNPAY"
+													id="VNPAY"
+													className="self-start"
+												/>
+												<div className="flex flex-col items-center space-y-2 text-center">
+													<div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+														<span className="text-blue-600 font-bold text-xl">
+															V
+														</span>
+													</div>
+													<div>
+														<Label
+															htmlFor="VNPAY"
+															className="cursor-pointer font-medium"
+														>
+															VNPAY
+														</Label>
+														<p className="text-xs text-muted-foreground">
+															Secure online banking payment
+														</p>
+													</div>
+												</div>
+											</div>
+
+											<div className="flex flex-col items-center space-y-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+												<RadioGroupItem
+													value="MOMO"
+													id="MOMO"
+													className="self-start"
+												/>
+												<div className="flex flex-col items-center space-y-2 text-center">
+													<div className="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center">
+														<span className="text-pink-600 font-bold text-xl">
+															M
+														</span>
+													</div>
+													<div>
+														<Label
+															htmlFor="MOMO"
+															className="cursor-pointer font-medium"
+														>
+															MOMO Wallet
+														</Label>
+														<p className="text-xs text-muted-foreground">
+															Instant payment via MOMO app
+														</p>
+													</div>
+												</div>
+											</div>
+
+											<div className="flex flex-col items-center space-y-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+												<RadioGroupItem
+													value="ZALO"
+													id="ZALO"
+													className="self-start"
+												/>
+												<div className="flex flex-col items-center space-y-2 text-center">
+													<div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+														<span className="text-blue-500 font-bold text-xl">
+															Z
+														</span>
+													</div>
+													<div>
+														<Label
+															htmlFor="ZALO"
+															className="cursor-pointer font-medium"
+														>
+															ZALO Pay
+														</Label>
+														<p className="text-xs text-muted-foreground">
+															Quick payment through ZALO
+														</p>
+													</div>
+												</div>
+											</div>
+										</RadioGroup>
+									</div>
+
+									{bankTransferMethod && (
+										<div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+											<div className="flex items-start space-x-3">
+												<div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+													<span className="text-blue-600 text-sm">ℹ️</span>
+												</div>
+												<div className="space-y-2">
+													<p className="text-sm text-blue-800 font-medium">
+														{bankTransferMethod === "MOMO" &&
+															"MOMO Wallet Payment"}
+														{bankTransferMethod === "VNPAY" && "VNPAY Payment"}
+														{bankTransferMethod === "ZALO" &&
+															"ZALO Pay Payment"}
+													</p>
+													<p className="text-sm text-blue-700">
+														You&apos;ll be redirected to the payment provider to
+														complete your payment securely.
+													</p>
+													<div className="flex items-center space-x-2 text-xs text-blue-600">
+														<span>🔒</span>
+														<span>SSL Encrypted • Secure Payment</span>
+													</div>
+												</div>
+											</div>
+										</div>
+									)}
 								</div>
 							)}
 
@@ -562,10 +698,15 @@ export function CheckoutForm() {
 						type="submit"
 						size="lg"
 						className="w-full"
-						disabled={isLoading}
+						disabled={
+							isLoading ||
+							(paymentMethod === "BankTransfer" && !bankTransferMethod)
+						}
 					>
 						{isLoading
 							? "Processing Order..."
+							: paymentMethod === "BankTransfer" && !bankTransferMethod
+							? "Please select a payment provider"
 							: `Complete Order - $${total.toFixed(2)}`}
 					</Button>
 				</form>
@@ -580,11 +721,11 @@ export function CheckoutForm() {
 						</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
-						{sampleItems.map((item) => (
-							<div key={item.id} className="flex space-x-3">
+						{items.map((item) => (
+							<div key={item.sku_id} className="flex space-x-3">
 								<div className="relative h-16 w-16 overflow-hidden rounded-lg border">
 									<img
-										src={item.image || "/placeholder.svg"}
+										src={item.resource.url || "/placeholder.svg"}
 										alt={item.name}
 										className="h-full w-full object-cover"
 									/>
@@ -593,6 +734,9 @@ export function CheckoutForm() {
 									<h4 className="text-sm font-medium line-clamp-2">
 										{item.name}
 									</h4>
+									<div className="text-sm text-muted-foreground">
+										{item.sku_name}
+									</div>
 									<div className="flex justify-between text-sm">
 										<span className="text-muted-foreground">
 											Qty: {item.quantity}
