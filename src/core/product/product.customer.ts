@@ -11,15 +11,7 @@ export type TProductDetail = {
   id: number
   name: string
   description: string
-  resources: {
-    id: number
-    mime: string
-    url: string
-    file_size: number
-    width: number
-    height: number
-    duration: number
-  }[]
+  resources: Resource[]
   category: string
   rating: {
     score: number

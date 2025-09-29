@@ -15,7 +15,7 @@ enum AccountStatus {
 }
 
 export type AccountBase = {
-  code: string
+  id: number
   type: AccountType      // db.AccountType -> string enum likely
   status: AccountStatus    // db.AccountStatus -> string enum likely
   phone?: string | null
@@ -60,6 +60,7 @@ export const useSignOut = () =>
   useMutation({
     mutationFn: async () => {
       globalThis?.localStorage?.removeItem?.("token")
+      globalThis?.localStorage?.removeItem?.("refresh_token")
 
       await queryClient.setQueryData(['account', 'me'], null)
       return Promise.resolve()
