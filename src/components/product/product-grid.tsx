@@ -7,13 +7,11 @@ export const ProductGrid = forwardRef<
 	{ products: TProductCard[] }
 >(({ products = [] }, ref) => {
 	return (
-		<div
-			ref={ref}
-			className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-		>
+		<div className="grid px-6 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 			{products.map((product, index) => (
 				<ProductCard key={product.id + " " + index} product={product} />
 			))}
 		</div>
 	)
 })
+ProductGrid.displayName = "ProductGrid"

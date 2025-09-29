@@ -12,21 +12,12 @@ import {
 	ChevronLeft,
 	ChevronRight,
 } from "lucide-react"
-
-interface MediaResource {
-	id: number
-	mime: string
-	url: string
-	file_size: number
-	width: number
-	height: number
-	duration: number
-}
+import { Resource } from "@/core/shared/resource.type"
 
 interface MediaViewerModalProps {
 	isOpen: boolean
 	onClose: () => void
-	resources: MediaResource[]
+	resources: Resource[]
 	currentIndex: number
 	onIndexChange: (index: number) => void
 	productName: string
@@ -264,7 +255,6 @@ export function MediaViewerModal({
 							WebkitUserSelect: "none",
 							MozUserSelect: "none",
 							msUserSelect: "none",
-							WebkitUserDrag: "none",
 							KhtmlUserSelect: "none",
 							WebkitTouchCallout: "none",
 						}}
@@ -273,15 +263,14 @@ export function MediaViewerModal({
 							<Image
 								src={currentResource.url}
 								alt={productName}
-								width={currentResource.width}
-								height={currentResource.height}
+								width={currentResource.width ?? 600}
+								height={currentResource.height ?? 600}
 								className="max-w-[90vw] max-h-[90vh] object-contain select-none"
 								style={{
 									userSelect: "none",
 									WebkitUserSelect: "none",
 									MozUserSelect: "none",
 									msUserSelect: "none",
-									WebkitUserDrag: "none",
 									KhtmlUserSelect: "none",
 									WebkitTouchCallout: "none",
 									pointerEvents: "none",
@@ -300,7 +289,6 @@ export function MediaViewerModal({
 									WebkitUserSelect: "none",
 									MozUserSelect: "none",
 									msUserSelect: "none",
-									WebkitUserDrag: "none",
 									KhtmlUserSelect: "none",
 									WebkitTouchCallout: "none",
 								}}

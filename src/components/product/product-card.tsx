@@ -6,8 +6,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Star } from "lucide-react"
 import { useEffect, useRef } from "react"
-import { TippyGroup } from "@/lib/tippy/tippy-group"
-import { Tippy } from "@/lib/tippy/tippy"
 
 interface ProductCardProps {
 	product: {
