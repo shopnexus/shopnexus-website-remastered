@@ -4,7 +4,7 @@ export default function AccountPage() {
 	return (
 		<div className="min-h-screen flex flex-col">
 			<main className="flex-1 py-8">
-				<div className="container max-w-4xl">
+				<div className="container max-w-4xl mx-auto">
 					<div className="mb-8">
 						<h1 className="text-3xl font-bold text-balance">
 							Account Settings
