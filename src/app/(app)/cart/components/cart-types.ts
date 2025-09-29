@@ -1,3 +1,5 @@
+import { Resource } from "@/core/shared/resource.type"
+
 export interface CartItem {
   sku_id: string
   sku_name: string
@@ -7,15 +9,7 @@ export interface CartItem {
   price: number // Price in USDT (base currency)
   quantity: number
   // minOrderQuantity: number
-  resource: {
-    id: number
-    mime: string
-    url: string
-    file_size: number
-    width: number
-    height: number
-    duration: number
-  }
+  resource: Resource
   category: string
   bulk_price?: number // Bulk price in USDT
   bulk_threshold?: number

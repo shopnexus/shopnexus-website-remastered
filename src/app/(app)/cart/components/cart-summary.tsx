@@ -250,7 +250,15 @@ export function CartSummary({ items, selectedItems }: CartSummaryProps) {
 					asChild
 					disabled={selectedItems && selectedItems.length === 0}
 				>
-					<Link href="/checkout">
+					<Link
+						href={`/checkout${
+							selectedItems && selectedItems.length > 0
+								? `?selected=${selectedItems
+										.map((item) => item.sku_id)
+										.join(",")}`
+								: ""
+						}`}
+					>
 						<CreditCard className="h-5 w-5 mr-2" />
 						Checkout
 						{selectedItems && selectedItems.length > 0 && (
