@@ -1,0 +1,87 @@
+enum ResourceRefType {
+  Account
+  ProductSpu
+  ProductSku
+  Brand
+  Refund
+  ReturnDispute
+  Comment
+
+  @@map("resource_ref_type")
+  @@schema("shared")
+}
+
+enum ResourceProvider {
+  S3
+  Cloudinary
+  Local
+
+  @@map("resource_provider")
+  @@schema("shared")
+}
+
+// TODO: should catch "remove" event and remove them in s3;
+model Resource {
+  id          BigInt  @id @default(autoincrement())
+  code        String  @unique // unique code for the resource to identify on third party host (s3, cloudinary, or on local, etc.), e.g. "invoice_1234567890", "photo_1234567890", etc.
+  uploaded_by BigInt?
+
+  provider   ResourceProvider
+  mime       String // MIME type of the resource, e.g. image/jpeg, image/png, etc.
+  file_size  BigInt?
+  width      Int? // for images
+  height     Int? // for images
+  duration   Float? // for videos/audio
+  checksum   String?
+  status     Status           @default(Pending)
+  created_at DateTime         @default(now()) @db.Timestamptz(3)
+
+  author  Account?            @relation("resource_upload_by", fields: [uploaded_by], references: [id], onUpdate: Cascade, onDelete: SetNull)
+  profile Profile?            @relation("profile_avatar")
+  refs    ResourceReference[]
+
+  @@map("resource")
+  @@schema("shared")
+}
+
+model ResourceReference {
+  id         BigInt          @id @default(autoincrement())
+  rs_id      BigInt
+  ref_type   ResourceRefType
+  ref_id     BigInt
+  order      Int
+  is_primary Boolean
+
+  resource Resource @relation(fields: [rs_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+
+  @@map("resource_reference")
+  @@schema("shared")
+}
+
+model ServiceOption {
+  id          String  @id @db.VarChar(100) // e.g. "ghn-standard", "vnpay-qr"
+  category    String // For listing, e.g. "shipment", "payment", etc.
+  name        String // e.g. "Giao hàng nhanh - Standard", "VNPay - QR"
+  description String
+  provider    String // "ghn", "vnpay", "momo"
+  method      String // "standard", "qr", "bank"
+  is_active   Boolean @default(true)
+
+  shipments Shipment[]
+  orders    Order[]
+
+  @@index([category, provider])
+  @@map("service_option")
+  @@schema("shared")
+}
+
+enum Status {
+  Pending
+  Processing
+  Success
+  Canceled
+  Failed
+
+  @@map("status")
+  @@schema("shared")
+}

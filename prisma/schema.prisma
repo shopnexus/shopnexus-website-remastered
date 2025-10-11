@@ -1,0 +1,16 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+generator dbml {
+  provider              = "prisma-dbml-generator"
+  mapToDbSchema         = false
+  includeRelationFields = false
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["account", "catalog", "inventory", "promotion", "order", "analytic", "system", "shared"]
+}

@@ -128,14 +128,16 @@ export default function ProductDetailPage({
 	// 	}
 	// }, [productData, selectedSku])
 
-	// useEffect(() => {
-	// 	mutateCreateInteraction({
-	// 		event_type: "view",
-	// 		ref_type: "Product",
-	// 		ref_id: Number(id),
-	// 		metadata: {},
-	// 	})
-	// }, [id])
+	useEffect(() => {
+		for (let i =0 ; i < 10; i++) {
+      mutateCreateInteraction({
+			event_type: "view",
+			ref_type: "Product",
+			ref_id: Number(id),
+			metadata: {},
+		})
+    }
+	}, [id])
 
 	if (isLoading) {
 		return (
