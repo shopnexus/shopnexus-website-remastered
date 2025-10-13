@@ -264,7 +264,7 @@ export default function ProductsPage() {
 	}
 
 	return (
-		<div className="min-h-screen flex flex-col">
+		<div className="min-h-screen min-w-3xl flex flex-col">
 			<main className="flex-1 py-8 mx-auto">
 				<div className="container max-w-7xl">
 					<PageHeader

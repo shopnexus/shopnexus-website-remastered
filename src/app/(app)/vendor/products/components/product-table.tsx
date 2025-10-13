@@ -78,11 +78,11 @@ export function ProductTable({
 							<ImageIcon className="h-4 w-4" />
 						</AvatarFallback>
 					</Avatar>
-					{images.length > 1 && (
+					{/* {images.length > 1 && (
 						<Badge variant="secondary" className="text-xs">
 							+{images.length - 1}
 						</Badge>
-					)}
+					)} */}
 				</div>
 			),
 			className: "w-20",
@@ -107,18 +107,18 @@ export function ProductTable({
 			),
 			sortable: true,
 		},
-		{
-			key: "brand",
-			label: "Brand",
-			render: (value: string) => <Badge variant="outline">{value}</Badge>,
-			sortable: true,
-		},
-		{
-			key: "category",
-			label: "Category",
-			render: (value: string) => <Badge variant="secondary">{value}</Badge>,
-			sortable: true,
-		},
+		// {
+		// 	key: "brand",
+		// 	label: "Brand",
+		// 	render: (value: string) => <Badge variant="outline">{value}</Badge>,
+		// 	sortable: true,
+		// },
+		// {
+		// 	key: "category",
+		// 	label: "Category",
+		// 	render: (value: string) => <Badge variant="secondary">{value}</Badge>,
+		// 	sortable: true,
+		// },
 		{
 			key: "sales",
 			label: "Performance",
@@ -164,14 +164,14 @@ export function ProductTable({
 				<StatusBadge status={value ? "Active" : "Inactive"} />
 			),
 		},
-		{
-			key: "date_updated",
-			label: "Last Updated",
-			render: (value: string) => (
-				<div className="text-sm">{new Date(value).toLocaleDateString()}</div>
-			),
-			sortable: true,
-		},
+		// {
+		// 	key: "date_updated",
+		// 	label: "Last Updated",
+		// 	render: (value: string) => (
+		// 		<div className="text-sm">{new Date(value).toLocaleDateString()}</div>
+		// 	),
+		// 	sortable: true,
+		// },
 	]
 
 	const skuColumns: Column<MockSKU>[] = [
@@ -182,11 +182,11 @@ export function ProductTable({
 				<div className="flex items-center space-x-2">
 					<span className="font-mono text-sm">#{value}</span>
 					{/* Mock featured indicator */}
-					{Math.random() > 0.7 && (
+					{/* {Math.random() > 0.7 && (
 						<Badge variant="default" className="text-xs">
 							Featured
 						</Badge>
-					)}
+					)} */}
 				</div>
 			),
 			className: "w-24",
@@ -197,12 +197,6 @@ export function ProductTable({
 			render: (value: number) => (
 				<div className="space-y-1">
 					<div className="font-medium">${value.toLocaleString()}</div>
-					{/* Mock discount indicator */}
-					{Math.random() > 0.8 && (
-						<div className="text-xs text-green-600">
-							Save ${Math.floor(value * 0.1)}
-						</div>
-					)}
 				</div>
 			),
 			className: "w-28",
@@ -221,9 +215,9 @@ export function ProductTable({
 				return (
 					<div className="space-y-1">
 						<Badge variant={variant}>{value}</Badge>
-						<div className="text-xs text-muted-foreground capitalize">
+						{/* <div className="text-xs text-muted-foreground capitalize">
 							{stockLevel} stock
-						</div>
+						</div> */}
 					</div>
 				)
 			},
@@ -243,21 +237,6 @@ export function ProductTable({
 			),
 		},
 		{
-			key: "weight",
-			label: "Details",
-			render: (weight: number, sku: MockSKU) => (
-				<div className="space-y-1 text-xs text-muted-foreground">
-					{weight && <div>Weight: {weight}kg</div>}
-					{sku.dimensions && (
-						<div>
-							{sku.dimensions.length}×{sku.dimensions.width}×
-							{sku.dimensions.height}cm
-						</div>
-					)}
-				</div>
-			),
-		},
-		{
 			key: "can_combine",
 			label: "Combinable",
 			render: (value: boolean) => <StatusBadge status={value ? "Yes" : "No"} />,
@@ -266,19 +245,10 @@ export function ProductTable({
 	]
 
 	const renderExpandedRow = (spu: MockSPU) => (
-		<Card className="m-4">
-			<CardHeader className="pb-3">
+		<div className="m-4 gap-0 border-0">
+			<CardHeader className="">
 				<div className="flex items-center justify-between">
-					<CardTitle className="text-lg">SKUs for {spu.name}</CardTitle>
 					<div className="flex items-center gap-2">
-						<Button
-							size="sm"
-							variant="outline"
-							onClick={() => router.push(`/vendor/products/${spu.id}`)}
-						>
-							<ExternalLink className="h-4 w-4 mr-2" />
-							View Product
-						</Button>
 						<Button
 							size="sm"
 							onClick={() => onCreateSKU(spu)}
@@ -296,16 +266,6 @@ export function ProductTable({
 					columns={skuColumns}
 					actions={(sku) => (
 						<div className="flex items-center gap-1">
-							<Button
-								size="sm"
-								variant="ghost"
-								onClick={() => {
-									/* Mock copy SKU */
-								}}
-								title="Copy SKU"
-							>
-								<Copy className="h-4 w-4" />
-							</Button>
 							<Button
 								size="sm"
 								variant="ghost"
@@ -333,7 +293,7 @@ export function ProductTable({
 					)}
 				/>
 			</CardContent>
-		</Card>
+		</div>
 	)
 
 	return (
@@ -374,16 +334,6 @@ export function ProductTable({
 							title="Edit Product"
 						>
 							<Edit className="h-4 w-4" />
-						</Button>
-						<Button
-							size="sm"
-							variant="ghost"
-							onClick={() => {
-								/* Mock duplicate product */
-							}}
-							title="Duplicate Product"
-						>
-							<Copy className="h-4 w-4" />
 						</Button>
 						<Button
 							size="sm"

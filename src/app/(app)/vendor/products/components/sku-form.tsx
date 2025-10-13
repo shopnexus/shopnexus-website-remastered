@@ -132,7 +132,7 @@ export function SKUForm({ sku, spu, onSave, onCancel }: SKUFormProps) {
 								handleChange("can_combine", checked)
 							}
 						/>
-						<Label htmlFor="can_combine">Can Combine with Other Items</Label>
+						<Label htmlFor="can_combine">Can Combine</Label>
 					</div>
 
 					<div className="space-y-2">

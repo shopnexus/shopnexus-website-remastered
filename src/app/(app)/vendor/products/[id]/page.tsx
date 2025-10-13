@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
-import { mockSpus, MockSPU } from "../../components/mock-data"
+import { mockSpus, MockSPU, mockComments } from "../../components/mock-data"
+import { ProductComments } from "./components/product-comments"
 import { toast } from "sonner"
 import {
 	ArrowLeft,
@@ -217,6 +218,8 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
 									</div>
 								</CardContent>
 							</Card>
+							{/* Comments Section */}
+							<ProductComments comments={mockComments} productId={product.id} />
 						</div>
 
 						{/* Sidebar */}

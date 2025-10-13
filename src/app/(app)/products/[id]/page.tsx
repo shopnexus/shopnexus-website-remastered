@@ -129,14 +129,12 @@ export default function ProductDetailPage({
 	// }, [productData, selectedSku])
 
 	useEffect(() => {
-		for (let i =0 ; i < 10; i++) {
-      mutateCreateInteraction({
+		mutateCreateInteraction({
 			event_type: "view",
 			ref_type: "Product",
 			ref_id: Number(id),
 			metadata: {},
 		})
-    }
 	}, [id])
 
 	if (isLoading) {
