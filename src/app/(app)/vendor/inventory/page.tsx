@@ -6,15 +6,13 @@ import { PageHeader } from "../components/page-header"
 import { InventoryTable } from "./components/inventory-table"
 import { ImportStockDialog } from "./components/import-stock-dialog"
 import { toast } from "sonner"
-import { useListStock, useImportStock } from "@/core/inventory/inventory.vendor"
+import { useImportStock } from "@/core/inventory/inventory.vendor"
 
 export default function InventoryPage() {
 	const searchParams = useSearchParams()
 	const [showImportDialog, setShowImportDialog] = useState(false)
 	const [selectedSkuId, setSelectedSkuId] = useState<number | null>(null)
 
-	// Load stock data from API
-	const { data: stockData = [], isLoading: stockLoading } = useListStock()
 	const importStock = useImportStock()
 
 	// Handle URL parameter for SKU filtering

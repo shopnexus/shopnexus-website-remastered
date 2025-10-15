@@ -38,14 +38,7 @@ export interface ImportStockRequest {
 export function useListProductSerials(params?: { sku_id?: number; status?: string }) {
   return useQuery({
     queryKey: ["inventory", "serials", params],
-    queryFn: () => customFetchStandard<ProductSerial[]>(`inventory/serials?${qs.stringify(params || {})}`),
-  })
-}
-
-export function useListStock(params?: { ref_type?: string; ref_id?: number }) {
-  return useQuery({
-    queryKey: ["inventory", "stock", params],
-    queryFn: () => customFetchStandard<Stock[]>(`inventory/stock?${qs.stringify(params || {})}`),
+    queryFn: () => customFetchStandard<ProductSerial[]>(`inventory/serial?${qs.stringify(params || {})}`),
   })
 }
 
@@ -79,42 +72,14 @@ export function useUpdateSerialStatus() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, status }: { id: number; status: ProductSerial["status"] }) =>
-      customFetchStandard<ProductSerial>(`inventory/serials/${id}/status`, {
+    mutationFn: ({ serial_ids, status }: { serial_ids: number[]; status: ProductSerial["status"] }) =>
+      customFetchStandard<ProductSerial>(`inventory/serial`, {
         method: 'PATCH',
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ serial_ids, status }),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory", "serials"] })
       queryClient.invalidateQueries({ queryKey: ["inventory", "stock"] })
-    },
-  })
-}
-
-export function useAdjustStock() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: ({
-      stock_id,
-      change,
-      reason
-    }: {
-      stock_id: number
-      change: number
-      reason?: string
-    }) =>
-      customFetchStandard<{ success: boolean }>('inventory/adjust', {
-        method: 'POST',
-        body: JSON.stringify({
-          stock_id,
-          change,
-          reason
-        }),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["inventory", "stock"] })
-      queryClient.invalidateQueries({ queryKey: ["inventory", "stock-history"] })
     },
   })
 }

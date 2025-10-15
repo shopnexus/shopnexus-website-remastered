@@ -13,7 +13,12 @@ import {
 } from "../../components/mock-data"
 import { useState } from "react"
 import { Package, Search, Filter, Eye } from "lucide-react"
-import { useListProductSerials } from "@/core/inventory/inventory.vendor"
+import {
+	Stock,
+	StockHistory,
+	useListProductSerials,
+	useListStockHistory,
+} from "@/core/inventory/inventory.vendor"
 
 // Mock data for product serials - in real app this would come from API
 const mockProductSerials: MockProductSerial[] = [
@@ -60,16 +65,18 @@ const mockProductSerials: MockProductSerial[] = [
 ]
 
 interface InventoryTableProps {
-	stock: MockStock[]
+	stock_id: number
 	selectedSkuId?: number | null
 	onSkuChange?: (skuId: number | null) => void
 }
 
 export function InventoryTable({
-	stock,
+	stock_id,
 	selectedSkuId,
 	onSkuChange,
 }: InventoryTableProps) {
+	//TODO: add use infinite query of history stock here
+
 	// Filter serials by selected SKU
 	const filteredSerials = selectedSkuId
 		? mockProductSerials.filter((serial) => serial.sku_id === selectedSkuId)
@@ -124,7 +131,7 @@ export function InventoryTable({
 		},
 	]
 
-	const historyColumns: Column<MockStockHistory>[] = [
+	const historyColumns: Column<StockHistory>[] = [
 		{
 			key: "change",
 			label: "Change",
@@ -228,34 +235,18 @@ export function InventoryTable({
 				</TabsContent>
 
 				<TabsContent value="history" className="space-y-4">
-					{stock.length > 0 ? (
-						<div className="space-y-4">
-							{stock.map((item) => (
-								<Card key={item.id}>
-									<CardHeader>
-										<CardTitle className="text-base">{item.sku_name}</CardTitle>
-									</CardHeader>
-									<CardContent>
-										<DataTable
-											data={item.history}
-											columns={historyColumns}
-											className="max-h-60 overflow-y-auto"
-										/>
-									</CardContent>
-								</Card>
-							))}
-						</div>
-					) : (
-						<Card>
-							<CardContent className="flex flex-col items-center justify-center py-12">
-								<Package className="h-12 w-12 text-muted-foreground mb-4" />
-								<h3 className="text-lg font-semibold mb-2">No History Data</h3>
-								<p className="text-muted-foreground text-center">
-									Stock history will appear here after importing inventory
-								</p>
-							</CardContent>
-						</Card>
-					)}
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">{item.sku_name}</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<DataTable
+								data={item.history}
+								columns={historyColumns}
+								className="max-h-60 overflow-y-auto"
+							/>
+						</CardContent>
+					</Card>
 				</TabsContent>
 			</Tabs>
 		</div>
