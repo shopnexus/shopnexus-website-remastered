@@ -7,94 +7,95 @@ import { EmptyState } from "../components/empty-state"
 import { ProductTable } from "./components/product-table"
 // import { SPUForm } from "./components/spu-form" // Now using dedicated edit page
 import { SKUForm } from "./components/sku-form"
-import { mockSpus, MockSPU, MockSKU } from "../components/mock-data"
+import { MockSPU, MockSKU } from "../components/mock-data"
 import { toast } from "sonner"
+import { Download, Upload, RefreshCw, BarChart3, Settings } from "lucide-react"
 import {
-	Download,
-	Upload,
-	Filter,
-	RefreshCw,
-	BarChart3,
-	Settings,
-	Eye,
-	Copy,
-} from "lucide-react"
+	useListProductSPU,
+	useDeleteProductSPU,
+	useUpdateProductSPU,
+	useCreateProductSKU,
+	useUpdateProductSKU,
+	useDeleteProductSKU,
+} from "@/core/product/product.vendor"
+import { useInfiniteMerge } from "@/hooks/use-infinite-merge"
+import { Pagination } from "@/components/ui/pagination"
 
 export default function ProductsPage() {
 	const router = useRouter()
-	const [spus, setSpus] = useState<MockSPU[]>(mockSpus)
+	const deleteSpu = useDeleteProductSPU()
+	const updateSpu = useUpdateProductSPU()
+
+	// Load SPUs from real API (infinite)
+	const [currentPage, setCurrentPage] = useState(1)
+	const limit = 10
+	const listSpuResult = useListProductSPU({ page: currentPage, limit })
+	const apiSpus = useInfiniteMerge(listSpuResult)
+
+	// Map API SPUs to table-friendly shape (fill extras with defaults)
+	const spus: MockSPU[] = useMemo(
+		() =>
+			apiSpus.map((spu) => ({
+				id: spu.id,
+				code: spu.code,
+				name: spu.name,
+				description: spu.description,
+				brand: spu.brand,
+				category: spu.category,
+				is_active: spu.is_active,
+				date_created: spu.date_created,
+				date_updated: spu.date_updated,
+				resources: spu.resources,
+				rating: spu.rating,
+				tags: spu.tags,
+				// Not provided by API on list endpoint yet
+				views: 0,
+				sales: 0,
+				// SKUs will be loaded dynamically when table rows are expanded
+				skus: [],
+			})),
+		[apiSpus]
+	)
+
 	const [showSKUForm, setShowSKUForm] = useState(false)
 	const [editingSKU, setEditingSKU] = useState<MockSKU | null>(null)
 	const [selectedSPU, setSelectedSPU] = useState<MockSPU | null>(null)
 
-	// Calculate stats
+	// Calculate stats (placeholder; real metrics TBD)
 	const stats = useMemo(() => {
-		const totalProducts = spus.length
-		const activeProducts = spus.filter((spu) => spu.is_active).length
-		const totalSkus = spus.reduce((sum, spu) => sum + spu.skus.length, 0)
-		const lowStockSkus = spus.reduce(
-			(sum, spu) => sum + spu.skus.filter((sku) => sku.stock < 10).length,
-			0
-		)
-		const totalSales = spus.reduce((sum, spu) => sum + spu.sales, 0)
-		const totalViews = spus.reduce((sum, spu) => sum + spu.views, 0)
-		const avgRating =
-			spus.reduce((sum, spu) => sum + spu.rating, 0) / spus.length
-
-		return [
-			{
-				label: "Total Products",
-				value: totalProducts,
-				change: 12,
-				trend: "up" as const,
-			},
-			{
-				label: "Active Products",
-				value: activeProducts,
-				change: 5,
-				trend: "up" as const,
-			},
-			{
-				label: "Total Sales",
-				value: totalSales,
-				change: 18,
-				trend: "up" as const,
-			},
-			{
-				label: "Avg Rating",
-				value: avgRating.toFixed(1),
-				change: 0.3,
-				trend: "up" as const,
-			},
-		]
-	}, [spus])
+		return []
+	}, [])
 
 	const handleCreateSPU = () => {
 		router.push("/vendor/products/new")
 	}
 
 	const handleEditSPU = (spu: MockSPU) => {
-		router.push(`/vendor/products/${spu.id}`)
+		// router.push(`/vendor/products/${spu.id}`)
+		// open in new tab
+		window.open(`/vendor/products/${spu.id}`, "_blank")
 	}
 
 	const handleDeleteSPU = (spuId: number) => {
-		setSpus((prev) => prev.filter((spu) => spu.id !== spuId))
-		toast.success("Product deleted successfully")
+		deleteSpu.mutate(
+			{ id: spuId },
+			{
+				onSuccess: () => toast.success("Product deleted successfully"),
+				onError: () => toast.error("Failed to delete product"),
+			}
+		)
 	}
 
 	const handleToggleSPUStatus = (spuId: number) => {
-		setSpus((prev) =>
-			prev.map((spu) =>
-				spu.id === spuId
-					? {
-							...spu,
-							is_active: !spu.is_active,
-							date_updated: new Date().toISOString().split("T")[0],
-					  }
-					: spu
-			)
+		const current = spus.find((s) => s.id === spuId)
+		if (!current) return
+		updateSpu.mutate(
+			{ id: spuId, is_active: !current.is_active },
+			{
+				onSuccess: () => toast.success("Product status updated"),
+				onError: () => toast.error("Failed to update status"),
+			}
 		)
-		toast.success("Product status updated")
 	}
 
 	const handleCreateSKU = (spu: MockSPU) => {
@@ -109,80 +110,75 @@ export default function ProductsPage() {
 		setShowSKUForm(true)
 	}
 
+	const createSku = useCreateProductSKU()
+	const updateSku = useUpdateProductSKU()
+	const deleteSku = useDeleteProductSKU()
+
 	const handleSaveSKU = (skuData: Partial<MockSKU>) => {
 		if (!selectedSPU) return
 
 		if (editingSKU) {
 			// Update existing SKU
-			setSpus((prev) =>
-				prev.map((spu) =>
-					spu.id === selectedSPU.id
-						? {
-								...spu,
-								skus: spu.skus.map((sku) =>
-									sku.id === editingSKU.id
-										? {
-												...sku,
-												...skuData,
-												date_updated: new Date().toISOString().split("T")[0],
-										  }
-										: sku
-								),
-								date_updated: new Date().toISOString().split("T")[0],
-						  }
-						: spu
-				)
+
+			updateSku.mutate(
+				{
+					id: editingSKU.id,
+					price: skuData.price,
+					can_combine: skuData.can_combine,
+					attributes: skuData.attributes,
+				},
+				{
+					onSuccess: () => {
+						toast.success("SKU updated successfully")
+						setShowSKUForm(false)
+						setEditingSKU(null)
+						setSelectedSPU(null)
+					},
+					onError: () => toast.error("Failed to update SKU"),
+				}
 			)
-			toast.success("SKU updated successfully")
 		} else {
 			// Create new SKU
-			const newSKU: MockSKU = {
-				id: Math.max(...selectedSPU.skus.map((s) => s.id), 0) + 1,
-				spu_id: selectedSPU.id,
-				price: skuData.price || 0,
-				stock: skuData.stock || 0,
-				can_combine: skuData.can_combine ?? true,
-				attributes: skuData.attributes || {},
-				date_created: new Date().toISOString().split("T")[0],
-				date_updated: new Date().toISOString().split("T")[0],
-				is_featured: skuData.is_featured ?? false,
-			}
-			setSpus((prev) =>
-				prev.map((spu) =>
-					spu.id === selectedSPU.id
-						? {
-								...spu,
-								skus: [...spu.skus, newSKU],
-								date_updated: new Date().toISOString().split("T")[0],
-						  }
-						: spu
-				)
+
+			createSku.mutate(
+				{
+					spu_id: selectedSPU.id,
+					price: skuData.price || 0,
+					can_combine: skuData.can_combine ?? false,
+					attributes: skuData.attributes,
+				},
+				{
+					onSuccess: () => {
+						toast.success("SKU created successfully")
+						setShowSKUForm(false)
+						setEditingSKU(null)
+						setSelectedSPU(null)
+					},
+					onError: () => toast.error("Failed to create SKU"),
+				}
 			)
-			toast.success("SKU created successfully")
 		}
-		setShowSKUForm(false)
-		setEditingSKU(null)
-		setSelectedSPU(null)
 	}
 
-	const handleDeleteSKU = (skuId: number, spuId: number) => {
-		setSpus((prev) =>
-			prev.map((spu) =>
-				spu.id === spuId
-					? {
-							...spu,
-							skus: spu.skus.filter((sku) => sku.id !== skuId),
-							date_updated: new Date().toISOString().split("T")[0],
-					  }
-					: spu
-			)
+	const handleDeleteSKU = (skuId: number, _spuId: number) => {
+		void _spuId
+		deleteSku.mutate(
+			{ id: skuId },
+			{
+				onSuccess: () => toast.success("SKU deleted successfully"),
+				onError: () => toast.error("Failed to delete SKU"),
+			}
 		)
-		toast.success("SKU deleted successfully")
 	}
 
-	const handleBulkAction = (action: string) => {
-		toast.info(`Bulk ${action} action would be implemented`)
+	const handleManageInventory = (sku: MockSKU, spu: MockSPU) => {
+		// Navigate to inventory page with SKU filter
+		router.push(`/vendor/inventory?sku=${sku.id}`)
 	}
+
+	// const handleBulkAction = (action: string) => {
+	// 	toast.info(`Bulk ${action} action would be implemented`)
+	// }
 
 	const handleExport = () => {
 		toast.info("Export functionality would be implemented")
@@ -237,7 +233,7 @@ export default function ProductsPage() {
 		},
 	]
 
-	if (spus.length === 0) {
+	if (!listSpuResult.isLoading && spus.length === 0) {
 		return (
 			<div className="min-h-screen flex flex-col">
 				<main className="flex-1 py-8 mx-auto">
@@ -284,7 +280,27 @@ export default function ProductsPage() {
 						onCreateSKU={handleCreateSKU}
 						onEditSKU={handleEditSKU}
 						onDeleteSKU={handleDeleteSKU}
+						onManageInventory={handleManageInventory}
 					/>
+
+					{/* Pagination */}
+					{(() => {
+						const firstPage = listSpuResult.data?.pages?.[0]
+						const total = firstPage?.pagination?.total ?? 0
+						const totalPages = Math.max(1, Math.ceil(total / limit))
+						if (totalPages <= 1) return null
+						return (
+							<Pagination
+								currentPage={currentPage}
+								totalPages={totalPages}
+								onPageChange={(page) => {
+									const next = Math.min(Math.max(1, page), totalPages)
+									if (next !== currentPage) setCurrentPage(next)
+								}}
+								className="mt-4"
+							/>
+						)
+					})()}
 
 					{/* SPU Form is now handled by dedicated edit page */}
 

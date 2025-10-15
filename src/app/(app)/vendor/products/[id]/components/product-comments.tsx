@@ -227,9 +227,9 @@ export function ProductComments({ comments, productId }: ProductCommentsProps) {
 													<ThumbsDown className="h-4 w-4" />
 													<span className="text-xs">{comment.downvote}</span>
 												</Button>
-												<span className="text-xs text-muted-foreground">
+												{/* <span className="text-xs text-muted-foreground">
 													Was this review helpful?
-												</span>
+												</span> */}
 											</div>
 										</div>
 									</div>

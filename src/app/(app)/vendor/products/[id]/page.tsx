@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,27 +24,26 @@ import {
 	Copy,
 	Share,
 } from "lucide-react"
+import { useGetProductDetail } from "@/core/product/product.customer"
+import {
+	useGetProductSPU,
+	useListProductSKU,
+} from "@/core/product/product.vendor"
 
 interface ProductViewPageProps {
-	params: {
+	params: Promise<{
 		id: string
-	}
+	}>
 }
 
 export default function ProductViewPage({ params }: ProductViewPageProps) {
 	const router = useRouter()
-	const [product, setProduct] = useState<MockSPU | null>(null)
 
-	useEffect(() => {
-		const productId = parseInt(params.id)
-		const foundProduct = mockSpus.find((spu) => spu.id === productId)
-		if (foundProduct) {
-			setProduct(foundProduct)
-		} else {
-			toast.error("Product not found")
-			router.push("/vendor/products")
-		}
-	}, [params.id, router])
+	const { id } = use(params)
+	const { data: product, isLoading } = useGetProductSPU(Number(id))
+	const { data: skus = [] } = useListProductSKU({
+		spu_id: Number(id),
+	})
 
 	if (!product) {
 		return (
@@ -64,15 +63,14 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
 					{/* Header */}
 					<div className="flex items-center justify-between mb-8">
 						<div className="flex items-center gap-4">
-							<Button
+							{/* <Button
 								variant="ghost"
 								size="sm"
-								onClick={() => router.back()}
 								className="flex items-center gap-2"
 							>
 								<ArrowLeft className="h-4 w-4" />
 								Back
-							</Button>
+							</Button> */}
 							<div>
 								<h1 className="text-3xl font-bold">{product.name}</h1>
 								<p className="text-muted-foreground">
@@ -81,16 +79,6 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
 							</div>
 						</div>
 						<div className="flex items-center gap-2">
-							<Button
-								variant="outline"
-								onClick={() => {
-									/* Mock share */
-								}}
-								className="flex items-center gap-2"
-							>
-								<Share className="h-4 w-4" />
-								Share
-							</Button>
 							<Button
 								variant="outline"
 								onClick={() => {
@@ -126,7 +114,7 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
 								</CardHeader>
 								<CardContent>
 									<div className="grid gap-4 md:grid-cols-2">
-										{product.images.map((image, index) => (
+										{product.resources.map((image, index) => (
 											<div key={index} className="relative group">
 												<img
 													src={image}
@@ -179,7 +167,7 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
 								</CardHeader>
 								<CardContent>
 									<div className="space-y-4">
-										{product.skus.map((sku) => (
+										{skus.map((sku) => (
 											<div
 												key={sku.id}
 												className="flex items-center justify-between p-4 border rounded-lg"
@@ -191,17 +179,15 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
 													<div>
 														<div className="font-medium">SKU #{sku.id}</div>
 														<div className="text-sm text-muted-foreground">
-															{Object.entries(sku.attributes).map(
-																([key, value]) => (
-																	<Badge
-																		key={key}
-																		variant="outline"
-																		className="mr-1 text-xs"
-																	>
-																		{key}: {value}
-																	</Badge>
-																)
-															)}
+															{sku.attributes.map(({ name, value }) => (
+																<Badge
+																	key={name}
+																	variant="outline"
+																	className="mr-1 text-xs"
+																>
+																	{name}: {value}
+																</Badge>
+															))}
 														</div>
 													</div>
 												</div>
@@ -245,7 +231,7 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
 									</CardTitle>
 								</CardHeader>
 								<CardContent className="space-y-4">
-									<div className="flex items-center justify-between">
+									{/* <div className="flex items-center justify-between">
 										<div className="flex items-center gap-2">
 											<Eye className="h-4 w-4 text-muted-foreground" />
 											<span className="text-sm">Views</span>
@@ -253,26 +239,28 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
 										<span className="font-medium">
 											{product.views.toLocaleString()}
 										</span>
-									</div>
-									<div className="flex items-center justify-between">
+									</div> */}
+									{/* <div className="flex items-center justify-between">
 										<div className="flex items-center gap-2">
 											<TrendingUp className="h-4 w-4 text-muted-foreground" />
 											<span className="text-sm">Sales</span>
 										</div>
 										<span className="font-medium">{product.sales}</span>
-									</div>
+									</div> */}
 									<div className="flex items-center justify-between">
 										<div className="flex items-center gap-2">
 											<Star className="h-4 w-4 text-yellow-500" />
 											<span className="text-sm">Rating</span>
 										</div>
-										<span className="font-medium">{product.rating}/5</span>
+										<span className="font-medium">
+											{product.rating.score}/5
+										</span>
 									</div>
 									<div className="flex items-center justify-between">
 										<span className="text-sm text-muted-foreground">
 											Reviews
 										</span>
-										<span className="font-medium">{product.review_count}</span>
+										<span className="font-medium">{product.rating.total}</span>
 									</div>
 								</CardContent>
 							</Card>
@@ -316,10 +304,6 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
 										<span>
 											{new Date(product.date_updated).toLocaleDateString()}
 										</span>
-									</div>
-									<div className="flex justify-between">
-										<span className="text-muted-foreground">SKUs</span>
-										<span>{product.skus.length}</span>
 									</div>
 								</CardContent>
 							</Card>

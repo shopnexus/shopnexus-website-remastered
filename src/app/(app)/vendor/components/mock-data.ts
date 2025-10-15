@@ -12,12 +12,14 @@ export interface MockSPU {
   date_created: string
   date_updated: string
   skus: MockSKU[]
-  images: string[]
+  resources: string[]
   tags: string[]
   views: number
   sales: number
-  rating: number
-  review_count: number
+  rating: {
+    score: number
+    total: number
+  }
 }
 
 export interface MockSKU {
@@ -26,16 +28,8 @@ export interface MockSKU {
   price: number
   stock: number
   can_combine: boolean
-  attributes: Record<string, string>
+  attributes: { name: string; value: string }[]
   date_created: string
-  date_updated: string
-  is_featured: boolean
-  weight?: number
-  dimensions?: {
-    length: number
-    width: number
-    height: number
-  }
 }
 
 export interface MockStock {
@@ -52,6 +46,15 @@ export interface MockStockHistory {
   id: number
   change: number
   date_created: string
+}
+
+export interface MockProductSerial {
+  id: number
+  serial_number: string
+  sku_id: number
+  status: 'Active' | 'Inactive' | 'Sold' | 'Damaged'
+  date_created: string
+  sku_name: string // For display purposes
 }
 
 export interface MockRefund {
@@ -164,12 +167,11 @@ export const mockSpus: MockSPU[] = [
     is_active: true,
     date_created: '2024-01-15',
     date_updated: '2024-01-20',
-    images: ['/business-laptop-computer.jpg', '/technology-office-equipment.jpg'],
+    resources: ['/business-laptop-computer.jpg', '/technology-office-equipment.jpg'],
     tags: ['business', 'laptop', 'professional', 'portable'],
     views: 1247,
     sales: 89,
-    rating: 4.6,
-    review_count: 23,
+    rating: { score: 4.5, total: 23 },
     skus: [
       {
         id: 1,
@@ -209,12 +211,14 @@ export const mockSpus: MockSPU[] = [
     is_active: true,
     date_created: '2024-01-20',
     date_updated: '2024-01-25',
-    images: ['/professional-office-chair.jpg'],
+    resources: ['/professional-office-chair.jpg'],
     tags: ['ergonomic', 'office', 'comfort', 'adjustable'],
     views: 892,
     sales: 156,
-    rating: 4.4,
-    review_count: 18,
+    rating: {
+      score: 4.4,
+      total: 18
+    },
     skus: [
       {
         id: 3,
@@ -254,12 +258,11 @@ export const mockSpus: MockSPU[] = [
     is_active: false,
     date_created: '2024-02-01',
     date_updated: '2024-02-05',
-    images: ['/standing-desk-converter.png'],
+    resources: ['/standing-desk-converter.png'],
     tags: ['standing', 'desk', 'adjustable', 'health'],
     views: 456,
     sales: 23,
-    rating: 4.2,
-    review_count: 8,
+    rating: { score: 4.2, total: 8 },
     skus: [
       {
         id: 5,
@@ -286,12 +289,14 @@ export const mockSpus: MockSPU[] = [
     is_active: true,
     date_created: '2024-01-10',
     date_updated: '2024-01-15',
-    images: ['/office-supplies-kit.png', '/office-supplies-desk.jpg'],
+    resources: ['/office-supplies-kit.png', '/office-supplies-desk.jpg'],
     tags: ['supplies', 'kit', 'office', 'complete'],
     views: 678,
     sales: 234,
-    rating: 4.7,
-    review_count: 45,
+    rating: {
+      score: 4.7,
+      total: 45
+    },
     skus: [
       {
         id: 6,
@@ -318,12 +323,11 @@ export const mockSpus: MockSPU[] = [
     is_active: true,
     date_created: '2024-01-05',
     date_updated: '2024-01-12',
-    images: ['/modern-office-furniture.png', '/modern-business-office-workspace.jpg'],
+    resources: ['/modern-office-furniture.png', '/modern-business-office-workspace.jpg'],
     tags: ['furniture', 'modern', 'set', 'complete'],
     views: 1023,
     sales: 67,
-    rating: 4.5,
-    review_count: 12,
+    rating: { score: 4.3, total: 12 },
     skus: [
       {
         id: 7,

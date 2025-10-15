@@ -5,7 +5,7 @@ import { StatusBadge } from "../../components/status-badge"
 import { ConfirmDialog } from "../../components/confirm-dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { CardContent, CardHeader } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MockSPU, MockSKU } from "../../components/mock-data"
 import {
@@ -19,14 +19,170 @@ import {
 	TrendingUp,
 	Package,
 	Image as ImageIcon,
-	Filter,
-	Search,
-	MoreHorizontal,
-	Copy,
-	ExternalLink,
+	Warehouse,
 } from "lucide-react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useListProductSKU } from "@/core/product/product.vendor"
+
+// SKU columns definition
+const skuColumns: Column<MockSKU>[] = [
+	{
+		key: "id",
+		label: "SKU ID",
+		render: (value: number) => (
+			<div className="flex items-center space-x-2">
+				<span className="font-mono text-sm">#{value}</span>
+			</div>
+		),
+		className: "w-24",
+	},
+	{
+		key: "price",
+		label: "Price",
+		render: (value: number) => (
+			<div className="space-y-1">
+				<div className="font-medium">${value.toLocaleString()}</div>
+			</div>
+		),
+		className: "w-28",
+	},
+	{
+		key: "stock",
+		label: "Stock",
+		render: (value: number) => {
+			const stockLevel = value > 50 ? "high" : value > 10 ? "medium" : "low"
+			const variant =
+				stockLevel === "high"
+					? "default"
+					: stockLevel === "medium"
+					? "secondary"
+					: "destructive"
+			return (
+				<div className="space-y-1">
+					<Badge variant={variant}>{value}</Badge>
+				</div>
+			)
+		},
+		className: "w-24",
+	},
+	{
+		key: "attributes",
+		label: "Attributes",
+		render: (attributes: { name: string; value: string }[]) => (
+			<div className="flex flex-wrap gap-1 max-w-48">
+				{attributes.map((attr, index) => (
+					<Badge key={index} variant="outline" className="text-xs">
+						{attr.name}: {attr.value}
+					</Badge>
+				))}
+			</div>
+		),
+	},
+	{
+		key: "can_combine",
+		label: "Combinable",
+		render: (value: boolean) => <StatusBadge status={value ? "Yes" : "No"} />,
+		className: "w-24",
+	},
+]
+
+// Component to handle SKU loading and display for a specific SPU
+function SKUTable({
+	spuId,
+	onCreateSKU,
+	onEditSKU,
+	onDeleteSKU,
+	onManageInventory,
+}: {
+	spuId: number
+	onCreateSKU: (spu: MockSPU) => void
+	onEditSKU: (sku: MockSKU, spu: MockSPU) => void
+	onDeleteSKU: (skuId: number, spuId: number) => void
+	onManageInventory: (sku: MockSKU, spu: MockSPU) => void
+}) {
+	const { data: skus = [], isLoading } = useListProductSKU({ spu_id: spuId })
+
+	// Map API SKUs to MockSKU format for compatibility
+	const mockSkus: MockSKU[] = skus.map((sku) => ({
+		id: sku.id,
+		spu_id: sku.spu_id,
+		price: sku.price,
+		stock: sku.stock || 0, // Default stock if not provided
+		can_combine: sku.can_combine,
+		attributes: sku.attributes, // ProductAttribute[] is compatible with { name: string; value: string }[]
+		date_created: sku.date_created,
+		date_updated: sku.date_created, // Use date_created as fallback
+		is_featured: false, // Default value
+	}))
+
+	const handleCreateSKU = () => {
+		// Create a minimal SPU object for the callback
+		const mockSpu: MockSPU = { id: spuId } as MockSPU
+		onCreateSKU(mockSpu)
+	}
+
+	if (isLoading) {
+		return (
+			<div className="p-4 text-center text-muted-foreground">
+				Loading SKUs...
+			</div>
+		)
+	}
+
+	return (
+		<div className="m-4 gap-0 border-0">
+			<CardHeader>
+				<div className="flex items-center justify-between">
+					<div className="flex items-center gap-2">
+						<Button
+							size="sm"
+							onClick={handleCreateSKU}
+							className="flex items-center gap-2"
+						>
+							<Plus className="h-4 w-4" />
+							Add SKU
+						</Button>
+					</div>
+				</div>
+			</CardHeader>
+			<CardContent>
+				<DataTable
+					data={mockSkus}
+					columns={skuColumns}
+					actions={(sku) => (
+						<div className="flex items-center gap-1">
+							<Button
+								size="sm"
+								variant="ghost"
+								onClick={() => onManageInventory(sku, { id: spuId } as MockSPU)}
+								title="Manage Inventory"
+							>
+								<Warehouse className="h-4 w-4" />
+							</Button>
+							<Button
+								size="sm"
+								variant="ghost"
+								onClick={() => onEditSKU(sku, { id: spuId } as MockSPU)}
+								title="Edit SKU"
+							>
+								<Edit className="h-4 w-4" />
+							</Button>
+							<Button
+								size="sm"
+								variant="ghost"
+								onClick={() => onDeleteSKU(sku.id, spuId)}
+								title="Delete SKU"
+							>
+								<Trash2 className="h-4 w-4" />
+							</Button>
+						</div>
+					)}
+				/>
+			</CardContent>
+		</div>
+	)
+}
 
 interface ProductTableProps {
 	spus: MockSPU[]
@@ -36,6 +192,7 @@ interface ProductTableProps {
 	onCreateSKU: (spu: MockSPU) => void
 	onEditSKU: (sku: MockSKU, spu: MockSPU) => void
 	onDeleteSKU: (skuId: number, spuId: number) => void
+	onManageInventory: (sku: MockSKU, spu: MockSPU) => void
 }
 
 export function ProductTable({
@@ -46,6 +203,7 @@ export function ProductTable({
 	onCreateSKU,
 	onEditSKU,
 	onDeleteSKU,
+	onManageInventory,
 }: ProductTableProps) {
 	const router = useRouter()
 	const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -68,12 +226,12 @@ export function ProductTable({
 
 	const spuColumns: Column<MockSPU>[] = [
 		{
-			key: "images",
+			key: "resources",
 			label: "Image",
-			render: (images: string[], spu: MockSPU) => (
+			render: (resources: string[], spu: MockSPU) => (
 				<div className="flex items-center space-x-2">
 					<Avatar className="h-10 w-10">
-						<AvatarImage src={images[0]} alt={spu.name} />
+						<AvatarImage src={resources[0]} alt={spu.name} />
 						<AvatarFallback>
 							<ImageIcon className="h-4 w-4" />
 						</AvatarFallback>
@@ -92,15 +250,17 @@ export function ProductTable({
 			label: "Product",
 			render: (value: string, spu: MockSPU) => (
 				<div className="space-y-1">
-					<div className="font-medium">{value}</div>
-					<div className="text-sm text-muted-foreground">{spu.code}</div>
+					<div className="font-medium w-100 truncate">{value}</div>
+					<div className="text-sm text-muted-foreground w-100 truncate">
+						{spu.code}
+					</div>
 					<div className="flex items-center space-x-2">
 						<div className="flex items-center space-x-1">
 							<Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-							<span className="text-xs">{spu.rating}</span>
+							<span className="text-xs">{spu.rating.score}</span>
 						</div>
 						<span className="text-xs text-muted-foreground">
-							({spu.review_count} reviews)
+							({spu.rating.total} reviews)
 						</span>
 					</div>
 				</div>
@@ -174,127 +334,24 @@ export function ProductTable({
 		// },
 	]
 
-	const skuColumns: Column<MockSKU>[] = [
-		{
-			key: "id",
-			label: "SKU ID",
-			render: (value: number) => (
-				<div className="flex items-center space-x-2">
-					<span className="font-mono text-sm">#{value}</span>
-					{/* Mock featured indicator */}
-					{/* {Math.random() > 0.7 && (
-						<Badge variant="default" className="text-xs">
-							Featured
-						</Badge>
-					)} */}
-				</div>
-			),
-			className: "w-24",
-		},
-		{
-			key: "price",
-			label: "Price",
-			render: (value: number) => (
-				<div className="space-y-1">
-					<div className="font-medium">${value.toLocaleString()}</div>
-				</div>
-			),
-			className: "w-28",
-		},
-		{
-			key: "stock",
-			label: "Stock",
-			render: (value: number) => {
-				const stockLevel = value > 50 ? "high" : value > 10 ? "medium" : "low"
-				const variant =
-					stockLevel === "high"
-						? "default"
-						: stockLevel === "medium"
-						? "secondary"
-						: "destructive"
-				return (
-					<div className="space-y-1">
-						<Badge variant={variant}>{value}</Badge>
-						{/* <div className="text-xs text-muted-foreground capitalize">
-							{stockLevel} stock
-						</div> */}
-					</div>
-				)
-			},
-			className: "w-24",
-		},
-		{
-			key: "attributes",
-			label: "Attributes",
-			render: (attributes: Record<string, string>) => (
-				<div className="flex flex-wrap gap-1 max-w-48">
-					{Object.entries(attributes).map(([key, value]) => (
-						<Badge key={key} variant="outline" className="text-xs">
-							{key}: {value}
-						</Badge>
-					))}
-				</div>
-			),
-		},
-		{
-			key: "can_combine",
-			label: "Combinable",
-			render: (value: boolean) => <StatusBadge status={value ? "Yes" : "No"} />,
-			className: "w-24",
-		},
-	]
-
-	const renderExpandedRow = (spu: MockSPU) => (
-		<div className="m-4 gap-0 border-0">
-			<CardHeader className="">
-				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-2">
-						<Button
-							size="sm"
-							onClick={() => onCreateSKU(spu)}
-							className="flex items-center gap-2"
-						>
-							<Plus className="h-4 w-4" />
-							Add SKU
-						</Button>
-					</div>
-				</div>
-			</CardHeader>
-			<CardContent>
-				<DataTable
-					data={spu.skus}
-					columns={skuColumns}
-					actions={(sku) => (
-						<div className="flex items-center gap-1">
-							<Button
-								size="sm"
-								variant="ghost"
-								onClick={() => onEditSKU(sku, spu)}
-								title="Edit SKU"
-							>
-								<Edit className="h-4 w-4" />
-							</Button>
-							<Button
-								size="sm"
-								variant="ghost"
-								onClick={() =>
-									setDeleteConfirm({
-										type: "sku",
-										id: sku.id,
-										spuId: spu.id,
-										name: `SKU ${sku.id}`,
-									})
-								}
-								title="Delete SKU"
-							>
-								<Trash2 className="h-4 w-4" />
-							</Button>
-						</div>
-					)}
-				/>
-			</CardContent>
-		</div>
-	)
+	const renderExpandedRow = (spu: MockSPU) => {
+		return (
+			<SKUTable
+				spuId={spu.id}
+				onCreateSKU={onCreateSKU}
+				onEditSKU={onEditSKU}
+				onDeleteSKU={(skuId, spuId) =>
+					setDeleteConfirm({
+						type: "sku",
+						id: skuId,
+						spuId,
+						name: `SKU ${skuId}`,
+					})
+				}
+				onManageInventory={onManageInventory}
+			/>
+		)
+	}
 
 	return (
 		<>
@@ -330,7 +387,7 @@ export function ProductTable({
 						<Button
 							size="sm"
 							variant="ghost"
-							onClick={() => router.push(`/vendor/products/${spu.id}/edit`)}
+							onClick={() => onEditSPU(spu)}
 							title="Edit Product"
 						>
 							<Edit className="h-4 w-4" />

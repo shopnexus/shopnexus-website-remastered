@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { customFetchPagination, customFetchStandard } from "@/lib/queryclient/custom-fetch"
 import { PaginationParams } from "@/lib/queryclient/response.type"
 import qs from "qs"
@@ -12,39 +12,31 @@ export type ProductAttribute = {
 
 export type ProductSku = {
   id: number
-  code: string
   spu_id: number
   price: number
   can_combine: boolean
   date_created: string
-  date_deleted: string | null
-  attributes: ProductSkuAttribute[]
-}
-
-export type ProductSkuAttribute = {
-  id: number
-  code: string
-  sku_id: number
-  name: string
-  value: string
-  date_created: string
-  date_updated: string
+  stock: number
+  attributes: ProductAttribute[]
 }
 
 export type ProductSPU = {
   id: number
   code: string
-  vendor_id: number
-  category_id: number
-  brand_id: number
+  category: string
+  brand: string
+  featured_sku_id: number | null
   name: string
   description: string
   is_active: boolean
-  featured_sku_id: number | null
-  date_manufactured: string | null
   date_created: string
   date_updated: string
-  date_deleted: string | null
+  resources: string[]
+  rating: {
+    score: number
+    total: number
+  }
+  tags: string[]
 }
 
 // ===== PARAM TYPES =====
@@ -77,10 +69,12 @@ export type DeleteProductSPUParams = {
   id: number
 }
 
-export type ListProductSKUParams = PaginationParams<{
-  spu_id: number[]
-  price: number[]
-}>
+export type ListProductSKUParams = {
+  spu_id?: number
+  price_from?: number
+  price_to?: number
+  can_combine?: boolean
+}
 
 export type CreateProductSKUParams = {
   spu_id: number
@@ -142,7 +136,7 @@ export const useUpdateProductSPU = () => {
   return useMutation({
     mutationFn: (params: UpdateProductSPUParams) =>
       customFetchStandard<ProductSPU>('catalog/product-spu', {
-        method: 'PUT',
+        method: 'PATCH',
         body: JSON.stringify(params),
       }),
     onSuccess: async () => {
@@ -166,23 +160,19 @@ export const useDeleteProductSPU = () => {
   })
 }
 
+// Get Product SPU by ID
+export const useGetProductSPU = (id: number | undefined) =>
+  useQuery({
+    queryKey: ['product-spu', 'detail', id],
+    queryFn: () => customFetchStandard<ProductSPU>(`catalog/product-spu/${id}`),
+    enabled: typeof id === 'number' && id > 0,
+  })
+
 // List Product SKU (Infinite Query)
 export const useListProductSKU = (params: ListProductSKUParams) =>
-  useInfiniteQuery({
+  useQuery({
     queryKey: ['product-sku', 'list', params],
-    queryFn: async ({ pageParam }) => customFetchPagination<ProductSku>(`catalog/product-sku?${qs.stringify(pageParam)}`),
-    getNextPageParam: (lastPageRes, _, lastPageParam) => {
-      if (!lastPageRes.pagination.next_page && !lastPageRes.pagination.next_cursor) {
-        return undefined
-      }
-      return {
-        ...lastPageParam,
-        page: lastPageRes.pagination.next_page,
-        cursor: lastPageRes.pagination.next_cursor,
-        limit: lastPageParam.limit,
-      }
-    },
-    initialPageParam: params,
+    queryFn: () => customFetchStandard<ProductSku[]>(`catalog/product-sku?${qs.stringify(params)}`),
   })
 
 // Create Product SKU
@@ -206,7 +196,7 @@ export const useUpdateProductSKU = () => {
   return useMutation({
     mutationFn: (params: UpdateProductSKUParams) =>
       customFetchStandard<ProductSku>('catalog/product-sku', {
-        method: 'PUT',
+        method: 'PATCH',
         body: JSON.stringify(params),
       }),
     onSuccess: async () => {

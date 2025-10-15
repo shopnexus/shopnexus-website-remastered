@@ -29,10 +29,10 @@ export function SKUForm({ sku, spu, onSave, onCancel }: SKUFormProps) {
 		price: 0,
 		stock: 0,
 		can_combine: true,
-		attributes: {} as Record<string, string>,
+		attributes: [] as { name: string; value: string }[],
 	})
 
-	const [newAttribute, setNewAttribute] = useState({ key: "", value: "" })
+	const [newAttribute, setNewAttribute] = useState({ name: "", value: "" })
 
 	useEffect(() => {
 		if (sku) {
@@ -40,14 +40,14 @@ export function SKUForm({ sku, spu, onSave, onCancel }: SKUFormProps) {
 				price: sku.price,
 				stock: sku.stock,
 				can_combine: sku.can_combine,
-				attributes: { ...sku.attributes },
+				attributes: sku.attributes,
 			})
 		} else {
 			setFormData({
 				price: 0,
 				stock: 0,
 				can_combine: true,
-				attributes: {},
+				attributes: [],
 			})
 		}
 	}, [sku])
@@ -57,29 +57,28 @@ export function SKUForm({ sku, spu, onSave, onCancel }: SKUFormProps) {
 		onSave(formData)
 	}
 
-	const handleChange = (field: string, value: any) => {
+	const handleChange = (field: string, value: unknown) => {
 		setFormData((prev) => ({ ...prev, [field]: value }))
 	}
 
 	const addAttribute = () => {
-		if (newAttribute.key && newAttribute.value) {
+		if (newAttribute.name && newAttribute.value) {
 			setFormData((prev) => ({
 				...prev,
-				attributes: {
+				attributes: [
 					...prev.attributes,
-					[newAttribute.key]: newAttribute.value,
-				},
+					{ name: newAttribute.name, value: newAttribute.value },
+				],
 			}))
-			setNewAttribute({ key: "", value: "" })
+			setNewAttribute({ name: "", value: "" })
 		}
 	}
 
 	const removeAttribute = (key: string) => {
-		setFormData((prev) => {
-			const newAttributes = { ...prev.attributes }
-			delete newAttributes[key]
-			return { ...prev, attributes: newAttributes }
-		})
+		setFormData((prev) => ({
+			...prev,
+			attributes: prev.attributes.filter((attr) => attr.name !== key),
+		}))
 	}
 
 	return (
@@ -138,19 +137,19 @@ export function SKUForm({ sku, spu, onSave, onCancel }: SKUFormProps) {
 					<div className="space-y-2">
 						<Label>Attributes</Label>
 						<div className="space-y-2">
-							{Object.entries(formData.attributes).map(([key, value]) => (
-								<div key={key} className="flex items-center gap-2">
+							{formData.attributes.map(({ name, value }) => (
+								<div key={name} className="flex items-center gap-2">
 									<Badge
 										variant="secondary"
 										className="flex items-center gap-1"
 									>
-										{key}: {value}
+										{name}: {value}
 										<Button
 											type="button"
 											size="sm"
 											variant="ghost"
 											className="h-4 w-4 p-0 hover:bg-transparent"
-											onClick={() => removeAttribute(key)}
+											onClick={() => removeAttribute(name)}
 										>
 											<X className="h-3 w-3" />
 										</Button>
@@ -161,11 +160,11 @@ export function SKUForm({ sku, spu, onSave, onCancel }: SKUFormProps) {
 							<div className="flex gap-2">
 								<Input
 									placeholder="Attribute name"
-									value={newAttribute.key}
+									value={newAttribute.name}
 									onChange={(e) =>
 										setNewAttribute((prev) => ({
 											...prev,
-											key: e.target.value,
+											name: e.target.value,
 										}))
 									}
 									className="flex-1"
@@ -185,7 +184,7 @@ export function SKUForm({ sku, spu, onSave, onCancel }: SKUFormProps) {
 									type="button"
 									size="sm"
 									onClick={addAttribute}
-									disabled={!newAttribute.key || !newAttribute.value}
+									disabled={!newAttribute.name || !newAttribute.value}
 								>
 									<Plus className="h-4 w-4" />
 								</Button>

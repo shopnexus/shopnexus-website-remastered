@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
-import { mockSpus, MockSPU } from "../../../components/mock-data"
 import { toast } from "sonner"
 import {
 	ArrowLeft,
@@ -23,6 +22,11 @@ import {
 	X,
 	Upload,
 } from "lucide-react"
+import {
+	useGetProductSPU,
+	useUpdateProductSPU,
+	ProductSPU,
+} from "@/core/product/product.vendor"
 
 interface ProductEditPageProps {
 	params: {
@@ -32,30 +36,57 @@ interface ProductEditPageProps {
 
 export default function ProductEditPage({ params }: ProductEditPageProps) {
 	const router = useRouter()
-	const [product, setProduct] = useState<MockSPU | null>(null)
+	const [product, setProduct] = useState<
+		| (ProductSPU & {
+				views: number
+				sales: number
+				review_count: number
+				skus: unknown[]
+		  })
+		| null
+	>(null)
 	const [isPreview, setIsPreview] = useState(false)
 	const [isLoading, setIsLoading] = useState(false)
 	const [newTag, setNewTag] = useState("")
 	const [newImage, setNewImage] = useState("")
 
+	const productId = Number.parseInt(params.id)
+	const { data: apiProduct, isLoading: isLoadingProduct } = useGetProductSPU(
+		Number.isFinite(productId) ? productId : undefined
+	)
+	const updateSpu = useUpdateProductSPU()
+
 	useEffect(() => {
-		const productId = parseInt(params.id)
-		const foundProduct = mockSpus.find((spu) => spu.id === productId)
-		if (foundProduct) {
-			setProduct({ ...foundProduct })
-		} else {
-			toast.error("Product not found")
-			router.push("/vendor/products")
-		}
-	}, [params.id, router])
+		if (!apiProduct) return
+		// Map API product to local UI shape with defaults for fields not in API
+		setProduct({
+			...apiProduct,
+			views: 0,
+			sales: 0,
+			review_count: apiProduct.rating?.total ?? 0,
+			skus: [],
+		})
+	}, [apiProduct])
 
 	const handleSave = async () => {
 		if (!product) return
 
 		setIsLoading(true)
 		try {
-			// Simulate API call
-			await new Promise((resolve) => setTimeout(resolve, 1000))
+			await new Promise<void>((resolve, reject) => {
+				updateSpu.mutate(
+					{
+						id: product.id,
+						name: product.name,
+						description: product.description,
+						is_active: product.is_active,
+					},
+					{
+						onSuccess: () => resolve(),
+						onError: () => reject(new Error("update failed")),
+					}
+				)
+			})
 			toast.success("Product updated successfully")
 			router.push("/vendor/products")
 		} catch (error) {
@@ -88,7 +119,7 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
 		if (newImage.trim() && product) {
 			setProduct({
 				...product,
-				images: [...product.images, newImage.trim()],
+				resources: [...product.resources, newImage.trim()],
 			})
 			setNewImage("")
 		}
@@ -98,12 +129,12 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
 		if (product) {
 			setProduct({
 				...product,
-				images: product.images.filter((image) => image !== imageToRemove),
+				resources: product.resources.filter((image) => image !== imageToRemove),
 			})
 		}
 	}
 
-	if (!product) {
+	if (isLoadingProduct || !product) {
 		return (
 			<div className="min-h-screen flex items-center justify-center">
 				<div className="text-center">
@@ -282,7 +313,7 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
 									</div>
 
 									<div className="grid gap-4 md:grid-cols-2">
-										{product.images.map((image, index) => (
+										{product.resources.map((image, index) => (
 											<div key={index} className="relative group">
 												<img
 													src={image}
@@ -389,7 +420,9 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
 										<span className="text-sm text-muted-foreground">
 											Rating
 										</span>
-										<span className="font-medium">{product.rating}/5</span>
+										<span className="font-medium">
+											{product.rating?.score ?? 0}/5
+										</span>
 									</div>
 									<div className="flex justify-between">
 										<span className="text-sm text-muted-foreground">

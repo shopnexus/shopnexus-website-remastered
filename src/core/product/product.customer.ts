@@ -9,9 +9,11 @@ const queryClient = getQueryClient()
 
 export type TProductDetail = {
   id: number
+  code: string
   name: string
   description: string
   resources: Resource[]
+  brand: string
   category: string
   rating: {
     score: number

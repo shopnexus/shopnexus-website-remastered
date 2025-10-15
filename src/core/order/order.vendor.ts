@@ -1,9 +1,9 @@
-import { useInfiniteQuery, useMutation } from "@tanstack/react-query"
-import { customFetchPagination, customFetchStandard } from "../../lib/queryclient/custom-fetch"
+import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query"
+import { customFetchPagination, customFetchStandard } from "@/lib/queryclient/custom-fetch"
 import QueryString from "qs"
 import { PaginationParams, SuccessPaginationRes } from "@/lib/queryclient/response.type"
 
-type TOrder = {
+export type TOrder = {
   id: number
   account_id: number
   payment_gateway: string
@@ -13,27 +13,7 @@ type TOrder = {
   date_updated: string
 }
 
-type CheckoutParams = {
-  address: string
-  payment_gateway: string
-  sku_ids: number[]
-}
-
-type CheckoutResult = {
-  order: TOrder
-  url: string
-}
-
-export const useCheckout = () =>
-  useMutation({
-    mutationKey: ['checkout'],
-    mutationFn: (params: CheckoutParams) => customFetchStandard<CheckoutResult>(`order/checkout`, {
-      method: 'POST',
-      body: JSON.stringify(params),
-    }),
-  })
-
-type ListOrdersParams = PaginationParams<{
+export type ListOrdersParams = PaginationParams<{
   account_id?: number
   status?: string
   date_from?: string
@@ -56,3 +36,31 @@ export const useListOrders = (params: ListOrdersParams) =>
     },
     initialPageParam: params,
   })
+
+export const useGetOrder = (id?: number) =>
+  useQuery({
+    queryKey: ['order', 'detail', id],
+    queryFn: () => customFetchStandard<TOrder>(`order/${id}`),
+    enabled: typeof id === 'number' && id > 0,
+  })
+
+export type ConfirmOrderParams = {
+  sku_id: number
+  from_address?: string
+  weight_grams: number
+  length_cm: number
+  width_cm: number
+  height_cm: number
+}
+
+export const useConfirmOrder = () =>
+  useMutation({
+    mutationKey: ['order', 'confirm'],
+    mutationFn: (params: ConfirmOrderParams) =>
+      customFetchStandard<{ message: string }>(`order/confirm`, {
+        method: 'POST',
+        body: JSON.stringify(params),
+      }),
+  })
+
+

@@ -1,44 +1,48 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { PageHeader } from "../components/page-header"
-import { StockTable } from "./components/stock-table"
+import { InventoryTable } from "./components/inventory-table"
 import { ImportStockDialog } from "./components/import-stock-dialog"
-import { mockStock, MockStock } from "../components/mock-data"
 import { toast } from "sonner"
+import { useListStock, useImportStock } from "@/core/inventory/inventory.vendor"
 
 export default function InventoryPage() {
-	const [stock, setStock] = useState<MockStock[]>(mockStock)
+	const searchParams = useSearchParams()
 	const [showImportDialog, setShowImportDialog] = useState(false)
+	const [selectedSkuId, setSelectedSkuId] = useState<number | null>(null)
+
+	// Load stock data from API
+	const { data: stockData = [], isLoading: stockLoading } = useListStock()
+	const importStock = useImportStock()
+
+	// Handle URL parameter for SKU filtering
+	useEffect(() => {
+		const skuParam = searchParams.get("sku")
+		if (skuParam) {
+			setSelectedSkuId(parseInt(skuParam))
+		}
+	}, [searchParams])
 
 	const handleImportStock = (skuId: number, quantity: number) => {
-		// In real implementation, this would call the server
-		// Server would generate serial numbers and update stock
-
-		setStock((prev) =>
-			prev.map((item) =>
-				item.sku_id === skuId
-					? {
-							...item,
-							current_stock: item.current_stock + quantity,
-							last_updated: new Date().toISOString().split("T")[0],
-							history: [
-								...item.history,
-								{
-									id: Math.max(...item.history.map((h) => h.id)) + 1,
-									change: quantity,
-									date_created: new Date().toISOString().split("T")[0],
-								},
-							],
-					  }
-					: item
-			)
+		importStock.mutate(
+			{
+				ref_id: skuId,
+				change: quantity,
+				ref_type: "ProductSku",
+				serial_ids: [],
+			},
+			{
+				onSuccess: (data) => {
+					toast.success(`Successfully imported ${quantity} units.`)
+					setShowImportDialog(false)
+				},
+				onError: () => {
+					toast.error("Failed to import stock. Please try again.")
+				},
+			}
 		)
-
-		toast.success(
-			`Successfully imported ${quantity} units. Serial numbers generated automatically.`
-		)
-		setShowImportDialog(false)
 	}
 
 	return (
@@ -47,12 +51,16 @@ export default function InventoryPage() {
 				<div className="container max-w-7xl">
 					<PageHeader
 						title="Inventory Management"
-						description="Manage stock levels and import new inventory"
+						description="Manage stock levels and track product serials"
 						actionLabel="Import Stock"
 						onAction={() => setShowImportDialog(true)}
 					/>
 
-					<StockTable stock={stock} />
+					<InventoryTable
+						stock={[]}
+						selectedSkuId={selectedSkuId}
+						onSkuChange={setSelectedSkuId}
+					/>
 
 					{showImportDialog && (
 						<ImportStockDialog

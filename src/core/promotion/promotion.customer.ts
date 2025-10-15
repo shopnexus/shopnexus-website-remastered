@@ -1,5 +1,7 @@
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query"
-import { customFetchStandard } from "../../lib/queryclient/custom-fetch"
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
+import { customFetchPagination, customFetchStandard } from "../../lib/queryclient/custom-fetch"
+import qs from "qs"
+import { PaginationParams, SuccessPaginationRes } from "@/lib/queryclient/response.type"
 
 export type Promotion = {
   id: number
@@ -15,3 +17,26 @@ export const useGetPromotion = (id?: number) => useQuery({
   queryFn: async () => customFetchStandard<Promotion>(`promotion/${id}`),
   enabled: !!id,
 })
+
+type PromotionListFilters = {
+  is_active?: boolean
+}
+
+export type ListPromotionParams = PaginationParams<PromotionListFilters>
+
+export const useListPromotion = (params: ListPromotionParams) =>
+  useInfiniteQuery({
+    queryKey: ['promotion', 'list', params],
+    queryFn: async ({ pageParam }) =>
+      customFetchPagination<Promotion>(`catalog/promotion?${qs.stringify(pageParam, { arrayFormat: 'repeat' })}`),
+    getNextPageParam: (lastPageRes: SuccessPaginationRes<Promotion>, _, lastPageParam) => {
+      if (!lastPageRes.pagination.next_page && !lastPageRes.pagination.next_cursor) return undefined
+      return {
+        ...lastPageParam,
+        page: lastPageRes.pagination.next_page,
+        cursor: lastPageRes.pagination.next_cursor,
+        limit: lastPageParam.limit,
+      }
+    },
+    initialPageParam: params,
+  })
