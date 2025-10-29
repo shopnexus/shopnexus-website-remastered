@@ -2,29 +2,25 @@ import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query"
 import { customFetchPagination, customFetchStandard } from "@/lib/queryclient/custom-fetch"
 import QueryString from "qs"
 import { PaginationParams, SuccessPaginationRes } from "@/lib/queryclient/response.type"
+import { Status } from "../shared/status.type"
 
 export type TOrder = {
   id: number
-  account_id: number
-  payment_gateway: string
-  status: string
-  address: string
-  date_created: string
-  date_updated: string
+  order_id: number
+  sku_id: number
+  vendor_id: number
+  confirmed_by_id: number | null
+  shipment_id: number
+  note: string
+  status: Status
+  quantity: number
 }
 
-export type ListOrdersParams = PaginationParams<{
-  account_id?: number
-  status?: string
-  date_from?: string
-  date_to?: string
-}>
-
-export const useListOrders = (params: ListOrdersParams) =>
+export const useListVendorOrders = (params: PaginationParams<unknown>) =>
   useInfiniteQuery({
     queryKey: ['order', 'list', params],
     queryFn: async ({ pageParam }) =>
-      customFetchPagination<TOrder>(`order?${QueryString.stringify(pageParam, { arrayFormat: 'repeat' })}`),
+      customFetchPagination<TOrder>(`order/vendor?${QueryString.stringify(pageParam, { arrayFormat: 'repeat' })}`),
     getNextPageParam: (lastPageRes: SuccessPaginationRes<TOrder>, _, lastPageParam) => {
       if (!lastPageRes.pagination.next_page && !lastPageRes.pagination.next_cursor) return undefined
       return {
@@ -37,15 +33,8 @@ export const useListOrders = (params: ListOrdersParams) =>
     initialPageParam: params,
   })
 
-export const useGetOrder = (id?: number) =>
-  useQuery({
-    queryKey: ['order', 'detail', id],
-    queryFn: () => customFetchStandard<TOrder>(`order/${id}`),
-    enabled: typeof id === 'number' && id > 0,
-  })
-
 export type ConfirmOrderParams = {
-  sku_id: number
+  order_item_id: number
   from_address?: string
   weight_grams: number
   length_cm: number

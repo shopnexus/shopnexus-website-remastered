@@ -140,43 +140,12 @@ export function RefundDetailDialog({
 						Close
 					</Button>
 
-					{refund.status === "Pending" && (
-						<>
-							<Button
-								variant="outline"
-								onClick={() => onUpdateStatus(refund.id, "Canceled")}
-							>
-								Reject Refund
-							</Button>
-							<Button onClick={() => onUpdateStatus(refund.id, "Processing")}>
-								Process Refund
-							</Button>
-						</>
-					)}
-
-					{refund.status === "Processing" && (
-						<>
-							<Button
-								variant="outline"
-								onClick={() => setShowDisputeForm(!showDisputeForm)}
-								className="flex items-center gap-2"
-							>
-								<AlertTriangle className="h-4 w-4" />
-								{showDisputeForm ? "Cancel Dispute" : "Create Dispute"}
-							</Button>
-							{showDisputeForm && (
-								<Button
-									onClick={handleCreateDispute}
-									disabled={!disputeReason.trim()}
-								>
-									Submit Dispute
-								</Button>
-							)}
-							<Button onClick={() => onUpdateStatus(refund.id, "Success")}>
-								Approve Refund
-							</Button>
-						</>
-					)}
+					<Button variant="outline" onClick={() => handleCreateDispute()}>
+						Create dispute
+					</Button>
+					<Button onClick={() => onUpdateStatus(refund.id, "Processing")}>
+						Approve
+					</Button>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

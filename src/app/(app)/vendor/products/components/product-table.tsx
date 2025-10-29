@@ -101,7 +101,7 @@ function SKUTable({
 	onDeleteSKU: (skuId: number, spuId: number) => void
 	onManageInventory: (sku: MockSKU, spu: MockSPU) => void
 }) {
-	const { data: skus = [], isLoading } = useListProductSKU({ spu_id: spuId })
+	const { data: skus = [] } = useListProductSKU({ spu_id: spuId, limit: 10 })
 
 	// Map API SKUs to MockSKU format for compatibility
 	const mockSkus: MockSKU[] = skus.map((sku) => ({
@@ -120,14 +120,6 @@ function SKUTable({
 		// Create a minimal SPU object for the callback
 		const mockSpu: MockSPU = { id: spuId } as MockSPU
 		onCreateSKU(mockSpu)
-	}
-
-	if (isLoading) {
-		return (
-			<div className="p-4 text-center text-muted-foreground">
-				Loading SKUs...
-			</div>
-		)
 	}
 
 	return (

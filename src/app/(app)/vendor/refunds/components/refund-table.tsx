@@ -123,25 +123,13 @@ export function RefundTable({
 								}
 							>
 								<SelectTrigger className="w-32 h-8">
-									<SelectValue placeholder="Update" />
+									<SelectValue placeholder="Action" />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="Processing">Processing</SelectItem>
 									<SelectItem value="Success">Approve</SelectItem>
-									<SelectItem value="Canceled">Reject</SelectItem>
+									<SelectItem value="Canceled">Create dispute</SelectItem>
 								</SelectContent>
 							</Select>
-						)}
-
-						{refund.status === "Processing" && (
-							<Button
-								size="sm"
-								variant="ghost"
-								onClick={() => onCreateDispute(refund.id, "Dispute reason")}
-								title="Create Dispute"
-							>
-								<AlertTriangle className="h-4 w-4" />
-							</Button>
 						)}
 					</div>
 				)}

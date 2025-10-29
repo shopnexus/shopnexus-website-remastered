@@ -2,45 +2,45 @@ import { useInfiniteQuery, useMutation } from "@tanstack/react-query"
 import { customFetchPagination, customFetchStandard } from "../../lib/queryclient/custom-fetch"
 import QueryString from "qs"
 import { PaginationParams, SuccessPaginationRes } from "@/lib/queryclient/response.type"
+import { Status } from "../shared/status.type"
 
 type TOrder = {
   id: number
   account_id: number
   payment_gateway: string
-  status: string
+  status: Status
   address: string
   date_created: string
   date_updated: string
 }
 
-type CheckoutParams = {
-  address: string
-  payment_gateway: string
-  sku_ids: number[]
-}
-
-type CheckoutResult = {
-  order: TOrder
-  url: string
-}
-
 export const useCheckout = () =>
   useMutation({
     mutationKey: ['checkout'],
-    mutationFn: (params: CheckoutParams) => customFetchStandard<CheckoutResult>(`order/checkout`, {
+    mutationFn: (params: {
+      address: string
+      payment_option: string
+      skus: {
+        sku_id: number
+        promotion_ids: number[]
+        shipment_option: string
+        note: string
+      }[]
+    }) => customFetchStandard<{
+      order: TOrder
+      url: string
+    }>(`order/checkout`, {
       method: 'POST',
       body: JSON.stringify(params),
     }),
   })
 
-type ListOrdersParams = PaginationParams<{
+export const useListOrders = (params: PaginationParams<{
   account_id?: number
   status?: string
   date_from?: string
   date_to?: string
-}>
-
-export const useListOrders = (params: ListOrdersParams) =>
+}>) =>
   useInfiniteQuery({
     queryKey: ['order', 'list', params],
     queryFn: async ({ pageParam }) =>

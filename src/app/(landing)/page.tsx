@@ -38,8 +38,6 @@ export default function HomePage() {
 				{/* Personalized Welcome Section for Logged In Users */}
 				{!isLoggedIn && <HeroSection />}
 
-				<FeaturedCategories />
-
 				{/* Featured Products */}
 				<section className="py-6">
 					<div className="container">
@@ -81,6 +79,8 @@ export default function HomePage() {
 						)}
 					</div>
 				</section>
+
+				<FeaturedCategories />
 
 				{/* Why Choose Us / Account Benefits */}
 				<section className="py-16 bg-muted/50" ref={ref}>

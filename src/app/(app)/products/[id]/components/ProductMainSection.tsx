@@ -21,7 +21,7 @@ interface SkuDetail {
 	id: number
 	price: number
 	original_price: number
-	attributes: Record<string, string>
+	attributes: { name: string; value: string }[]
 }
 
 interface ProductMainSectionProps {

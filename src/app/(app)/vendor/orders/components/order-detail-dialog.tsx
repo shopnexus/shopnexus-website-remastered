@@ -20,7 +20,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select"
 import { MockOrder } from "../../components/mock-data"
-import { CheckCircle } from "lucide-react"
+import { AlertTriangle, CheckCircle } from "lucide-react"
 
 interface OrderDetailDialogProps {
 	order: MockOrder
@@ -113,40 +113,26 @@ export function OrderDetailDialog({
 											<StatusBadge status={item.status} />
 
 											{item.status === "Pending" && !item.confirmed_by_id && (
-												<Button
-													size="sm"
-													onClick={() => onConfirmItem(order.id, item.id)}
-													className="flex items-center gap-1"
-												>
-													<CheckCircle className="h-4 w-4" />
-													Confirm
-												</Button>
-											)}
-
-											{item.status !== "Success" &&
-												item.status !== "Canceled" && (
-													<Select
-														value=""
-														onValueChange={(value) =>
-															onUpdateItemStatus(
-																order.id,
-																item.id,
-																value as MockOrder["items"][0]["status"]
-															)
-														}
+												<>
+													<Button
+														size="sm"
+														onClick={() => onConfirmItem(order.id, item.id)}
+														className="flex items-center gap-1"
 													>
-														<SelectTrigger className="w-32">
-															<SelectValue placeholder="Update" />
-														</SelectTrigger>
-														<SelectContent>
-															<SelectItem value="Processing">
-																Processing
-															</SelectItem>
-															<SelectItem value="Success">Complete</SelectItem>
-															<SelectItem value="Canceled">Cancel</SelectItem>
-														</SelectContent>
-													</Select>
-												)}
+														<CheckCircle className="h-4 w-4" />
+														Confirm
+													</Button>
+													<Button
+														size="sm"
+														onClick={() => onConfirmItem(order.id, item.id)}
+														className="flex items-center gap-1"
+														variant="destructive"
+													>
+														<AlertTriangle className="h-4 w-4" />
+														Cancel
+													</Button>
+												</>
+											)}
 										</div>
 									</div>
 

@@ -26,7 +26,7 @@ export type TProductDetail = {
     id: number
     price: number
     original_price: number
-    attributes: Record<string, string>
+    attributes: { name: string; value: string }[]
   }[]
   specifications: Record<string, string>
 }

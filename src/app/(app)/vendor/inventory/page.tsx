@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { PageHeader } from "../components/page-header"
 import { InventoryTable } from "./components/inventory-table"
@@ -11,17 +11,13 @@ import { useImportStock } from "@/core/inventory/inventory.vendor"
 export default function InventoryPage() {
 	const searchParams = useSearchParams()
 	const [showImportDialog, setShowImportDialog] = useState(false)
-	const [selectedSkuId, setSelectedSkuId] = useState<number | null>(null)
 
 	const importStock = useImportStock()
 
-	// Handle URL parameter for SKU filtering
-	useEffect(() => {
-		const skuParam = searchParams.get("sku")
-		if (skuParam) {
-			setSelectedSkuId(parseInt(skuParam))
-		}
-	}, [searchParams])
+	// Get SKU from URL parameters
+	const selectedSkuId = searchParams.get("sku")
+		? parseInt(searchParams.get("sku")!)
+		: null
 
 	const handleImportStock = (skuId: number, quantity: number) => {
 		importStock.mutate(
@@ -32,7 +28,7 @@ export default function InventoryPage() {
 				serial_ids: [],
 			},
 			{
-				onSuccess: (data) => {
+				onSuccess: () => {
 					toast.success(`Successfully imported ${quantity} units.`)
 					setShowImportDialog(false)
 				},
@@ -54,14 +50,19 @@ export default function InventoryPage() {
 						onAction={() => setShowImportDialog(true)}
 					/>
 
-					<InventoryTable
-						stock={[]}
-						selectedSkuId={selectedSkuId}
-						onSkuChange={setSelectedSkuId}
-					/>
+					{selectedSkuId ? (
+						<InventoryTable selectedSkuId={selectedSkuId} />
+					) : (
+						<div className="flex justify-center py-8">
+							<div className="text-muted-foreground">
+								Please provide a SKU ID in the URL to view inventory
+							</div>
+						</div>
+					)}
 
-					{showImportDialog && (
+					{showImportDialog && selectedSkuId && (
 						<ImportStockDialog
+							selectedSkuId={selectedSkuId}
 							onImport={handleImportStock}
 							onCancel={() => setShowImportDialog(false)}
 						/>

@@ -13,41 +13,27 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select"
-import { mockSpus } from "../../components/mock-data"
+	useListProductSPU,
+	useListProductSKU,
+} from "@/core/product/product.vendor"
 
 interface ImportStockDialogProps {
+	selectedSkuId: number
 	onImport: (skuId: number, quantity: number) => void
 	onCancel: () => void
 }
 
 export function ImportStockDialog({
+	selectedSkuId,
 	onImport,
 	onCancel,
 }: ImportStockDialogProps) {
-	const [selectedSkuId, setSelectedSkuId] = useState<string>("")
 	const [quantity, setQuantity] = useState<number>(0)
-
-	// Flatten all SKUs from all SPUs for selection
-	const allSkus = mockSpus.flatMap((spu) =>
-		spu.skus.map((sku) => ({
-			id: sku.id,
-			name: `${spu.name} - ${sku.attributes
-				.map(({ name, value }) => `${name}: ${value}`)
-				.join(", ")}`,
-			spuName: spu.name,
-		}))
-	)
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault()
-		if (selectedSkuId && quantity > 0) {
-			onImport(parseInt(selectedSkuId), quantity)
+		if (quantity > 0) {
+			onImport(selectedSkuId, quantity)
 		}
 	}
 
@@ -63,21 +49,23 @@ export function ImportStockDialog({
 				</DialogHeader>
 
 				<form onSubmit={handleSubmit} className="space-y-4">
-					<div className="space-y-2">
-						<Label htmlFor="sku">Select SKU</Label>
-						<Select value={selectedSkuId} onValueChange={setSelectedSkuId}>
-							<SelectTrigger>
-								<SelectValue placeholder="Choose a SKU to import" />
-							</SelectTrigger>
-							<SelectContent>
-								{allSkus.map((sku) => (
-									<SelectItem key={sku.id} value={sku.id.toString()}>
-										{sku.name}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
+					{/* <div className="space-y-2">
+						<Label>Selected SKU</Label>
+						<div className="p-3 bg-muted rounded-md">
+							<div className="font-medium">
+								{selectedSpu?.name || `SPU ${selectedSku?.spu_id}`}
+							</div>
+							<div className="text-sm text-muted-foreground">
+								SKU {selectedSkuId} -{" "}
+								{selectedSku?.attributes
+									?.map(
+										(attr: { name: string; value: string }) =>
+											`${attr.name}: ${attr.value}`
+									)
+									.join(", ")}
+							</div>
+						</div>
+					</div> */}
 
 					<div className="space-y-2">
 						<Label htmlFor="quantity">Quantity to Import</Label>
@@ -101,7 +89,7 @@ export function ImportStockDialog({
 						<Button type="button" variant="outline" onClick={onCancel}>
 							Cancel
 						</Button>
-						<Button type="submit" disabled={!selectedSkuId || quantity <= 0}>
+						<Button type="submit" disabled={quantity <= 0}>
 							Import Stock
 						</Button>
 					</DialogFooter>

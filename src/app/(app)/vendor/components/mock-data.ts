@@ -1,6 +1,8 @@
 // Mock data for vendor management pages
 // Simplified from database schema for flexibility
 
+import { Status } from "@/core/shared/status.type"
+
 export interface MockSPU {
   id: number
   code: string
@@ -108,8 +110,8 @@ export interface MockOrder {
   customer_name: string
   customer_email: string
   customer_phone?: string
-  payment_status: 'Pending' | 'Processing' | 'Success' | 'Canceled'
-  shipping_status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Returned'
+  payment_status: Status
+  shipping_status: Status
   total_items: number
   total_amount: number
   shipping_address: {
@@ -142,7 +144,7 @@ export interface MockOrderItem {
   product_image?: string
   quantity: number
   price: number
-  status: 'Pending' | 'Processing' | 'Success' | 'Canceled'
+  status: Status
   confirmed_by_id?: number
   confirmed_at?: string
   shipped_at?: string

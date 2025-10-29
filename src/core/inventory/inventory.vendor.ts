@@ -1,11 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { customFetchStandard } from "../../lib/queryclient/custom-fetch"
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query"
+import { customFetchStandard, customFetchPagination } from "../../lib/queryclient/custom-fetch"
+import { PaginationParams } from "../../lib/queryclient/response.type"
 import qs from "qs"
 
 // Types for inventory management
-export interface ProductSerial {
+export interface Serial {
   id: number
-  serial_number: string
+  serial_id: string
   sku_id: number
   status: "Active" | "Inactive" | "Sold" | "Damaged"
   date_created: string
@@ -27,25 +28,60 @@ export interface StockHistory {
   date_created: string
 }
 
-export interface ImportStockRequest {
+// Query functions
+export function useGetStock(params: {
   ref_id: number
   ref_type: "ProductSku" | "Promotion"
-  change: number
-  serial_ids: string[]
-}
-
-// Query functions
-export function useListProductSerials(params?: { sku_id?: number; status?: string }) {
+}) {
   return useQuery({
-    queryKey: ["inventory", "serials", params],
-    queryFn: () => customFetchStandard<ProductSerial[]>(`inventory/serial?${qs.stringify(params || {})}`),
+    queryKey: ["inventory", "stock", params],
+    queryFn: () => customFetchStandard<Stock>(`inventory/stock?${qs.stringify(params)}`),
+    enabled: !!params.ref_id && !!params.ref_type,
   })
 }
 
-export function useListStockHistory(params?: { stock_id?: number; limit?: number }) {
-  return useQuery({
+export function useListStockHistory(params: PaginationParams<{
+  ref_id: number
+  ref_type: "ProductSku" | "Promotion"
+}>) {
+  return useInfiniteQuery({
     queryKey: ["inventory", "stock-history", params],
-    queryFn: () => customFetchStandard<StockHistory[]>(`inventory/stock-history?${qs.stringify(params || {})}`),
+    queryFn: async ({ pageParam }) => customFetchPagination<StockHistory>(`inventory/stock/history?${qs.stringify(pageParam)}`),
+    getNextPageParam: (lastPageRes, _, lastPageParam) => {
+      if (!lastPageRes.pagination.next_page && !lastPageRes.pagination.next_cursor) {
+        return undefined
+      }
+      return {
+        ...lastPageParam,
+        page: lastPageRes.pagination.next_page,
+        cursor: lastPageRes.pagination.next_cursor,
+        limit: lastPageParam.limit,
+      }
+    },
+    initialPageParam: params,
+    enabled: !!params.ref_id && !!params.ref_type,
+  })
+}
+
+export function useListProductSerials(params: PaginationParams<{
+  sku_id: number
+}>) {
+  return useInfiniteQuery({
+    queryKey: ["inventory", "serials", params],
+    queryFn: async ({ pageParam }) => customFetchPagination<Serial>(`inventory/serial?${qs.stringify(pageParam)}`),
+    getNextPageParam: (lastPageRes, _, lastPageParam) => {
+      if (!lastPageRes.pagination.next_page && !lastPageRes.pagination.next_cursor) {
+        return undefined
+      }
+      return {
+        ...lastPageParam,
+        page: lastPageRes.pagination.next_page,
+        cursor: lastPageRes.pagination.next_cursor,
+        limit: lastPageParam.limit,
+      }
+    },
+    initialPageParam: params,
+    enabled: !!params.sku_id,
   })
 }
 
@@ -54,8 +90,13 @@ export function useImportStock() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: ImportStockRequest) =>
-      customFetchStandard<string>('inventory/import', {
+    mutationFn: (data: {
+      ref_id: number
+      ref_type: "ProductSku" | "Promotion"
+      change: number
+      serial_ids: string[]
+    }) =>
+      customFetchStandard<string>('inventory/stock/import', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
@@ -68,14 +109,17 @@ export function useImportStock() {
   })
 }
 
-export function useUpdateSerialStatus() {
+export function useUpdateSkuSerial() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ serial_ids, status }: { serial_ids: number[]; status: ProductSerial["status"] }) =>
-      customFetchStandard<ProductSerial>(`inventory/serial`, {
+    mutationFn: (data: {
+      serial_ids: string[]
+      status: "Active" | "Inactive" | "Sold" | "Damaged"
+    }) =>
+      customFetchStandard<string>(`inventory/serial`, {
         method: 'PATCH',
-        body: JSON.stringify({ serial_ids, status }),
+        body: JSON.stringify(data),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory", "serials"] })

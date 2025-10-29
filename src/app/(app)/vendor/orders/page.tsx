@@ -1,30 +1,86 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { PageHeader } from "../components/page-header"
 import { OrderTable } from "./components/order-table"
 import { OrderDetailDialog } from "./components/order-detail-dialog"
-import { mockOrders, MockOrder } from "../components/mock-data"
+import { MockOrder } from "../components/mock-data"
 import { toast } from "sonner"
+import { Download, RefreshCw, BarChart3, Settings } from "lucide-react"
 import {
-	Download,
-	Upload,
-	Filter,
-	RefreshCw,
-	BarChart3,
-	Settings,
-	Eye,
-	Copy,
-	Truck,
-	Clock,
-	CheckCircle,
-	AlertTriangle,
-} from "lucide-react"
+	useConfirmOrder,
+	useListVendorOrders,
+	TOrder,
+} from "@/core/order/order.vendor"
+import { Status } from "@/core/shared/status.type"
 
 export default function OrdersPage() {
-	const [orders, setOrders] = useState<MockOrder[]>(mockOrders)
+	const { data, refetch } = useListVendorOrders({ limit: 20 })
+	const [orders, setOrders] = useState<MockOrder[]>([])
 	const [selectedOrder, setSelectedOrder] = useState<MockOrder | null>(null)
 	const [showDetailDialog, setShowDetailDialog] = useState(false)
+	const confirmMutation = useConfirmOrder()
+
+	// Transform BE data -> UI mock shape expected by table/dialog
+	const transformedOrders = useMemo(() => {
+		const pages = data?.pages ?? []
+		const flat: TOrder[] = pages.flatMap((p) => p.data)
+		const byOrderId = new Map<number, MockOrder>()
+
+		for (const item of flat) {
+			const orderId = item.order_id
+			if (!byOrderId.has(orderId)) {
+				byOrderId.set(orderId, {
+					id: orderId,
+					order_number: `ORD-${orderId}`,
+					customer_name: `Customer #${orderId}`,
+					customer_email: "",
+					payment_status: item.status,
+					shipping_status: Status.Pending,
+					total_items: 0,
+					total_amount: 0,
+					shipping_address: {
+						street: "",
+						city: "",
+						state: "",
+						zip: "",
+						country: "",
+					},
+					date_created: new Date().toISOString(),
+					date_updated: new Date().toISOString(),
+					items: [],
+					priority: "Normal",
+				})
+			}
+
+			const current = byOrderId.get(orderId)!
+			current.items.push({
+				id: item.id,
+				sku_name: `SKU #${item.sku_id}`,
+				sku_id: item.sku_id,
+				quantity: item.quantity,
+				price: 0,
+				status: item.status,
+				confirmed_by_id: item.confirmed_by_id ?? undefined,
+			})
+		}
+
+		// finalize totals
+		for (const order of byOrderId.values()) {
+			order.total_items = order.items.reduce((s, it) => s + it.quantity, 0)
+			order.total_amount = order.items.reduce(
+				(s, it) => s + it.quantity * it.price,
+				0
+			)
+		}
+
+		return Array.from(byOrderId.values())
+	}, [data])
+
+	// keep local UI state in sync for components expecting stateful array
+	useEffect(() => {
+		setOrders(transformedOrders)
+	}, [transformedOrders])
 
 	// Calculate stats
 	const stats = useMemo(() => {
@@ -32,20 +88,11 @@ export default function OrdersPage() {
 		const pendingOrders = orders.filter(
 			(order) => order.payment_status === "Pending"
 		).length
-		const processingOrders = orders.filter(
-			(order) => order.payment_status === "Processing"
-		).length
-		const completedOrders = orders.filter(
-			(order) => order.payment_status === "Success"
-		).length
 		const totalRevenue = orders.reduce(
 			(sum, order) => sum + order.total_amount,
 			0
 		)
 		const avgOrderValue = totalRevenue / totalOrders
-		const urgentOrders = orders.filter(
-			(order) => order.priority === "Urgent" || order.priority === "High"
-		).length
 
 		return [
 			{
@@ -80,26 +127,25 @@ export default function OrdersPage() {
 		setShowDetailDialog(true)
 	}
 
-	const handleConfirmItem = (orderId: number, itemId: number) => {
-		setOrders((prev) =>
-			prev.map((order) =>
-				order.id === orderId
-					? {
-							...order,
-							items: order.items.map((item) =>
-								item.id === itemId
-									? {
-											...item,
-											confirmed_by_id: 1,
-											status: "Processing" as const,
-									  }
-									: item
-							),
-					  }
-					: order
-			)
-		)
-		toast.success("Order item confirmed")
+	const handleConfirmItem = async (orderId: number, itemId: number) => {
+		try {
+			const theOrder = orders.find((o) => o.id === orderId)
+			const theItem = theOrder?.items.find((i) => i.id === itemId)
+			if (!theItem) throw new Error("Item not found")
+
+			await confirmMutation.mutateAsync({
+				order_item_id: theItem.id,
+				weight_grams: theItem.weight ? Math.round(theItem.weight * 1000) : 1000,
+				length_cm: theItem.dimensions?.length ?? 10,
+				width_cm: theItem.dimensions?.width ?? 10,
+				height_cm: theItem.dimensions?.height ?? 10,
+			})
+
+			toast.success("Order item confirmed")
+			await refetch()
+		} catch {
+			toast.error("Failed to confirm order item")
+		}
 	}
 
 	const handleUpdateItemStatus = (
@@ -107,28 +153,18 @@ export default function OrdersPage() {
 		itemId: number,
 		newStatus: MockOrder["items"][0]["status"]
 	) => {
-		setOrders((prev) =>
-			prev.map((order) =>
-				order.id === orderId
-					? {
-							...order,
-							items: order.items.map((item) =>
-								item.id === itemId ? { ...item, status: newStatus } : item
-							),
-					  }
-					: order
-			)
-		)
-		toast.success(`Order item status updated to ${newStatus}`)
+		void orderId
+		void itemId
+		void newStatus
+		// Optional: implement status update via BE when endpoint is ready
+		toast.info(`Order item status update is not yet supported`)
 	}
 
 	const handleExport = () => {
 		toast.info("Export functionality would be implemented")
 	}
 
-	const handleImport = () => {
-		toast.info("Import functionality would be implemented")
-	}
+	// const handleImport = () => {}
 
 	const handleRefresh = () => {
 		toast.info("Data refreshed")
@@ -142,9 +178,7 @@ export default function OrdersPage() {
 		toast.info("Settings would be implemented")
 	}
 
-	const handleBulkAction = (action: string) => {
-		toast.info(`Bulk ${action} action would be implemented`)
-	}
+	// const handleBulkAction = (action: string) => {}
 
 	const secondaryActions = [
 		{

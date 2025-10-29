@@ -8,7 +8,7 @@ interface SkuDetail {
 	id: number
 	price: number
 	original_price: number
-	attributes: Record<string, string>
+	attributes: { name: string; value: string }[]
 }
 
 interface ProductOptionsProps {
@@ -20,10 +20,11 @@ interface ProductOptionsProps {
 
 // Mock function để lấy thumbnail cho từng option
 const getOptionThumbnail = (
-	attributes: Record<string, string>,
+	attributes: { name: string; value: string }[],
 	productImages?: string[]
 ): string => {
-	const color = attributes.color?.toLowerCase()
+	const colorAttr = attributes.find((attr) => attr.name === "color")
+	const color = colorAttr?.value.toLowerCase()
 	const colorImageMap: Record<string, string> = {
 		black: "/placeholder.jpg",
 		green: "/placeholder.jpg",
@@ -41,13 +42,13 @@ export function ProductOptions({
 	onSelectSku,
 	productImages,
 }: ProductOptionsProps) {
-	// Tạo sections từ tất cả attribute keys có trong SKUs
+	// Tạo sections từ tất cả attribute names có trong SKUs
 	const sections = useMemo(() => {
-		const allAttributeKeys = new Set<string>()
+		const allAttributeNames = new Set<string>()
 		skus.forEach((sku) => {
-			Object.keys(sku.attributes).forEach((key) => allAttributeKeys.add(key))
+			sku.attributes.forEach((attr) => allAttributeNames.add(attr.name))
 		})
-		return Array.from(allAttributeKeys)
+		return Array.from(allAttributeNames)
 	}, [skus])
 
 	// Tạo options cho mỗi section
@@ -57,8 +58,9 @@ export function ProductOptions({
 		sections.forEach((section) => {
 			const values = new Set<string>()
 			skus.forEach((sku) => {
-				if (sku.attributes[section]) {
-					values.add(sku.attributes[section])
+				const attr = sku.attributes.find((a) => a.name === section)
+				if (attr) {
+					values.add(attr.value)
 				}
 			})
 			result[section] = Array.from(values)
@@ -70,7 +72,11 @@ export function ProductOptions({
 	// State để track selections cho từng section
 	const [selections, setSelections] = useState<Record<string, string>>(() => {
 		if (selectedSku) {
-			return selectedSku.attributes
+			const selectionsRecord: Record<string, string> = {}
+			selectedSku.attributes.forEach((attr) => {
+				selectionsRecord[attr.name] = attr.value
+			})
+			return selectionsRecord
 		}
 		return {}
 	})
@@ -79,7 +85,9 @@ export function ProductOptions({
 	const availableSkus = useMemo(() => {
 		return skus.filter((sku) => {
 			return Object.entries(selections).every(([key, value]) => {
-				return !selections[key] || sku.attributes[key] === value
+				if (!selections[key]) return true
+				const attr = sku.attributes.find((a) => a.name === key)
+				return attr?.value === value
 			})
 		})
 	}, [skus, selections])
@@ -89,7 +97,9 @@ export function ProductOptions({
 		const testSelections = { ...selections, [section]: value }
 		return skus.some((sku) => {
 			return Object.entries(testSelections).every(([key, val]) => {
-				return !testSelections[key] || sku.attributes[key] === val
+				if (!testSelections[key]) return true
+				const attr = sku.attributes.find((a) => a.name === key)
+				return attr?.value === val
 			})
 		})
 	}
@@ -111,7 +121,8 @@ export function ProductOptions({
 				// Tìm SKU matching với selections mới
 				const matchingSku = skus.find((sku) => {
 					return Object.entries(newSelections).every(([key, val]) => {
-						return sku.attributes[key] === val
+						const attr = sku.attributes.find((a) => a.name === key)
+						return attr?.value === val
 					})
 				})
 				if (matchingSku) {
