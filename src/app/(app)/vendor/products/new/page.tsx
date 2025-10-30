@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
 import {
 	ArrowLeft,
@@ -20,11 +19,9 @@ import {
 	Tag,
 	Plus,
 	X,
-	Upload,
 } from "lucide-react"
 import FileUpload from "@/components/shared/file-upload"
 import { useCreateProductSPU } from "@/core/product/product.vendor"
-import { useGetCategories, useGetBrands } from "@/core/catalog/catalog.query"
 import {
 	Select,
 	SelectContent,
@@ -38,8 +35,7 @@ export default function NewProductPage() {
 	const [isPreview, setIsPreview] = useState(false)
 	const [isLoading, setIsLoading] = useState(false)
 	const [newTag, setNewTag] = useState("")
-	const [newImage, setNewImage] = useState("")
-	const [resources, setResources] = useState<string[]>([])
+	const [resources, setResources] = useState<{ key: string; url: string }[]>([])
 	const { mutateAsync: mutateCreateProductSPU } = useCreateProductSPU()
 	// const { data: categories = [] } = useListBra()
 	// const { data: brands = [] } = useGetBrands()
@@ -55,7 +51,7 @@ export default function NewProductPage() {
 		tags: [] as string[],
 	})
 
-	const handleUploadComplete = (urls: string[]) => {
+	const handleUploadComplete = (urls: { key: string; url: string }[]) => {
 		setResources([...resources, ...urls])
 	}
 
@@ -77,7 +73,7 @@ export default function NewProductPage() {
 				name: product.name,
 				description: product.description,
 				is_active: product.is_active,
-				resource_ids: resources.map((r) => r.split("/").pop()?.split("+")[0]),
+				resources: resources.map((r) => r.key),
 			})
 			toast.success("Product created successfully")
 			router.push("/vendor/products")

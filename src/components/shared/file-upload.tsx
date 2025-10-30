@@ -1,10 +1,12 @@
 import { useState, useRef, useCallback } from "react"
 import { Upload, X } from "lucide-react"
-import * as tus from "tus-js-client"
 import url from "url"
+import { customFetch } from "@/lib/queryclient/custom-fetch"
+import { SuccessResponse } from "@/lib/queryclient/response.type"
+import Image from "next/image"
 interface FileUploadProps {
-	onUploadComplete: (urls: string[]) => void
-	resources: string[]
+	onUploadComplete: (urls: { key: string; url: string }[]) => void
+	resources: { key: string; url: string }[]
 	onRemoveImage: (index: number) => void
 }
 
@@ -20,35 +22,28 @@ const FileUpload = ({
 	const fileInputRef = useRef<HTMLInputElement>(null)
 
 	const uploadFile = useCallback(async (file: File) => {
-		return new Promise<string>((resolve, reject) => {
-			const upload = new tus.Upload(file, {
-				endpoint: url.resolve(
-					String(process.env.NEXT_PUBLIC_API_URL),
-					"shared/files"
-				),
-				retryDelays: [0, 3000, 5000, 10000, 20000],
-				metadata: {
-					filename: file.name,
-					filetype: file.type,
-				},
-				onError: (error) => {
-					console.error("Failed to upload:", error)
-					reject(error)
-				},
-				onProgress: (bytesUploaded, bytesTotal) => {
-					const percentage = Math.round((bytesUploaded / bytesTotal) * 100)
-					setUploadProgress((prev) => ({
-						...prev,
-						[file.name]: percentage,
-					}))
-				},
-				onSuccess: () => {
-					console.log(upload)
-					resolve(upload.url || "")
-				},
-			})
-			upload.start()
+		const apiUrl = new URL(
+			"shared/files",
+			String(process.env.NEXT_PUBLIC_API_URL)
+		).toString()
+
+		const form = new FormData()
+		form.append("file", file)
+
+		const response = await fetch(apiUrl, {
+			method: "POST",
+			body: form,
+			headers: {
+				Authorization: `Bearer ${globalThis?.localStorage?.getItem?.("token")}`, // TODO: create custom fetch without headers application/json
+			},
+			// DO NOT set Content-Type header - let browser set it automatically
 		})
+
+		const data = (await response.json()) as SuccessResponse<{
+			key: string
+			url: string
+		}>
+		return data.data
 	}, [])
 
 	const handleFileSelect = useCallback(
@@ -57,16 +52,16 @@ const FileUpload = ({
 			if (!files || files.length === 0) return
 
 			setIsUploading(true)
-			const uploadedUrls: string[] = []
+			const resources: { key: string; url: string }[] = []
 
 			try {
 				for (let i = 0; i < files.length; i++) {
 					const file = files[i]
-					const url = await uploadFile(file)
-					uploadedUrls.push(url)
+					const rs = await uploadFile(file)
+					resources.push(rs)
 				}
 
-				onUploadComplete(uploadedUrls)
+				onUploadComplete(resources)
 			} catch (error) {
 				console.error("Error uploading files:", error)
 			} finally {
@@ -94,16 +89,16 @@ const FileUpload = ({
 			if (!files || files.length === 0) return
 
 			setIsUploading(true)
-			const uploadedUrls: string[] = []
+			const resources: { key: string; url: string }[] = []
 
 			try {
 				for (let i = 0; i < files.length; i++) {
 					const file = files[i]
-					const url = await uploadFile(file)
-					uploadedUrls.push(url)
+					const rs = await uploadFile(file)
+					resources.push(rs)
 				}
 
-				onUploadComplete(uploadedUrls)
+				onUploadComplete(resources)
 			} catch (error) {
 				console.error("Error uploading files:", error)
 			} finally {
@@ -164,8 +159,10 @@ const FileUpload = ({
 					<div className="flex overflow-x-auto space-x-2 py-2">
 						{resources.map((image, index) => (
 							<div key={index} className="relative flex-shrink-0">
-								<img
-									src={image}
+								<Image
+									width={100}
+									height={100}
+									src={image.url}
 									alt={`Image ${index + 1}`}
 									className="w-24 h-24 object-cover rounded-lg border"
 									onError={(e) => {

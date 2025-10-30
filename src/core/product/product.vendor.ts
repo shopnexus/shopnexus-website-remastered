@@ -119,7 +119,7 @@ export const useCreateProductSPU = () => {
       name: string
       description: string
       is_active: boolean
-      resource_ids: number[]
+      resources: string[]
     }) =>
       customFetchStandard<ProductSPU>('catalog/product-spu', {
         method: 'POST',
