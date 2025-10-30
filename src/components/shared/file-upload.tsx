@@ -43,6 +43,7 @@ const FileUpload = ({
 					}))
 				},
 				onSuccess: () => {
+					console.log(upload)
 					resolve(upload.url || "")
 				},
 			})

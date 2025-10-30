@@ -23,6 +23,15 @@ import {
 	Upload,
 } from "lucide-react"
 import FileUpload from "@/components/shared/file-upload"
+import { useCreateProductSPU } from "@/core/product/product.vendor"
+import { useGetCategories, useGetBrands } from "@/core/catalog/catalog.query"
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select"
 
 export default function NewProductPage() {
 	const router = useRouter()
@@ -31,20 +40,23 @@ export default function NewProductPage() {
 	const [newTag, setNewTag] = useState("")
 	const [newImage, setNewImage] = useState("")
 	const [resources, setResources] = useState<string[]>([])
+	const { mutateAsync: mutateCreateProductSPU } = useCreateProductSPU()
+	// const { data: categories = [] } = useListBra()
+	// const { data: brands = [] } = useGetBrands()
+	const categories = [{ id: 1, name: "Camisas y Blusas" }]
+	const brands = [{ id: 1, name: "Unknown" }]
 
 	const [product, setProduct] = useState({
-		code: "",
 		name: "",
 		description: "",
-		brand: "",
-		category: "",
+		brand_id: "",
+		category_id: "",
 		is_active: true,
-		images: [] as string[],
 		tags: [] as string[],
 	})
 
 	const handleUploadComplete = (urls: string[]) => {
-		setResources(urls)
+		setResources([...resources, ...urls])
 	}
 
 	const handleRemoveImage = (index: number) => {
@@ -52,15 +64,21 @@ export default function NewProductPage() {
 	}
 
 	const handleSave = async () => {
-		if (!product.name || !product.code) {
+		if (!product.name) {
 			toast.error("Please fill in required fields")
 			return
 		}
 
 		setIsLoading(true)
 		try {
-			// Simulate API call
-			await new Promise((resolve) => setTimeout(resolve, 1000))
+			await mutateCreateProductSPU({
+				category_id: Number(product.category_id),
+				brand_id: Number(product.brand_id),
+				name: product.name,
+				description: product.description,
+				is_active: product.is_active,
+				resource_ids: resources.map((r) => r.split("/").pop()?.split("+")[0]),
+			})
 			toast.success("Product created successfully")
 			router.push("/vendor/products")
 		} catch (error) {
@@ -174,25 +192,49 @@ export default function NewProductPage() {
 									<div className="grid gap-4 md:grid-cols-2">
 										<div className="space-y-2">
 											<Label htmlFor="brand">Brand</Label>
-											<Input
-												id="brand"
-												value={product.brand}
-												onChange={(e) =>
-													setProduct({ ...product, brand: e.target.value })
+											<Select
+												value={product.brand_id}
+												onValueChange={(value) =>
+													setProduct({ ...product, brand_id: value })
 												}
-												placeholder="Enter brand name"
-											/>
+											>
+												<SelectTrigger>
+													<SelectValue placeholder="Select a brand" />
+												</SelectTrigger>
+												<SelectContent>
+													{brands.map((brand) => (
+														<SelectItem
+															key={brand.id}
+															value={brand.id.toString()}
+														>
+															{brand.name}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
 										</div>
 										<div className="space-y-2">
 											<Label htmlFor="category">Category</Label>
-											<Input
-												id="category"
-												value={product.category}
-												onChange={(e) =>
-													setProduct({ ...product, category: e.target.value })
+											<Select
+												value={product.category_id}
+												onValueChange={(value) =>
+													setProduct({ ...product, category_id: value })
 												}
-												placeholder="Enter category"
-											/>
+											>
+												<SelectTrigger>
+													<SelectValue placeholder="Select a category" />
+												</SelectTrigger>
+												<SelectContent>
+													{categories.map((category) => (
+														<SelectItem
+															key={category.id}
+															value={category.id.toString()}
+														>
+															{category.name}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
 										</div>
 									</div>
 								</CardContent>

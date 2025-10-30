@@ -48,12 +48,6 @@ export type ListProductSPUParams = PaginationParams<{
   is_active?: boolean[]
 }>
 
-export type CreateProductSPUParams = {
-  category_id: number
-  brand_id: number
-  name: string
-  description: string
-}
 
 export type UpdateProductSPUParams = {
   id: number
@@ -119,7 +113,14 @@ export const useListProductSPU = (params: ListProductSPUParams) =>
 export const useCreateProductSPU = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (params: CreateProductSPUParams) =>
+    mutationFn: (params: {
+      category_id: number
+      brand_id: number
+      name: string
+      description: string
+      is_active: boolean
+      resource_ids: number[]
+    }) =>
       customFetchStandard<ProductSPU>('catalog/product-spu', {
         method: 'POST',
         body: JSON.stringify(params),
