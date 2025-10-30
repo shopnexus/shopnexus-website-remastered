@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useMemo, useCallback, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useListProductCards } from "@/core/product/product.customer"
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
@@ -22,6 +22,14 @@ const sortOptions = [
 ]
 
 export default function SearchPage() {
+	return (
+		<Suspense>
+			<Search></Search>
+		</Suspense>
+	)
+}
+
+function Search() {
 	const searchParams = useSearchParams()
 	const router = useRouter()
 

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 
 // Google Maps types
 declare global {
@@ -36,6 +36,7 @@ import {
 	Home,
 	Mail,
 	Phone,
+	Check,
 } from "lucide-react"
 import { useCheckout } from "@/core/order/order.customer"
 import { toast } from "sonner"
@@ -43,6 +44,14 @@ import { useGetCart } from "@/core/account/cart.customer"
 import { useRouter, useSearchParams } from "next/navigation"
 
 export function CheckoutForm() {
+	return (
+		<Suspense>
+			<Checkout></Checkout>
+		</Suspense>
+	)
+}
+
+function Checkout() {
 	const router = useRouter()
 	const searchParams = useSearchParams()
 	const [isLoading, setIsLoading] = useState(false)

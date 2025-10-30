@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { PageHeader } from "../components/page-header"
 import { InventoryTable } from "./components/inventory-table"
@@ -9,6 +9,14 @@ import { toast } from "sonner"
 import { useImportStock } from "@/core/inventory/inventory.vendor"
 
 export default function InventoryPage() {
+	return (
+		<Suspense>
+			<Inventory></Inventory>
+		</Suspense>
+	)
+}
+
+function Inventory() {
 	const searchParams = useSearchParams()
 	const [showImportDialog, setShowImportDialog] = useState(false)
 
