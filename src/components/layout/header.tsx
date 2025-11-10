@@ -22,7 +22,7 @@ import {
 	SheetTrigger,
 } from "@/components/ui/sheet"
 import { Separator } from "@/components/ui/separator"
-import { useGetMe, useSignOut } from "@/core/account/account.customer"
+import { useGetMe, useSignOut } from "@/core/account/account"
 import { useRouter } from "next/navigation"
 import { Logo } from "../shared/logo"
 import { cn } from "@/lib/utils"

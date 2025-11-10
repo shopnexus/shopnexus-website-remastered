@@ -21,16 +21,14 @@ type Interaction struct {
 }
 */
 
-export type CreateInteractionParams = {
-  event_type: 'view' | 'add_to_cart' | 'purchase' | 'rating'
-  ref_type: 'Product' | 'Category' | 'Brand' | 'Vendor'
-  ref_id: number
-  metadata?: Record<string, any>
-}
-
 export const useCreateInteraction = () =>
   useMutation({
-    mutationFn: async (params: CreateInteractionParams) => customFetchStandard<"OK">('analytic/interaction', {
+    mutationFn: async (params: {
+      event_type: 'view' | 'add_to_cart' | 'purchase' | 'rating'
+      ref_type: 'Product' | 'Category' | 'Brand' | 'Vendor'
+      ref_id: number
+      metadata?: Record<string, any>
+    }) => customFetchStandard<"OK">('analytic/interaction', {
       method: 'POST',
       body: JSON.stringify(params),
     }),

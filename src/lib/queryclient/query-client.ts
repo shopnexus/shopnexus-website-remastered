@@ -13,7 +13,8 @@ type ErrorObject = {
 
 function handleErrorQuery(error: ErrorObject) {
   if (error.code == "401") {
-    window.location.href="/login"
+    // window.location.href="/login"
+    alert("Unauthorized")
   }
 }
 

@@ -19,7 +19,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select"
-import { mockSpus } from "../../components/mock-data"
 
 interface ImportStockDialogProps {
 	skuId: number

@@ -2,14 +2,14 @@ import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-q
 import { customFetchPagination, customFetchStandard } from '@/lib/queryclient/custom-fetch'
 import type { PaginationParams, SuccessPaginationRes } from '@/lib/queryclient/response.type'
 import qs from 'qs'
-import { Resource } from '../shared/resource.type'
+import { Resource } from '../common/resource.type'
 
 export type TComment = {
   id: number
   account: {
     id: number
     name: string
-    avatar?: Resource
+    avatar: Resource | null
     verified: boolean
   }
   body: string
@@ -21,16 +21,14 @@ export type TComment = {
   resources: Resource[]
 }
 
-export type ListCommentsParams = PaginationParams<{
-  ref_type?: 'ProductSpu' | 'Comment'
+export const useListComments = (params: PaginationParams<{
+  ref_type: string
+  ref_id: number
   id?: number[]
   account_id?: number[]
-  ref_id?: number[]
   score_from?: number
   score_to?: number
-}>
-
-export const useListComments = (params: ListCommentsParams) =>
+}>) =>
   useInfiniteQuery({
     queryKey: ['comment', 'list', params],
     queryFn: async ({ pageParam }) =>
@@ -47,18 +45,16 @@ export const useListComments = (params: ListCommentsParams) =>
     initialPageParam: params,
   })
 
-export type CreateCommentParams = {
-  ref_type: 'ProductSpu' | 'Comment'
-  ref_id: number
-  body: string
-  score: number
-  resources?: { url: string }[]
-}
-
 export const useCreateComment = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (params: CreateCommentParams) =>
+    mutationFn: (params: {
+      ref_type: string
+      ref_id: number
+      body: string
+      score: number
+      resource_ids: string[]
+    }) =>
       customFetchStandard<TComment>('catalog/comment', {
         method: 'POST',
         body: JSON.stringify(params),
@@ -69,18 +65,16 @@ export const useCreateComment = () => {
   })
 }
 
-export type UpdateCommentParams = {
-  id: number
-  body?: string
-  score?: number
-  resources?: { url: string }[]
-  empty_resources?: boolean
-}
-
 export const useUpdateComment = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (params: UpdateCommentParams) =>
+    mutationFn: (params: {
+      id: number
+      body?: string
+      score?: number
+      resource_ids?: string[]
+      empty_resources?: boolean
+    }) =>
       customFetchStandard<TComment>('catalog/comment', {
         method: 'PATCH',
         body: JSON.stringify(params),
@@ -88,6 +82,20 @@ export const useUpdateComment = () => {
     onSuccess: async (_, variables) => {
       await qc.invalidateQueries({ queryKey: ['comment', 'list'] })
       await qc.invalidateQueries({ queryKey: ['comment', 'detail', variables.id] })
+    },
+  })
+}
+
+export const useDeleteComment = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (params: { ids: number[] }) =>
+      customFetchStandard<{ message: string }>('catalog/comment', {
+        method: 'DELETE',
+        body: JSON.stringify(params),
+      }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['comment', 'list'] })
     },
   })
 }

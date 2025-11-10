@@ -20,7 +20,7 @@ import {
 	useListStockHistory,
 	useUpdateSkuSerial,
 } from "@/core/inventory/inventory.vendor"
-import { useListProductSPU } from "@/core/product/product.vendor"
+import { useListProductSPU } from "@/core/catalog/product.vendor"
 import { Pagination } from "@/components/ui/pagination"
 import { useMemo, useState } from "react"
 import { useInfiniteMerge } from "@/hooks/use-infinite-merge"

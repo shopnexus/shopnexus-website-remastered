@@ -1,15 +1,16 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ProductImageGallery } from "@/components/product/product-image-gallery"
 import { ProductOptions } from "@/components/product/product-options"
 import { ShoppingCart, Star, Heart, Share2, Clock } from "lucide-react"
-import { useUpdateCart } from "@/core/account/cart.customer"
+import { useUpdateCart } from "@/core/account/cart"
 import { ButtonLoading } from "@/components/ui/button-loading"
 import { toast } from "sonner"
-import { Resource } from "@/core/shared/resource.type"
+import { Resource } from "@/core/common/resource.type"
 
 interface RatingDetail {
 	score: number
@@ -45,6 +46,7 @@ export function ProductMainSection({
 	onSelectSku,
 }: ProductMainSectionProps) {
 	const [quantity, setQuantity] = useState(1)
+	const router = useRouter()
 	const { mutateAsync: mutateUpdateCart } = useUpdateCart()
 
 	const discount = selectedSku?.original_price
@@ -217,7 +219,20 @@ export function ProductMainSection({
 						<ShoppingCart className="h-4 w-4 mr-2" />
 						Add To Cart
 					</ButtonLoading>
-					<Button className="bg-red-600 hover:bg-red-700">Buy Now</Button>
+					<ButtonLoading
+						className="bg-red-600 hover:bg-red-700"
+						minDurationMs={1000}
+						onClick={async () => {
+							if (!selectedSku?.id) return
+							// Navigate to checkout with buy_now=true, passing sku_id and quantity
+							router.push(
+								`/checkout?sku_id=${selectedSku.id}&quantity=${quantity}&buy_now=true`
+							)
+						}}
+						disabled={!selectedSku}
+					>
+						Buy Now
+					</ButtonLoading>
 				</div>
 
 				<div className="flex items-center justify-between pt-4">

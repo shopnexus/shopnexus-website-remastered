@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { Star, ThumbsUp, ThumbsDown, MoreHorizontal } from "lucide-react"
-import { Resource } from "@/core/shared/resource.type"
+import { Resource } from "@/core/common/resource.type"
 
 interface RatingDetail {
 	score: number

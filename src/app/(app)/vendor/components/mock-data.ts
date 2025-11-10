@@ -1,7 +1,7 @@
 // Mock data for vendor management pages
 // Simplified from database schema for flexibility
 
-import { Status } from "@/core/shared/status.type"
+import { Status } from "@/core/common/status.type"
 
 export interface MockSPU {
   id: number

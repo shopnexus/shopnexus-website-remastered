@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 
 interface ProductSpecificationsProps {
-	specifications: Record<string, string>
+	specifications: { name: string; value: string }[]
 	description: string
 }
 
@@ -21,12 +21,12 @@ export function ProductSpecifications({
 						Product Specifications
 					</h4>
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
-						{Object.entries(specifications ?? {}).map(([key, value]) => (
-							<div key={key} className="bg-card p-3 rounded-lg">
+						{(specifications ?? []).map((spec, index) => (
+							<div key={index} className="bg-card p-3 rounded-lg">
 								<div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-									{key}
+									{spec.name}
 								</div>
-								<div className="font-medium text-gray-900">{value}</div>
+								<div className="font-medium text-gray-900">{spec.value}</div>
 							</div>
 						))}
 					</div>

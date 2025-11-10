@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
-import { mockSpus, MockSPU, mockComments } from "../../components/mock-data"
 import { ProductComments } from "./components/product-comments"
 import { toast } from "sonner"
 import {
@@ -22,13 +21,12 @@ import {
 	Image as ImageIcon,
 	ExternalLink,
 	Copy,
-	Share,
 } from "lucide-react"
-import { useGetProductDetail } from "@/core/product/product.customer"
 import {
 	useGetProductSPU,
 	useListProductSKU,
-} from "@/core/product/product.vendor"
+	ProductSku,
+} from "@/core/catalog/product.vendor"
 
 interface ProductViewPageProps {
 	params: Promise<{
@@ -40,10 +38,12 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
 	const router = useRouter()
 
 	const { id } = use(params)
-	const { data: product, isLoading } = useGetProductSPU(Number(id))
-	const { data: skus = [] } = useListProductSKU({
-		spu_id: Number(id),
+	const productId = Number(id)
+	const { data: product, isLoading } = useGetProductSPU(productId)
+	const { data: skusData } = useListProductSKU({
+		spu_id: productId,
 	})
+	const skus: ProductSku[] = Array.isArray(skusData) ? skusData : []
 
 	if (!product) {
 		return (
@@ -74,7 +74,7 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
 							<div>
 								<h1 className="text-3xl font-bold">{product.name}</h1>
 								<p className="text-muted-foreground">
-									{product.code} • {product.brand} • {product.category}
+									{product.code} • {product.brand.name} • {product.category.name}
 								</p>
 							</div>
 						</div>
@@ -82,7 +82,8 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
 							<Button
 								variant="outline"
 								onClick={() => {
-									/* Mock copy link */
+									navigator.clipboard.writeText(window.location.href)
+									toast.success("Link copied to clipboard")
 								}}
 								className="flex items-center gap-2"
 							>
@@ -114,10 +115,10 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
 								</CardHeader>
 								<CardContent>
 									<div className="grid gap-4 md:grid-cols-2">
-										{product.resources.map((image, index) => (
-											<div key={index} className="relative group">
+										{product.resources.map((resource, index) => (
+											<div key={resource.id || index} className="relative group">
 												<img
-													src={image}
+													src={resource.url}
 													alt={`Product image ${index + 1}`}
 													className="w-full h-48 object-cover rounded-lg border"
 												/>
@@ -126,7 +127,7 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
 													variant="secondary"
 													className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
 													onClick={() => {
-														/* Mock view full size */
+														window.open(resource.url, "_blank")
 													}}
 												>
 													<Eye className="h-4 w-4" />
@@ -167,45 +168,51 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
 								</CardHeader>
 								<CardContent>
 									<div className="space-y-4">
-										{skus.map((sku) => (
-											<div
-												key={sku.id}
-												className="flex items-center justify-between p-4 border rounded-lg"
-											>
-												<div className="flex items-center gap-4">
-													<div className="h-12 w-12 bg-muted rounded-lg flex items-center justify-center">
-														<Package className="h-6 w-6 text-muted-foreground" />
+										{skus.length === 0 ? (
+											<div className="text-center py-8 text-muted-foreground">
+												No SKUs found for this product
+											</div>
+										) : (
+											skus.map((sku) => (
+												<div
+													key={sku.id}
+													className="flex items-center justify-between p-4 border rounded-lg"
+												>
+													<div className="flex items-center gap-4">
+														<div className="h-12 w-12 bg-muted rounded-lg flex items-center justify-center">
+															<Package className="h-6 w-6 text-muted-foreground" />
+														</div>
+														<div>
+															<div className="font-medium">SKU #{sku.id}</div>
+															<div className="text-sm text-muted-foreground">
+																{sku.attributes.map(({ name, value }) => (
+																	<Badge
+																		key={name}
+																		variant="outline"
+																		className="mr-1 text-xs"
+																	>
+																		{name}: {value}
+																	</Badge>
+																))}
+															</div>
+														</div>
 													</div>
-													<div>
-														<div className="font-medium">SKU #{sku.id}</div>
+													<div className="text-right">
+														<div className="font-medium">
+															${sku.price.toLocaleString()}
+														</div>
 														<div className="text-sm text-muted-foreground">
-															{sku.attributes.map(({ name, value }) => (
-																<Badge
-																	key={name}
-																	variant="outline"
-																	className="mr-1 text-xs"
-																>
-																	{name}: {value}
-																</Badge>
-															))}
+															Stock: {sku.stock || 0}
 														</div>
 													</div>
 												</div>
-												<div className="text-right">
-													<div className="font-medium">
-														${sku.price.toLocaleString()}
-													</div>
-													<div className="text-sm text-muted-foreground">
-														Stock: {sku.stock}
-													</div>
-												</div>
-											</div>
-										))}
+											))
+										)}
 									</div>
 								</CardContent>
 							</Card>
 							{/* Comments Section */}
-							<ProductComments comments={mockComments} productId={product.id} />
+							<ProductComments comments={[]} productId={product.id} />
 						</div>
 
 						{/* Sidebar */}
@@ -336,7 +343,7 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
 										variant="outline"
 										className="w-full justify-start"
 										onClick={() => {
-											/* Mock view in store */
+											window.open(`/products/${product.id}`, "_blank")
 										}}
 									>
 										<ExternalLink className="h-4 w-4 mr-2" />

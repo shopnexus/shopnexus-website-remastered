@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -27,124 +27,49 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table"
-import { Search, Eye, Download, Filter } from "lucide-react"
-
-interface OrderItem {
-	sku_id: string
-	name: string
-	sku_name: string
-	price: number
-	quantity: number
-	resource: {
-		url: string
-	}
-}
-
-interface Order {
-	id: string
-	date: string
-	status: "processing" | "shipped" | "delivered" | "cancelled"
-	total: number
-	items: OrderItem[]
-	purchaseOrder?: string
-}
-
-const sampleOrders: Order[] = [
-	{
-		id: "ORD-2024-001",
-		date: "2024-01-15",
-		status: "delivered",
-		total: 2599.75,
-		items: [
-			{
-				sku_id: "SKU-001",
-				name: "Professional Office Chair - Ergonomic Design",
-				sku_name: "Black Leather, Adjustable Height",
-				price: 249.99,
-				quantity: 8,
-				resource: { url: "/professional-office-chair.jpg" },
-			},
-			{
-				sku_id: "SKU-002",
-				name: "Premium Paper Pack - 5000 Sheets",
-				sku_name: "A4 White, 80gsm",
-				price: 39.99,
-				quantity: 25,
-				resource: { url: "/office-paper-stack.jpg" },
-			},
-		],
-		purchaseOrder: "PO-2024-001",
-	},
-	{
-		id: "ORD-2024-002",
-		date: "2024-01-18",
-		status: "shipped",
-		total: 1299.99,
-		items: [
-			{
-				sku_id: "SKU-003",
-				name: "Standing Desk Converter - Electric",
-				sku_name: "Black, 32-48 inch width",
-				price: 1299.99,
-				quantity: 1,
-				resource: { url: "/standing-desk-converter.png" },
-			},
-		],
-	},
-	{
-		id: "ORD-2024-003",
-		date: "2024-01-20",
-		status: "processing",
-		total: 899.5,
-		items: [
-			{
-				sku_id: "SKU-004",
-				name: "Office Supplies Starter Kit",
-				sku_name: "Complete bundle with pens, notebooks, folders",
-				price: 59.97,
-				quantity: 15,
-				resource: { url: "/office-supplies-kit.png" },
-			},
-		],
-		purchaseOrder: "PO-2024-002",
-	},
-	{
-		id: "ORD-2024-004",
-		date: "2024-01-22",
-		status: "delivered",
-		total: 3299.99,
-		items: [
-			{
-				sku_id: "SKU-005",
-				name: "Modern Office Furniture Set",
-				sku_name: "Desk + Chair + Storage combo",
-				price: 412.5,
-				quantity: 8,
-				resource: { url: "/modern-office-furniture.png" },
-			},
-		],
-	},
-]
+import { Search, Eye, Download, Filter, Package } from "lucide-react"
+import { OrderItem, useListOrders } from "@/core/order/order.customer"
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
+import {
+	useGetProductSPU,
+	useListProductSPU,
+} from "@/core/catalog/product.vendor"
 
 export function OrderHistory() {
-	const [orders] = useState<Order[]>(sampleOrders)
 	const [searchTerm, setSearchTerm] = useState("")
 	const [statusFilter, setStatusFilter] = useState("all")
 
-	const filteredOrders = orders.filter((order) => {
-		const matchesSearch =
-			order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			(order.purchaseOrder &&
-				order.purchaseOrder.toLowerCase().includes(searchTerm.toLowerCase()))
-
-		const matchesStatus =
-			statusFilter === "all" || order.status === statusFilter
-
-		return matchesSearch && matchesStatus
+	const infiniteOrders = useListOrders({
+		limit: 20,
+		page: 1,
+		...(statusFilter !== "all" && { status: statusFilter }),
 	})
 
-	const getStatusColor = (status: Order["status"]) => {
-		switch (status) {
+	const {
+		ref: loadMoreRef,
+		items: orders,
+		isFetching,
+		isLoading,
+		hasNextPage,
+	} = useInfiniteScroll(infiniteOrders)
+
+	const filteredOrders = useMemo(() => {
+		return orders.filter((order) => {
+			const matchesSearch = order.id
+				.toString()
+				.toLowerCase()
+				.includes(searchTerm.toLowerCase())
+
+			return matchesSearch
+		})
+	}, [orders, searchTerm])
+
+	const formatDate = (dateString: string) => {
+		return new Date(dateString).toLocaleDateString()
+	}
+
+	const getStatusColor = (status: string) => {
+		switch (status.toLowerCase()) {
 			case "processing":
 				return "bg-blue-500"
 			case "shipped":
@@ -221,85 +146,109 @@ export function OrderHistory() {
 									<TableHead>Order ID</TableHead>
 									<TableHead>Date</TableHead>
 									<TableHead>Items</TableHead>
-									<TableHead>Status</TableHead>
+									<TableHead>Payment Status</TableHead>
+									<TableHead>Order Status</TableHead>
 									<TableHead>Total</TableHead>
 									<TableHead>Actions</TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{filteredOrders.map((order) => (
-									<TableRow key={order.id}>
-										<TableCell className="font-medium">{order.id}</TableCell>
-										<TableCell>
-											{new Date(order.date).toLocaleDateString()}
-										</TableCell>
-										<TableCell className="max-w-md">
-											<div className="space-y-2">
-												{order.items.slice(0, 2).map((item) => (
-													<div
-														key={item.sku_id}
-														className="flex items-center space-x-2"
-													>
-														<div className="relative h-10 w-10 overflow-hidden rounded border flex-shrink-0">
-															<img
-																src={item.resource.url || "/placeholder.svg"}
-																alt={item.name}
-																className="h-full w-full object-cover"
-															/>
-														</div>
-														<div className="flex-1 min-w-0">
-															<p className="text-xs font-medium truncate">
-																{item.name}
-															</p>
-															<p className="text-xs text-muted-foreground">
-																Qty: {item.quantity} • $
-																{(item.price * item.quantity).toFixed(2)}
-															</p>
-														</div>
-													</div>
-												))}
-												{order.items.length > 2 && (
-													<p className="text-xs text-muted-foreground">
-														+{order.items.length - 2} more items
-													</p>
-												)}
-											</div>
-										</TableCell>
-										<TableCell>
-											<Badge variant="secondary" className="capitalize">
-												{order.status}
-											</Badge>
-										</TableCell>
-										<TableCell className="font-medium">
-											${order.total.toFixed(2)}
-										</TableCell>
-										<TableCell>
-											<div className="flex items-center space-x-2">
-												<Button variant="ghost" size="sm" asChild>
-													<Link href={`/orders/${order.id}`}>
-														<Eye className="h-4 w-4" />
-													</Link>
-												</Button>
-												<Button variant="ghost" size="sm">
-													<Download className="h-4 w-4" />
-												</Button>
-											</div>
+								{isLoading ? (
+									<TableRow>
+										<TableCell colSpan={6} className="text-center py-8">
+											<p className="text-muted-foreground">Loading orders...</p>
 										</TableCell>
 									</TableRow>
-								))}
+								) : filteredOrders.length === 0 ? (
+									<TableRow>
+										<TableCell colSpan={6} className="text-center py-8">
+											<p className="text-muted-foreground">
+												No orders found matching your criteria.
+											</p>
+										</TableCell>
+									</TableRow>
+								) : (
+									<>
+										{filteredOrders.map((order) => (
+											<TableRow key={order.id}>
+												<TableCell className="font-medium">
+													#{order.id}
+												</TableCell>
+												<TableCell>{formatDate(order.date_created)}</TableCell>
+												<TableCell className="max-w-md">
+													<div className="space-y-2">
+														{order.items.slice(0, 2).map((item) => (
+															<ItemRow key={item.id} item={item} />
+														))}
+														{order.items.length > 2 && (
+															<p className="text-xs text-muted-foreground">
+																+{order.items.length - 2} more items
+															</p>
+														)}
+													</div>
+												</TableCell>
+												<TableCell>
+													<Badge variant="secondary" className="capitalize">
+														{order.payment_status || "pending"}
+													</Badge>
+												</TableCell>
+												<TableCell>
+													<Badge variant="secondary" className="capitalize">
+														{order.items[0]?.status || "pending"}
+													</Badge>
+												</TableCell>
+												<TableCell className="font-medium">
+													{/* TODO: use invoice api */}-
+												</TableCell>
+												<TableCell>
+													<div className="flex items-center space-x-2">
+														<Button variant="ghost" size="sm" asChild>
+															<Link href={`/orders/${order.id}`}>
+																<Eye className="h-4 w-4" />
+															</Link>
+														</Button>
+														<Button variant="ghost" size="sm">
+															<Download className="h-4 w-4" />
+														</Button>
+													</div>
+												</TableCell>
+											</TableRow>
+										))}
+										{hasNextPage && (
+											<TableRow ref={loadMoreRef}>
+												<TableCell colSpan={6} className="text-center py-4">
+													{isFetching ? (
+														<p className="text-muted-foreground">
+															Loading more...
+														</p>
+													) : null}
+												</TableCell>
+											</TableRow>
+										)}
+									</>
+								)}
 							</TableBody>
 						</Table>
 					</div>
-
-					{filteredOrders.length === 0 && (
-						<div className="text-center py-8">
-							<p className="text-muted-foreground">
-								No orders found matching your criteria.
-							</p>
-						</div>
-					)}
 				</CardContent>
 			</Card>
+		</div>
+	)
+}
+
+function ItemRow({ item }: { item: OrderItem }) {
+	// const {data: sku} = useGetProductSKU(item.sku_id)
+	// const { data: spu } = useGetProductSPU(item.sku_id)
+
+	return (
+		<div key={item.id} className="flex items-center space-x-2">
+			<div className="relative h-10 w-10 overflow-hidden rounded border flex-shrink-0 bg-muted flex items-center justify-center">
+				<Package className="h-5 w-5 text-muted-foreground" />
+			</div>
+			<div className="flex-1 min-w-0">
+				<p className="text-xs font-medium truncate">SKU #{item.sku_id}</p>
+				<p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+			</div>
 		</div>
 	)
 }

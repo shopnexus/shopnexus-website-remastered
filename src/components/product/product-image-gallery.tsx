@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/carousel"
 import { MediaViewerModal } from "@/components/ui/media-viewer-modal"
 import { cn } from "@/lib/utils"
-import { Resource } from "@/core/shared/resource.type"
+import { Resource } from "@/core/common/resource.type"
 
 interface ProductImageGalleryProps {
 	resources: Resource[]

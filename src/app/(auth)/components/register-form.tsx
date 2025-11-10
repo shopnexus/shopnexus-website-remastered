@@ -8,18 +8,17 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Eye, EyeOff, Store, User } from "lucide-react"
 import { ButtonLoading } from "@/components/ui/button-loading"
 import { Logo } from "@/components/shared/logo"
+import { useRegisterBasic } from "@/core/account/account"
+import { useRouter } from "next/navigation"
+import { ResponseError } from "@/lib/queryclient/response.type"
+import { toast } from "sonner"
+import { useShake } from "@/hooks/use-shake"
 
 type AccountType = "vendor" | "customer"
 
@@ -90,32 +89,69 @@ const socialProviders = [
 	},
 ]
 
+type ContactMethod = "email" | "phone"
+
 export function RegisterForm() {
 	const [showPassword, setShowPassword] = useState(false)
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-	const [isLoading, setIsLoading] = useState(false)
+	const { mutateAsync: mutateRegisterAccount, isPending } = useRegisterBasic()
 	const [socialLoading, setSocialLoading] = useState<string | null>(null)
 	const [accountType, setAccountType] = useState<AccountType>("customer")
+	const [contactMethod, setContactMethod] = useState<ContactMethod>("email")
 	const [formData, setFormData] = useState({
-		firstName: "",
-		lastName: "",
 		email: "",
+		phone: "",
 		password: "",
 		confirmPassword: "",
-		companyName: "",
-		companySize: "",
-		industry: "",
-		phoneNumber: "",
 		agreeToTerms: false,
+	})
+	const router = useRouter()
+	const { shake, shakeRef } = useShake({
+		duration: 800,
+		intensity: 8,
+		easing: "ease-in-out",
 	})
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
-		setIsLoading(true)
-		// Simulate API call
-		await new Promise((resolve) => setTimeout(resolve, 1500))
-		setIsLoading(false)
-		console.log("Registration attempt:", { ...formData, accountType })
+
+		// Validate that the selected contact method has a value
+		if (contactMethod === "email" && !formData.email) {
+			toast.error("Please enter your email address")
+			shake()
+			return
+		}
+		if (contactMethod === "phone" && !formData.phone) {
+			toast.error("Please enter your phone number")
+			shake()
+			return
+		}
+
+		// Validate password match
+		if (formData.password !== formData.confirmPassword) {
+			toast.error("Passwords do not match")
+			shake()
+			return
+		}
+
+		try {
+			await mutateRegisterAccount({
+				type: accountType === "vendor" ? "Vendor" : "Customer",
+				username: null,
+				email: contactMethod === "email" ? formData.email : null,
+				phone: contactMethod === "phone" ? formData.phone : null,
+				password: formData.password,
+			})
+
+			router.push("/")
+		} catch (error) {
+			shake()
+			if (error instanceof ResponseError) {
+				toast.error(error.message)
+			} else {
+				toast.error("An unknown error occurred")
+			}
+		}
 	}
 
 	const handleSocialRegister = async (provider: string) => {
@@ -133,7 +169,6 @@ export function RegisterForm() {
 				"Join our platform as a vendor and start selling your products",
 			icon: Store,
 			registerText: "Register as Vendor",
-			loginText: "Sign in as Vendor",
 		},
 		customer: {
 			title: "Customer Registration",
@@ -141,14 +176,13 @@ export function RegisterForm() {
 				"Create your account and start shopping with thousands of vendors",
 			icon: User,
 			registerText: "Create Customer Account",
-			loginText: "Sign in as Customer",
 		},
 	}
 
 	const config = accountTypeConfig[accountType]
 
 	return (
-		<Card className="w-full max-w-2xl mx-auto">
+		<Card className="w-full max-w-md mx-auto">
 			<CardHeader className="space-y-1 text-center">
 				<Logo />
 				{/* <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
@@ -177,48 +211,33 @@ export function RegisterForm() {
 						</TabsTrigger>
 					</TabsList>
 
-					<TabsContent value={accountType} className="space-y-6 mt-6">
-						{/* <div className="text-center space-y-2 mb-6">
-							<div className="flex items-center justify-center space-x-2">
-								<config.icon className="h-6 w-6 text-primary" />
-								<h3 className="text-lg font-semibold">{config.title}</h3>
+					<TabsContent value={accountType} className="space-y-4 mt-6">
+						<form onSubmit={handleSubmit} className="space-y-4">
+							<div className="space-y-2">
+								<Label>Contact Method</Label>
+								<RadioGroup
+									value={contactMethod}
+									onValueChange={(value) =>
+										setContactMethod(value as ContactMethod)
+									}
+									className="flex gap-4"
+								>
+									<div className="flex items-center space-x-2">
+										<RadioGroupItem value="email" id="email-option" />
+										<Label htmlFor="email-option" className="cursor-pointer">
+											Email
+										</Label>
+									</div>
+									<div className="flex items-center space-x-2">
+										<RadioGroupItem value="phone" id="phone-option" />
+										<Label htmlFor="phone-option" className="cursor-pointer">
+											Phone
+										</Label>
+									</div>
+								</RadioGroup>
 							</div>
-							<p className="text-sm text-muted-foreground">
-								{config.description}
-							</p>
-						</div> */}
 
-						<form onSubmit={handleSubmit} className="space-y-6">
-							{/* Personal Information */}
-							<div className="space-y-4">
-								<h3 className="text-lg font-semibold">Personal Information</h3>
-								<div className="grid gap-4 md:grid-cols-2">
-									<div className="space-y-2">
-										<Label htmlFor="firstName">First Name</Label>
-										<Input
-											id="firstName"
-											placeholder="John"
-											value={formData.firstName}
-											onChange={(e) =>
-												setFormData({ ...formData, firstName: e.target.value })
-											}
-											required
-										/>
-									</div>
-									<div className="space-y-2">
-										<Label htmlFor="lastName">Last Name</Label>
-										<Input
-											id="lastName"
-											placeholder="Doe"
-											value={formData.lastName}
-											onChange={(e) =>
-												setFormData({ ...formData, lastName: e.target.value })
-											}
-											required
-										/>
-									</div>
-								</div>
-
+							{contactMethod === "email" ? (
 								<div className="space-y-2">
 									<Label htmlFor="email">Email Address</Label>
 									<Input
@@ -234,161 +253,89 @@ export function RegisterForm() {
 											setFormData({ ...formData, email: e.target.value })
 										}
 										required
+										className="h-11"
 									/>
 								</div>
-
-								{/* <div className="space-y-2">
-									<Label htmlFor="phoneNumber">Phone Number</Label>
+							) : (
+								<div className="space-y-2">
+									<Label htmlFor="phone">Phone Number</Label>
 									<Input
-										id="phoneNumber"
+										id="phone"
 										type="tel"
 										placeholder="+1 (555) 123-4567"
-										value={formData.phoneNumber}
+										value={formData.phone}
 										onChange={(e) =>
-											setFormData({ ...formData, phoneNumber: e.target.value })
+											setFormData({ ...formData, phone: e.target.value })
 										}
 										required
+										className="h-11"
 									/>
-								</div> */}
-							</div>
-
-							{/* Company Information - Only for Vendor */}
-							{accountType === "vendor" && (
-								<div className="space-y-4">
-									<h3 className="text-lg font-semibold">Company Information</h3>
-									<div className="space-y-2">
-										<Label htmlFor="companyName">Company Name</Label>
-										<Input
-											id="companyName"
-											placeholder="Acme Corporation"
-											value={formData.companyName}
-											onChange={(e) =>
-												setFormData({
-													...formData,
-													companyName: e.target.value,
-												})
-											}
-											required
-										/>
-									</div>
-
-									<div className="grid gap-4 md:grid-cols-2">
-										<div className="space-y-2">
-											<Label htmlFor="companySize">Company Size</Label>
-											<Select
-												onValueChange={(value) =>
-													setFormData({ ...formData, companySize: value })
-												}
-											>
-												<SelectTrigger>
-													<SelectValue placeholder="Select company size" />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value="1-10">1-10 employees</SelectItem>
-													<SelectItem value="11-50">11-50 employees</SelectItem>
-													<SelectItem value="51-200">
-														51-200 employees
-													</SelectItem>
-													<SelectItem value="201-1000">
-														201-1000 employees
-													</SelectItem>
-													<SelectItem value="1000+">1000+ employees</SelectItem>
-												</SelectContent>
-											</Select>
-										</div>
-
-										<div className="space-y-2">
-											<Label htmlFor="industry">Industry</Label>
-											<Select
-												onValueChange={(value) =>
-													setFormData({ ...formData, industry: value })
-												}
-											>
-												<SelectTrigger>
-													<SelectValue placeholder="Select industry" />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value="technology">Technology</SelectItem>
-													<SelectItem value="healthcare">Healthcare</SelectItem>
-													<SelectItem value="finance">Finance</SelectItem>
-													<SelectItem value="manufacturing">
-														Manufacturing
-													</SelectItem>
-													<SelectItem value="retail">Retail</SelectItem>
-													<SelectItem value="education">Education</SelectItem>
-													<SelectItem value="other">Other</SelectItem>
-												</SelectContent>
-											</Select>
-										</div>
-									</div>
 								</div>
 							)}
 
-							{/* Password */}
-							<div className="space-y-4">
-								<h3 className="text-lg font-semibold">Security</h3>
-								<div className="grid gap-4 md:grid-cols-2">
-									<div className="space-y-2">
-										<Label htmlFor="password">Password</Label>
-										<div className="relative">
-											<Input
-												id="password"
-												type={showPassword ? "text" : "password"}
-												placeholder="Create password"
-												value={formData.password}
-												onChange={(e) =>
-													setFormData({ ...formData, password: e.target.value })
-												}
-												required
-											/>
-											<Button
-												type="button"
-												variant="ghost"
-												size="sm"
-												className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-												onClick={() => setShowPassword(!showPassword)}
-											>
-												{showPassword ? (
-													<EyeOff className="h-4 w-4" />
-												) : (
-													<Eye className="h-4 w-4" />
-												)}
-											</Button>
-										</div>
+							<div className="grid gap-4 md:grid-cols-2">
+								<div className="space-y-2">
+									<Label htmlFor="password">Password</Label>
+									<div className="relative">
+										<Input
+											id="password"
+											type={showPassword ? "text" : "password"}
+											placeholder="Create password"
+											value={formData.password}
+											onChange={(e) =>
+												setFormData({ ...formData, password: e.target.value })
+											}
+											required
+											className="h-11 pr-10"
+										/>
+										<Button
+											type="button"
+											variant="ghost"
+											size="sm"
+											className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+											onClick={() => setShowPassword(!showPassword)}
+										>
+											{showPassword ? (
+												<EyeOff className="h-4 w-4" />
+											) : (
+												<Eye className="h-4 w-4" />
+											)}
+										</Button>
 									</div>
+								</div>
 
-									<div className="space-y-2">
-										<Label htmlFor="confirmPassword">Confirm Password</Label>
-										<div className="relative">
-											<Input
-												id="confirmPassword"
-												type={showConfirmPassword ? "text" : "password"}
-												placeholder="Confirm password"
-												value={formData.confirmPassword}
-												onChange={(e) =>
-													setFormData({
-														...formData,
-														confirmPassword: e.target.value,
-													})
-												}
-												required
-											/>
-											<Button
-												type="button"
-												variant="ghost"
-												size="sm"
-												className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-												onClick={() =>
-													setShowConfirmPassword(!showConfirmPassword)
-												}
-											>
-												{showConfirmPassword ? (
-													<EyeOff className="h-4 w-4" />
-												) : (
-													<Eye className="h-4 w-4" />
-												)}
-											</Button>
-										</div>
+								<div className="space-y-2">
+									<Label htmlFor="confirmPassword">Confirm Password</Label>
+									<div className="relative">
+										<Input
+											id="confirmPassword"
+											type={showConfirmPassword ? "text" : "password"}
+											placeholder="Confirm password"
+											value={formData.confirmPassword}
+											onChange={(e) =>
+												setFormData({
+													...formData,
+													confirmPassword: e.target.value,
+												})
+											}
+											required
+											className="h-11 pr-10"
+										/>
+										<Button
+											type="button"
+											variant="ghost"
+											size="sm"
+											className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+											onClick={() =>
+												setShowConfirmPassword(!showConfirmPassword)
+											}
+										>
+											{showConfirmPassword ? (
+												<EyeOff className="h-4 w-4" />
+											) : (
+												<Eye className="h-4 w-4" />
+											)}
+										</Button>
 									</div>
 								</div>
 							</div>
@@ -421,9 +368,10 @@ export function RegisterForm() {
 							</div>
 
 							<ButtonLoading
-								loading={isLoading}
+								ref={shakeRef as React.RefObject<HTMLButtonElement>}
+								loading={isPending}
 								onClick={handleSubmit}
-								className="w-full h-11 cursor-pointer"
+								className="w-full h-11 mt-6 cursor-pointer"
 								disabled={!formData.agreeToTerms}
 							>
 								<div className="flex items-center space-x-2">
@@ -491,10 +439,10 @@ export function RegisterForm() {
 
 				<div className="text-center text-sm text-muted-foreground">
 					<Link
-						href={`/login?type=${accountType}`}
+						href="/login"
 						className="text-primary hover:underline font-medium transition-colors"
 					>
-						{config.loginText}
+						Sign in instead
 					</Link>
 				</div>
 			</CardFooter>

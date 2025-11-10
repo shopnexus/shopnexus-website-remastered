@@ -12,7 +12,7 @@ import {
 	ChevronLeft,
 	ChevronRight,
 } from "lucide-react"
-import { Resource } from "@/core/shared/resource.type"
+import { Resource } from "@/core/common/resource.type"
 
 interface MediaViewerModalProps {
 	isOpen: boolean

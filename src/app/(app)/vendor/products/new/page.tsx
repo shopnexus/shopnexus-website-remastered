@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 import {
@@ -17,11 +16,10 @@ import {
 	EyeOff,
 	Image as ImageIcon,
 	Tag,
-	Plus,
-	X,
 } from "lucide-react"
 import FileUpload from "@/components/shared/file-upload"
-import { useCreateProductSPU } from "@/core/product/product.vendor"
+import { TagInput } from "@/components/shared/tag-input"
+import { useCreateProductSPU } from "@/core/catalog/product.vendor"
 import {
 	Select,
 	SelectContent,
@@ -34,8 +32,7 @@ export default function NewProductPage() {
 	const router = useRouter()
 	const [isPreview, setIsPreview] = useState(false)
 	const [isLoading, setIsLoading] = useState(false)
-	const [newTag, setNewTag] = useState("")
-	const [resources, setResources] = useState<{ key: string; url: string }[]>([])
+	const [resources, setResources] = useState<{ id: string; url: string }[]>([])
 	const { mutateAsync: mutateCreateProductSPU } = useCreateProductSPU()
 	// const { data: categories = [] } = useListBra()
 	// const { data: brands = [] } = useGetBrands()
@@ -51,7 +48,7 @@ export default function NewProductPage() {
 		tags: [] as string[],
 	})
 
-	const handleUploadComplete = (urls: { key: string; url: string }[]) => {
+	const handleUploadComplete = (urls: { id: string; url: string }[]) => {
 		setResources([...resources, ...urls])
 	}
 
@@ -73,31 +70,22 @@ export default function NewProductPage() {
 				name: product.name,
 				description: product.description,
 				is_active: product.is_active,
-				resources: resources.map((r) => r.key),
+				tags: product.tags,
+				resource_ids: resources.map((r) => r.id),
 			})
 			toast.success("Product created successfully")
 			router.push("/vendor/products")
-		} catch (error) {
+		} catch {
 			toast.error("Failed to create product")
 		} finally {
 			setIsLoading(false)
 		}
 	}
 
-	const handleAddTag = () => {
-		if (newTag.trim()) {
-			setProduct({
-				...product,
-				tags: [...product.tags, newTag.trim()],
-			})
-			setNewTag("")
-		}
-	}
-
-	const handleRemoveTag = (tagToRemove: string) => {
+	const handleTagsChange = (tags: string[]) => {
 		setProduct({
 			...product,
-			tags: product.tags.filter((tag) => tag !== tagToRemove),
+			tags,
 		})
 	}
 
@@ -359,36 +347,12 @@ export default function NewProductPage() {
 										Tags
 									</CardTitle>
 								</CardHeader>
-								<CardContent className="space-y-4">
-									<div className="flex gap-2">
-										<Input
-											value={newTag}
-											onChange={(e) => setNewTag(e.target.value)}
-											placeholder="Add tag"
-											onKeyPress={(e) => e.key === "Enter" && handleAddTag()}
-										/>
-										<Button onClick={handleAddTag} size="sm">
-											<Plus className="h-4 w-4" />
-										</Button>
-									</div>
-
-									{product.tags.length > 0 && (
-										<div className="flex flex-wrap gap-2">
-											{product.tags.map((tag, index) => (
-												<Badge
-													key={index}
-													variant="secondary"
-													className="flex items-center gap-1"
-												>
-													{tag}
-													<X
-														className="h-3 w-3 cursor-pointer hover:text-destructive"
-														onClick={() => handleRemoveTag(tag)}
-													/>
-												</Badge>
-											))}
-										</div>
-									)}
+								<CardContent>
+									<TagInput
+										tags={product.tags}
+										onTagsChange={handleTagsChange}
+										placeholder="Add tags (separate multiple with spaces)"
+									/>
 								</CardContent>
 							</Card>
 

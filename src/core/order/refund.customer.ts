@@ -2,10 +2,17 @@ import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-q
 import { customFetchPagination, customFetchStandard } from "../../lib/queryclient/custom-fetch"
 import qs from "qs"
 import { PaginationParams, SuccessPaginationRes } from "@/lib/queryclient/response.type"
-import { Status } from "../shared/status.type"
-import { Resource } from "../shared/resource.type"
+import { Status } from "../common/status.type"
+import { Resource } from "../common/resource.type"
 
 // ===== TYPES =====
+
+export enum RefundMethod {
+  PickUp = "PickUp",
+  DropOff = "DropOff",
+}
+
+
 
 export type TRefund = {
   id: number
@@ -13,10 +20,10 @@ export type TRefund = {
   order_item_id: number
   reviewed_by_id: number | null
   shipment_id: number | null
-  method: string
+  method: RefundMethod
   status: Status
   reason: string
-  address?: string | null
+  address: string | null
   date_created: string
   resources: Resource[]
 }
@@ -30,8 +37,8 @@ export const useCreateRefund = () => {
       order_item_id: number
       method: string
       reason: string
-      address?: string
-      resource_ids: number[]
+      address: string | null
+      resource_ids: string[]
     }) =>
       customFetchStandard<TRefund>(`order/refund`, {
         method: 'POST',
@@ -68,8 +75,9 @@ export const useUpdateRefund = () => {
     mutationFn: (params: {
       id: number
       method?: string
-      address?: string
+      address?: string | null
       reason?: string
+      resource_ids?: string[]
     }) =>
       customFetchStandard<TRefund>(`order/refund`, {
         method: 'PATCH',

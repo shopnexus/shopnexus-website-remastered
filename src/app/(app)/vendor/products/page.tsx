@@ -7,7 +7,6 @@ import { EmptyState } from "../components/empty-state"
 import { ProductTable } from "./components/product-table"
 // import { SPUForm } from "./components/spu-form" // Now using dedicated edit page
 import { SKUForm } from "./components/sku-form"
-import { MockSPU, MockSKU } from "../components/mock-data"
 import { toast } from "sonner"
 import { Download, Upload, RefreshCw, BarChart3, Settings } from "lucide-react"
 import {
@@ -17,7 +16,9 @@ import {
 	useCreateProductSKU,
 	useUpdateProductSKU,
 	useDeleteProductSKU,
-} from "@/core/product/product.vendor"
+	ProductSPU,
+	ProductSku,
+} from "@/core/catalog/product.vendor"
 import { useInfiniteMerge } from "@/hooks/use-infinite-merge"
 import { Pagination } from "@/components/ui/pagination"
 
@@ -32,34 +33,12 @@ export default function ProductsPage() {
 	const listSpuResult = useListProductSPU({ page: currentPage, limit })
 	const apiSpus = useInfiniteMerge(listSpuResult)
 
-	// Map API SPUs to table-friendly shape (fill extras with defaults)
-	const spus: MockSPU[] = useMemo(
-		() =>
-			apiSpus.map((spu) => ({
-				id: spu.id,
-				code: spu.code,
-				name: spu.name,
-				description: spu.description,
-				brand: spu.brand,
-				category: spu.category,
-				is_active: spu.is_active,
-				date_created: spu.date_created,
-				date_updated: spu.date_updated,
-				resources: spu.resources,
-				rating: spu.rating,
-				tags: spu.tags,
-				// Not provided by API on list endpoint yet
-				views: 0,
-				sales: 0,
-				// SKUs will be loaded dynamically when table rows are expanded
-				skus: [],
-			})),
-		[apiSpus]
-	)
+	// Use API SPUs directly
+	const spus = useMemo(() => apiSpus, [apiSpus])
 
 	const [showSKUForm, setShowSKUForm] = useState(false)
-	const [editingSKU, setEditingSKU] = useState<MockSKU | null>(null)
-	const [selectedSPU, setSelectedSPU] = useState<MockSPU | null>(null)
+	const [editingSKU, setEditingSKU] = useState<ProductSku | null>(null)
+	const [selectedSPU, setSelectedSPU] = useState<ProductSPU | null>(null)
 
 	// Calculate stats (placeholder; real metrics TBD)
 	const stats = useMemo(() => {
@@ -70,7 +49,7 @@ export default function ProductsPage() {
 		router.push("/vendor/products/new")
 	}
 
-	const handleEditSPU = (spu: MockSPU) => {
+	const handleEditSPU = (spu: ProductSPU) => {
 		// router.push(`/vendor/products/${spu.id}`)
 		// open in new tab
 		window.open(`/vendor/products/${spu.id}`, "_blank")
@@ -98,13 +77,13 @@ export default function ProductsPage() {
 		)
 	}
 
-	const handleCreateSKU = (spu: MockSPU) => {
+	const handleCreateSKU = (spu: ProductSPU) => {
 		setSelectedSPU(spu)
 		setEditingSKU(null)
 		setShowSKUForm(true)
 	}
 
-	const handleEditSKU = (sku: MockSKU, spu: MockSPU) => {
+	const handleEditSKU = (sku: ProductSku, spu: ProductSPU) => {
 		setSelectedSPU(spu)
 		setEditingSKU(sku)
 		setShowSKUForm(true)
@@ -114,7 +93,14 @@ export default function ProductsPage() {
 	const updateSku = useUpdateProductSKU()
 	const deleteSku = useDeleteProductSKU()
 
-	const handleSaveSKU = (skuData: Partial<MockSKU>) => {
+	const handleSaveSKU = (
+		skuData: Partial<ProductSku> & {
+			price?: number
+			can_combine?: boolean
+			attributes?: { name: string; value: string }[]
+			stock?: number
+		}
+	) => {
 		if (!selectedSPU) return
 
 		if (editingSKU) {
@@ -171,7 +157,7 @@ export default function ProductsPage() {
 		)
 	}
 
-	const handleManageInventory = (sku: MockSKU, spu: MockSPU) => {
+	const handleManageInventory = (sku: ProductSku, spu: ProductSPU) => {
 		// Navigate to inventory page with SKU filter
 		router.push(`/vendor/inventory?sku=${sku.id}`)
 	}

@@ -9,17 +9,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Eye, EyeOff, Store, User } from "lucide-react"
+import { Eye, EyeOff } from "lucide-react"
 import { ButtonLoading } from "@/components/ui/button-loading"
-import { useLoginBasic } from "@/core/account/account.customer"
+import { useLoginBasic } from "@/core/account/account"
 import { useRouter } from "next/navigation"
 import { ResponseError } from "@/lib/queryclient/response.type"
 import { toast } from "sonner"
 import { useShake } from "@/hooks/use-shake"
 import { Logo } from "@/components/shared/logo"
-
-type AccountType = "vendor" | "customer"
 
 // Social login providers configuration
 const socialProviders = [
@@ -92,7 +89,6 @@ export function LoginForm() {
 	const [showPassword, setShowPassword] = useState(false)
 	const { mutateAsync: mutateLoginAccount, isPending } = useLoginBasic()
 	const [socialLoading, setSocialLoading] = useState<string | null>(null)
-	const [accountType, setAccountType] = useState<AccountType>("customer")
 	const [formData, setFormData] = useState({
 		id: "",
 		password: "",
@@ -107,7 +103,7 @@ export function LoginForm() {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
 		try {
-			const data = await mutateLoginAccount({
+			await mutateLoginAccount({
 				id: formData.id,
 				password: formData.password,
 			})
@@ -128,29 +124,8 @@ export function LoginForm() {
 		// Simulate social login API call
 		await new Promise((resolve) => setTimeout(resolve, 1500))
 		setSocialLoading(null)
-		console.log(`Social login attempt with ${provider}:`, { accountType })
+		console.log(`Social login attempt with ${provider}`)
 	}
-
-	const accountTypeConfig = {
-		vendor: {
-			title: "Vendor Portal",
-			description: "Access your vendor dashboard and manage your products",
-			label: "Email, username or phone number",
-			placeholder: "vendor@company.com",
-			icon: Store,
-			registerText: "Register as Vendor",
-		},
-		customer: {
-			title: "Customer Portal",
-			description: "Sign in to your account to start shopping",
-			label: "Email, username or phone number",
-			placeholder: "xavier@gmail.com",
-			icon: User,
-			registerText: "Create Customer Account",
-		},
-	}
-
-	const config = accountTypeConfig[accountType]
 
 	return (
 		<Card className="w-full max-w-md mx-auto gap-y-6">
@@ -163,182 +138,119 @@ export function LoginForm() {
 			</CardHeader>
 
 			<CardContent className="space-y-6">
-				<Tabs
-					value={accountType}
-					onValueChange={(value) => setAccountType(value as AccountType)}
-					className="w-full"
-				>
-					<TabsList className="grid w-full grid-cols-2">
-						<TabsTrigger
-							value="customer"
-							className="flex items-center space-x-2"
-						>
-							<User className="h-4 w-4" />
-							<span>Customer</span>
-						</TabsTrigger>
-						<TabsTrigger value="vendor" className="flex items-center space-x-2">
-							<Store className="h-4 w-4" />
-							<span>Vendor</span>
-						</TabsTrigger>
-					</TabsList>
+				<form onSubmit={handleSubmit} className="space-y-4">
+					<div className="space-y-2">
+						<Label htmlFor="id">Email, username or phone number</Label>
+						<Input
+							id="id"
+							type="text"
+							placeholder="Enter your email, username or phone"
+							value={formData.id}
+							onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+							required
+							className="h-11"
+						/>
+					</div>
 
-					<TabsContent value={accountType} className="space-y-4 mt-6">
-						{/* <div className="text-center space-y-2 mb-6">
-							<div className="flex items-center justify-center space-x-2">
-								<config.icon className="h-6 w-6 text-primary" />
-								<h3 className="text-lg font-semibold">{config.title}</h3>
-							</div>
-							<p className="text-sm text-muted-foreground">
-								{config.description}
-							</p>
-						</div> */}
-
-						<form onSubmit={handleSubmit} className="space-y-4">
-							<div className="space-y-2">
-								<Label htmlFor="id">{config.label}</Label>
-								<Input
-									id="id"
-									type="id"
-									placeholder={config.placeholder}
-									value={formData.id}
-									onChange={(e) =>
-										setFormData({ ...formData, id: e.target.value })
-									}
-									required
-									className="h-11"
-								/>
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="password">Password</Label>
-								<div className="relative">
-									<Input
-										id="password"
-										type={showPassword ? "text" : "password"}
-										placeholder="Enter your password"
-										value={formData.password}
-										onChange={(e) =>
-											setFormData({ ...formData, password: e.target.value })
-										}
-										required
-										className="h-11 pr-10"
-									/>
-									<Button
-										type="button"
-										variant="ghost"
-										size="sm"
-										className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-										onClick={() => setShowPassword(!showPassword)}
-									>
-										{showPassword ? (
-											<EyeOff className="h-4 w-4" />
-										) : (
-											<Eye className="h-4 w-4" />
-										)}
-									</Button>
-								</div>
-							</div>
-
-							<div className="flex items-center justify-between">
-								<div className="flex items-center space-x-2">
-									<Checkbox
-										id="remember"
-										checked={formData.rememberMe}
-										onCheckedChange={(checked) =>
-											setFormData({
-												...formData,
-												rememberMe: checked as boolean,
-											})
-										}
-									/>
-									<Label htmlFor="remember" className="text-sm">
-										Remember me
-									</Label>
-								</div>
-								<Link
-									href="/forgot-password"
-									className="text-sm text-primary hover:underline transition-colors"
-								>
-									Forgot password?
-								</Link>
-							</div>
-
-							<ButtonLoading
-								ref={shakeRef as React.RefObject<HTMLButtonElement>}
-								loading={isPending}
-								onClick={handleSubmit}
-								className="w-full h-11 mt-6 cursor-pointer"
+					<div className="space-y-2">
+						<Label htmlFor="password">Password</Label>
+						<div className="relative">
+							<Input
+								id="password"
+								type={showPassword ? "text" : "password"}
+								placeholder="Enter your password"
+								value={formData.password}
+								onChange={(e) =>
+									setFormData({ ...formData, password: e.target.value })
+								}
+								required
+								className="h-11 pr-10"
+							/>
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+								onClick={() => setShowPassword(!showPassword)}
 							>
-								<div className="flex items-center space-x-2">
-									<config.icon className="h-4 w-4" />
-									<span>
-										Sign In as{" "}
-										{accountType === "vendor" ? "Vendor" : "Customer"}
-									</span>
-								</div>
-							</ButtonLoading>
-
-							{/* <Button
-								type="submit"
-								className="w-full h-11 mt-6"
-								disabled={isLoading}
-							>
-								{isLoading ? (
-									<div className="flex items-center space-x-2">
-										<div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-										<span>Signing in...</span>
-									</div>
+								{showPassword ? (
+									<EyeOff className="h-4 w-4" />
 								) : (
-									<div className="flex items-center space-x-2">
-										<config.icon className="h-4 w-4" />
-										<span>
-											Sign In as{" "}
-											{accountType === "vendor" ? "Vendor" : "Customer"}
-										</span>
-									</div>
+									<Eye className="h-4 w-4" />
 								)}
-							</Button> */}
-						</form>
-
-						{/* Social Login Section */}
-						<div className="space-y-4">
-							<div className="relative">
-								<div className="absolute inset-0 flex items-center">
-									<span className="w-full border-t" />
-								</div>
-								<div className="relative flex justify-center text-xs uppercase">
-									<span className="bg-background px-2 text-muted-foreground">
-										Or continue with
-									</span>
-								</div>
-							</div>
-
-							<div className="grid grid-cols-2 gap-3">
-								{socialProviders.map((provider) => (
-									<Button
-										key={provider.id}
-										type="button"
-										variant="outline"
-										className={`h-11 ${provider.color} transition-colors`}
-										onClick={() => handleSocialLogin(provider.id)}
-										disabled={socialLoading !== null}
-									>
-										{socialLoading === provider.id ? (
-											<div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-										) : (
-											<span className="mr-2">{provider.icon}</span>
-										)}
-										<span
-											className={`text-sm font-medium ${provider.textColor}`}
-										>
-											{provider.name}
-										</span>
-									</Button>
-								))}
-							</div>
+							</Button>
 						</div>
-					</TabsContent>
-				</Tabs>
+					</div>
+
+					<div className="flex items-center justify-between">
+						<div className="flex items-center space-x-2">
+							<Checkbox
+								id="remember"
+								checked={formData.rememberMe}
+								onCheckedChange={(checked) =>
+									setFormData({
+										...formData,
+										rememberMe: checked as boolean,
+									})
+								}
+							/>
+							<Label htmlFor="remember" className="text-sm">
+								Remember me
+							</Label>
+						</div>
+						<Link
+							href="/forgot-password"
+							className="text-sm text-primary hover:underline transition-colors"
+						>
+							Forgot password?
+						</Link>
+					</div>
+
+					<ButtonLoading
+						ref={shakeRef as React.RefObject<HTMLButtonElement>}
+						loading={isPending}
+						onClick={handleSubmit}
+						className="w-full h-11 mt-6 cursor-pointer"
+					>
+						Sign In
+					</ButtonLoading>
+				</form>
+
+				{/* Social Login Section */}
+				<div className="space-y-4">
+					<div className="relative">
+						<div className="absolute inset-0 flex items-center">
+							<span className="w-full border-t" />
+						</div>
+						<div className="relative flex justify-center text-xs uppercase">
+							<span className="bg-background px-2 text-muted-foreground">
+								Or continue with
+							</span>
+						</div>
+					</div>
+
+					<div className="grid grid-cols-2 gap-3">
+						{socialProviders.map((provider) => (
+							<Button
+								key={provider.id}
+								type="button"
+								variant="outline"
+								className={`h-11 ${provider.color} transition-colors`}
+								onClick={() => handleSocialLogin(provider.id)}
+								disabled={socialLoading !== null}
+							>
+								{socialLoading === provider.id ? (
+									<div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+								) : (
+									<span className="mr-2">{provider.icon}</span>
+								)}
+								<span className={`text-sm font-medium ${provider.textColor}`}>
+									{provider.name}
+								</span>
+							</Button>
+						))}
+					</div>
+				</div>
 			</CardContent>
 
 			<CardFooter className="flex flex-col space-y-4 pt-0">
@@ -356,7 +268,7 @@ export function LoginForm() {
 				<div className="text-center text-sm text-muted-foreground">
 					Don&apos;t have an account?{" "}
 					<Link
-						href={`/register?type=${accountType}`}
+						href="/register"
 						className="text-primary hover:underline font-medium transition-colors"
 					>
 						Create one!

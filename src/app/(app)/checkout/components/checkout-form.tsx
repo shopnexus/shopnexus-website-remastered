@@ -7,7 +7,19 @@ import { useState, useEffect, Suspense } from "react"
 // Google Maps types
 declare global {
 	interface Window {
-		google: any
+		google?: {
+			maps: {
+				places: {
+					Autocomplete: new (
+						input: HTMLInputElement,
+						options: { types: string[] }
+					) => {
+						addListener: (event: string, callback: () => void) => void
+						getPlace: () => { formatted_address?: string }
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -22,26 +34,45 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
 	Truck,
 	CreditCard,
 	FileText,
 	User,
 	MapPin,
-	Clock,
-	Home,
 	Mail,
 	Phone,
-	Check,
+	Wallet,
+	Building2,
+	Smartphone,
 } from "lucide-react"
-import { useCheckout } from "@/core/order/order.customer"
+import { useCheckout, useQuote } from "@/core/order/order.customer"
 import { toast } from "sonner"
-import { useGetCart } from "@/core/account/cart.customer"
+import { useGetCart, useListCheckoutSkus } from "@/core/account/cart"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useCurrency } from "@/components/currency/currency-context"
+import { useMemo } from "react"
+import { useListServiceOption } from "@/core/common/option"
+import { ServiceOptionSelector } from "./service-option-selector"
+import { useListContacts, useCreateContact } from "@/core/account/contact"
+import { useGetMe } from "@/core/account/account"
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select"
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog"
+import Image from "next/image"
 
 export function CheckoutForm() {
 	return (
@@ -54,17 +85,83 @@ export function CheckoutForm() {
 function Checkout() {
 	const router = useRouter()
 	const searchParams = useSearchParams()
+	const { formatCurrency } = useCurrency()
 	const [isLoading, setIsLoading] = useState(false)
-	const [paymentMethod, setPaymentMethod] = useState("cod")
-	const [bankTransferMethod, setBankTransferMethod] = useState("VNPAY")
-	const [shippingMethod, setShippingMethod] = useState("standard")
-	const [sameAsBilling, setSameAsBilling] = useState(true)
-	const [showMap, setShowMap] = useState(false)
+	const [selectedPaymentOptionId, setSelectedPaymentOptionId] =
+		useState<string>("")
+	const [shipmentOption, setShipmentOption] = useState("")
+	const [quoteData, setQuoteData] = useState<{
+		subtotal: number
+		shipping: number
+	} | null>(null)
 	const { mutateAsync: mutateCheckout } = useCheckout()
-	const { data: allCartItems = [] } = useGetCart()
+	const { mutateAsync: mutateQuote } = useQuote()
 
 	// Get selected item IDs from URL parameters
 	const selectedItemIds = searchParams.get("selected")?.split(",") || []
+
+	// Get buy_now parameter from URL
+	const buyNow = searchParams.get("buy_now") === "true"
+
+	// Get sku_id and quantity for buy_now flow
+	const buyNowSkuId = searchParams.get("sku_id")
+	const buyNowQuantity = searchParams.get("quantity")
+
+	const { data: cartItems = [] } = useGetCart()
+	const { data: buyNowItems = [] } = useListCheckoutSkus(
+		buyNow
+			? {
+					sku_id: Number(buyNowSkuId),
+					quantity: Number(buyNowQuantity),
+			  }
+			: undefined
+	)
+
+	// Determine which items to use
+	const allCartItems = buyNow ? buyNowItems : cartItems
+
+	const { data: paymentOptions = [], isLoading: isLoadingPayment } =
+		useListServiceOption({
+			category: "payment",
+		})
+	const { data: shipmentOptions = [], isLoading: isLoadingShipment } =
+		useListServiceOption({
+			category: "shipment",
+		})
+	const { data: userAccount } = useGetMe()
+	const { data: contacts = [] } = useListContacts()
+	const createContact = useCreateContact()
+	const [selectedContactId, setSelectedContactId] = useState<string>(
+		userAccount?.default_contact_id?.toString() ?? "contact-select"
+	)
+	const [isCreateContactOpen, setIsCreateContactOpen] = useState(false)
+	const [newContactForm, setNewContactForm] = useState<{
+		full_name: string
+		phone: string
+		address: string
+		address_type?: "Home" | "Work"
+		phone_verified?: boolean
+	}>({
+		full_name: "",
+		phone: "",
+		address: "",
+		address_type: "Home",
+	})
+
+	// Check if user is logged in
+	const isLoggedIn = !!userAccount
+
+	// Provider icon map
+	const providerIconMap: Record<
+		string,
+		React.ComponentType<{ className?: string }>
+	> = {
+		VNPAY: Building2,
+		MOMO: Smartphone,
+		ZALO: Smartphone,
+		COD: Wallet,
+		DEFAULT: CreditCard,
+	}
 
 	// Filter cart items based on selected IDs, or use all items if no selection
 	const items =
@@ -73,36 +170,97 @@ function Checkout() {
 					selectedItemIds.includes(String(item.sku_id))
 			  )
 			: allCartItems
+
 	const [formData, setFormData] = useState({
 		// Personal Information
-		firstName: "",
-		lastName: "",
+		fullName: "",
 		email: "",
 		phone: "",
 
-		// Billing Address
-		billingAddress: "",
-		billingCity: "",
-		billingState: "",
-		billingZip: "",
-		billingCountry: "US",
-
 		// Shipping Address
-		shippingAddress: "",
-		shippingCity: "",
-		shippingState: "",
-		shippingZip: "",
-		shippingCountry: "US",
+		address: "",
 
 		// Order Information
 		specialInstructions: "",
-
-		// Payment Information
-		cardNumber: "",
-		expiryDate: "",
-		cvv: "",
-		cardName: "",
 	})
+
+	// Get current address (from selected contact or manual input)
+	const fullAddress = useMemo(() => {
+		if (selectedContactId && selectedContactId !== "new") {
+			const selectedContact = contacts.find(
+				(c) => String(c.id) === selectedContactId
+			)
+			return selectedContact?.address || formData.address
+		}
+		return formData.address
+	}, [selectedContactId, contacts, formData.address])
+
+	// Handle contact selection
+	const handleContactSelect = (contactId: string) => {
+		setSelectedContactId(contactId)
+		if (contactId === "new") {
+			setIsCreateContactOpen(true)
+		} else if (contactId && contactId !== "new") {
+			const selectedContact = contacts.find((c) => String(c.id) === contactId)
+			if (selectedContact) {
+				setFormData({
+					...formData,
+					fullName: selectedContact.full_name,
+					phone: selectedContact.phone,
+					address: selectedContact.address,
+				})
+			}
+		}
+	}
+
+	// Handle creating new contact
+	const handleCreateContact = async () => {
+		try {
+			const newContact = await createContact.mutateAsync(newContactForm)
+			setSelectedContactId(String(newContact.id))
+			setFormData({
+				...formData,
+				fullName: newContact.full_name,
+				phone: newContact.phone,
+				address: newContact.address,
+			})
+			setIsCreateContactOpen(false)
+			setNewContactForm({
+				full_name: "",
+				phone: "",
+				address: "",
+				address_type: "Home",
+			})
+		} catch (error) {
+			console.error("Failed to create contact:", error)
+		}
+	}
+
+	// Fetch quote when address or items change
+	useEffect(() => {
+		if (!fullAddress || items.length === 0 || !shipmentOption) return
+
+		const fetchQuote = async () => {
+			try {
+				const quote = await mutateQuote({
+					address: fullAddress,
+					skus: items.map((item) => ({
+						sku_id: item.sku_id,
+						quantity: item.quantity,
+						promotion_ids: item.promotions,
+						shipment_option: shipmentOption,
+					})),
+				})
+				setQuoteData(quote)
+			} catch (error) {
+				console.error("Failed to fetch quote:", error)
+			}
+		}
+
+		const timeoutId = setTimeout(fetchQuote, 500) // Debounce
+		return () => clearTimeout(timeoutId)
+	}, [fullAddress, shipmentOption, mutateQuote])
+	console.log(quoteData)
 
 	// Load Google Maps script
 	useEffect(() => {
@@ -117,48 +275,29 @@ function Checkout() {
 		}
 	}, [])
 
-	const subtotal = items.reduce(
-		(sum, item) => sum + item.price * item.quantity,
-		0
-	)
-	const shippingCost =
-		shippingMethod === "expedited"
-			? 9.99
-			: shippingMethod === "overnight"
-			? 19.99
-			: 0
-	const tax = subtotal * 0.08
-	const total = subtotal + shippingCost + tax
+	const subtotal =
+		quoteData?.subtotal ??
+		items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+	const shippingCost = quoteData?.shipping ?? 0
+	const total = buyNow
+		? allCartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+		: subtotal + shippingCost
 
 	// Initialize Google Places Autocomplete
-	const initializeAutocomplete = (
-		inputId: string,
-		addressType: "billing" | "shipping"
-	) => {
+	const initializeAutocomplete = (inputId: string) => {
 		if (typeof window !== "undefined" && window.google) {
 			const input = document.getElementById(inputId) as HTMLInputElement
 			if (input) {
 				const autocomplete = new window.google.maps.places.Autocomplete(input, {
 					types: ["address"],
-					// componentRestrictions: { country: "us" },
 				})
 
 				autocomplete.addListener("place_changed", () => {
 					const place = autocomplete.getPlace()
 					if (place.formatted_address) {
-						const addressComponents = place.formatted_address.split(", ")
-						const address = addressComponents[0] || ""
-						const city = addressComponents[1] || ""
-						const stateZip = addressComponents[2] || ""
-						const state = stateZip.split(" ")[0] || ""
-						const zip = stateZip.split(" ")[1] || ""
-
 						setFormData((prev) => ({
 							...prev,
-							[`${addressType}Address`]: address,
-							[`${addressType}City`]: city,
-							[`${addressType}State`]: state,
-							[`${addressType}Zip`]: zip,
+							address: place.formatted_address || "",
 						}))
 					}
 				})
@@ -168,32 +307,41 @@ function Checkout() {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
+		if (!shipmentOption) {
+			toast.error("Please select a shipping method")
+			return
+		}
+		if (!fullAddress) {
+			toast.error("Please enter a complete shipping address")
+			return
+		}
+		if (!selectedPaymentOptionId) {
+			toast.error("Please select a payment method")
+			return
+		}
+
 		setIsLoading(true)
 		try {
-			// const finalPaymentMethod =
-			// 	paymentMethod === "BankTransfer" && bankTransferMethod
-			// 		? `${paymentMethod}_${bankTransferMethod}`
-			// 		: paymentMethod
-			let finalPaymentMethod = ""
-			if (paymentMethod === "BankTransfer") {
-				if (bankTransferMethod === "VNPAY") {
-					finalPaymentMethod = "vnpay_banktransfer"
-				}
-			}
-
-			if (finalPaymentMethod === "") {
-				throw new Error("Invalid payment method")
-			}
-
 			const res = await mutateCheckout({
-				address: `${formData.firstName} ${formData.lastName}, ${formData.billingAddress}, ${formData.billingCity}, ${formData.billingState}, ${formData.billingZip}, ${formData.billingCountry}`,
-				payment_gateway: finalPaymentMethod,
-				sku_ids: items.map((item) => parseInt(item.sku_id)),
+				address: fullAddress,
+				payment_option: selectedPaymentOptionId,
+				buy_now: buyNow,
+				skus: items.map((item) => ({
+					sku_id: item.sku_id,
+					quantity: item.quantity,
+					promotion_ids: item.promotions,
+					shipment_option: shipmentOption,
+					note: formData.specialInstructions || undefined,
+				})),
 			})
-			// Handle success (e.g., show a success message, redirect, etc.)
+
 			toast.success("Order placed successfully!")
 
-			router.push(res.url)
+			if (res.url) {
+				router.push(res.url)
+			} else {
+				router.push("/orders")
+			}
 		} catch (error) {
 			toast.error("Error placing order: " + (error as Error).message)
 		} finally {
@@ -213,218 +361,261 @@ function Checkout() {
 								<User className="h-5 w-5" />
 								<span>Personal Information</span>
 							</CardTitle>
-							<CardDescription>Tell us a bit about yourself</CardDescription>
-						</CardHeader>
-						<CardContent className="space-y-4">
-							<div className="grid gap-4 md:grid-cols-2">
-								<div className="space-y-2">
-									<Label htmlFor="firstName">First Name *</Label>
-									<Input
-										id="firstName"
-										placeholder="John"
-										value={formData.firstName}
-										onChange={(e) =>
-											setFormData({ ...formData, firstName: e.target.value })
-										}
-										required
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="lastName">Last Name *</Label>
-									<Input
-										id="lastName"
-										placeholder="Doe"
-										value={formData.lastName}
-										onChange={(e) =>
-											setFormData({ ...formData, lastName: e.target.value })
-										}
-										required
-									/>
-								</div>
-							</div>
-
-							<div className="grid gap-4 md:grid-cols-2">
-								<div className="space-y-2">
-									<Label htmlFor="email">Email Address *</Label>
-									<div className="relative">
-										<Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-										<Input
-											id="email"
-											type="email"
-											placeholder="john@example.com"
-											value={formData.email}
-											onChange={(e) =>
-												setFormData({ ...formData, email: e.target.value })
-											}
-											className="pl-10"
-											required
-										/>
-									</div>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="phone">Phone Number *</Label>
-									<div className="relative">
-										<Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-										<Input
-											id="phone"
-											type="tel"
-											placeholder="(555) 123-4567"
-											value={formData.phone}
-											onChange={(e) =>
-												setFormData({ ...formData, phone: e.target.value })
-											}
-											className="pl-10"
-											required
-										/>
-									</div>
-								</div>
-							</div>
-						</CardContent>
-					</Card>
-
-					{/* Billing Address */}
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center space-x-2">
-								<Truck className="h-5 w-5" />
-								<span>Shipping Address</span>
-							</CardTitle>
 							<CardDescription>
-								Where should we deliver your order?
+								{isLoggedIn
+									? "Select your delivery address"
+									: "Tell us a bit about yourself"}
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-4">
-							<div className="space-y-2">
-								<Label htmlFor="billingAddress">Street Address *</Label>
-								<div className="relative">
-									<MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-									<Input
-										id="billingAddress"
-										placeholder="Start typing your address..."
-										value={formData.billingAddress}
-										onChange={(e) =>
-											setFormData({
-												...formData,
-												billingAddress: e.target.value,
-											})
-										}
-										className="pl-10"
-										onFocus={() =>
-											initializeAutocomplete("billingAddress", "billing")
-										}
-										required
-									/>
-								</div>
-								<p className="text-xs text-muted-foreground">
-									💡 Start typing to see address suggestions
-								</p>
-							</div>
+							{isLoggedIn ? (
+								// Logged in: Show contact dropdown
+								<div className="space-y-4">
+									<div className="space-y-2">
+										<Label htmlFor="contact-select">Select Address</Label>
+										<Select
+											defaultValue={
+												String(userAccount.default_contact_id) ??
+												"contact-select"
+											}
+											onValueChange={handleContactSelect}
+										>
+											<SelectTrigger
+												id="contact-select"
+												className="w-full justify-center min-h-[40px]"
+											>
+												<SelectValue placeholder="Choose from saved addresses or create new" />
+											</SelectTrigger>
+											<SelectContent>
+												{contacts.map((contact) => (
+													<SelectItem
+														key={contact.id}
+														value={String(contact.id)}
+													>
+														<div className="flex flex-col">
+															<span className="font-medium">
+																{contact.full_name}
+															</span>
+															<span className="text-xs text-muted-foreground">
+																{contact.address}
+															</span>
+														</div>
+													</SelectItem>
+												))}
+												<SelectItem value="new">
+													+ Create New Address
+												</SelectItem>
+											</SelectContent>
+										</Select>
+									</div>
 
-							<div className="grid gap-4 md:grid-cols-3">
-								<div className="space-y-2">
-									<Label htmlFor="billingCity">City *</Label>
-									<Input
-										id="billingCity"
-										placeholder="New York"
-										value={formData.billingCity}
-										onChange={(e) =>
-											setFormData({ ...formData, billingCity: e.target.value })
-										}
-										required
-									/>
+									{/* Create New Contact Dialog */}
+									<Dialog
+										open={isCreateContactOpen}
+										onOpenChange={(open) => {
+											setIsCreateContactOpen(open)
+											if (!open && selectedContactId === "new") {
+												setSelectedContactId("")
+											}
+										}}
+									>
+										<DialogContent>
+											<DialogHeader>
+												<DialogTitle>Add New Address</DialogTitle>
+												<DialogDescription>
+													Add a new delivery address for your order
+												</DialogDescription>
+											</DialogHeader>
+											<div className="space-y-4 py-4">
+												<div className="space-y-2">
+													<Label htmlFor="new-contact-full_name">
+														Full Name
+													</Label>
+													<Input
+														id="new-contact-full_name"
+														value={newContactForm.full_name}
+														onChange={(e) =>
+															setNewContactForm({
+																...newContactForm,
+																full_name: e.target.value,
+															})
+														}
+														placeholder="Enter full name"
+													/>
+												</div>
+												<div className="space-y-2">
+													<Label htmlFor="new-contact-phone">
+														Phone Number
+													</Label>
+													<Input
+														id="new-contact-phone"
+														value={newContactForm.phone}
+														onChange={(e) =>
+															setNewContactForm({
+																...newContactForm,
+																phone: e.target.value,
+															})
+														}
+														placeholder="Enter phone number"
+													/>
+												</div>
+												<div className="space-y-2">
+													<Label htmlFor="new-contact-address">Address</Label>
+													<Textarea
+														id="new-contact-address"
+														value={newContactForm.address}
+														onChange={(e) =>
+															setNewContactForm({
+																...newContactForm,
+																address: e.target.value,
+															})
+														}
+														placeholder="Enter full address"
+														rows={3}
+													/>
+												</div>
+												<div className="space-y-2">
+													<Label htmlFor="new-contact-address_type">
+														Address Type
+													</Label>
+													<Select
+														value={newContactForm.address_type}
+														onValueChange={(value: "Home" | "Work") =>
+															setNewContactForm({
+																...newContactForm,
+																address_type: value,
+															})
+														}
+													>
+														<SelectTrigger>
+															<SelectValue />
+														</SelectTrigger>
+														<SelectContent>
+															<SelectItem value="Home">Home</SelectItem>
+															<SelectItem value="Work">Work</SelectItem>
+														</SelectContent>
+													</Select>
+												</div>
+											</div>
+											<DialogFooter>
+												<Button
+													variant="outline"
+													onClick={() => setIsCreateContactOpen(false)}
+												>
+													Cancel
+												</Button>
+												<Button
+													onClick={handleCreateContact}
+													disabled={createContact.isPending}
+												>
+													{createContact.isPending
+														? "Adding..."
+														: "Add Address"}
+												</Button>
+											</DialogFooter>
+										</DialogContent>
+									</Dialog>
 								</div>
-								<div className="space-y-2">
-									<Label htmlFor="billingState">State *</Label>
-									<Input
-										id="billingState"
-										placeholder="NY"
-										value={formData.billingState}
-										onChange={(e) =>
-											setFormData({ ...formData, billingState: e.target.value })
-										}
-										required
-									/>
-								</div>
-								{/* <div className="space-y-2">
-									<Label htmlFor="billingZip">ZIP Code *</Label>
-									<Input
-										id="billingZip"
-										placeholder="10001"
-										value={formData.billingZip}
-										onChange={(e) =>
-											setFormData({ ...formData, billingZip: e.target.value })
-										}
-										required
-									/>
-								</div> */}
-							</div>
+							) : (
+								// Not logged in: Show full form
+								<>
+									<div className="space-y-2">
+										<Label htmlFor="fullName">Full Name *</Label>
+										<Input
+											id="fullName"
+											placeholder="John Doe"
+											value={formData.fullName}
+											onChange={(e) =>
+												setFormData({ ...formData, fullName: e.target.value })
+											}
+											required
+										/>
+									</div>
+
+									<div className="grid gap-4 md:grid-cols-2">
+										<div className="space-y-2">
+											<Label htmlFor="email">Email Address *</Label>
+											<div className="relative">
+												<Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+												<Input
+													id="email"
+													type="email"
+													placeholder="john@example.com"
+													value={formData.email}
+													onChange={(e) =>
+														setFormData({ ...formData, email: e.target.value })
+													}
+													className="pl-10"
+													required
+												/>
+											</div>
+										</div>
+										<div className="space-y-2">
+											<Label htmlFor="phone">Phone Number *</Label>
+											<div className="relative">
+												<Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+												<Input
+													id="phone"
+													type="tel"
+													placeholder="(555) 123-4567"
+													value={formData.phone}
+													onChange={(e) =>
+														setFormData({ ...formData, phone: e.target.value })
+													}
+													className="pl-10"
+													required
+												/>
+											</div>
+										</div>
+									</div>
+
+									<div className="space-y-2">
+										<Label htmlFor="address">Address *</Label>
+										<div className="relative">
+											<MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+											<Input
+												id="address"
+												placeholder="Enter your full address..."
+												value={formData.address}
+												onChange={(e) =>
+													setFormData({
+														...formData,
+														address: e.target.value,
+													})
+												}
+												className="pl-10"
+												onFocus={() => initializeAutocomplete("address")}
+												required
+											/>
+										</div>
+										<p className="text-xs text-muted-foreground">
+											💡 Start typing to see address suggestions
+										</p>
+									</div>
+								</>
+							)}
 						</CardContent>
 					</Card>
 
 					{/* Shipping Method */}
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center space-x-2">
-								<Truck className="h-5 w-5" />
-								<span>Delivery Options</span>
-							</CardTitle>
-							<CardDescription>
-								How fast do you need your order?
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<RadioGroup
-								value={shippingMethod}
-								onValueChange={setShippingMethod}
-							>
-								<div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-									<RadioGroupItem value="standard" id="standard" />
-									<div className="flex-1">
-										<Label
-											htmlFor="standard"
-											className="font-medium cursor-pointer"
-										>
-											🚚 Standard Delivery
-										</Label>
-										<p className="text-sm text-muted-foreground">
-											5-7 business days • Free shipping
-										</p>
-									</div>
-									<span className="font-medium text-green-600">FREE</span>
-								</div>
-								<div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-									<RadioGroupItem value="expedited" id="expedited" />
-									<div className="flex-1">
-										<Label
-											htmlFor="expedited"
-											className="font-medium cursor-pointer"
-										>
-											⚡ Fast Delivery
-										</Label>
-										<p className="text-sm text-muted-foreground">
-											2-3 business days
-										</p>
-									</div>
-									<span className="font-medium">$9.99</span>
-								</div>
-								<div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-									<RadioGroupItem value="overnight" id="overnight" />
-									<div className="flex-1">
-										<Label
-											htmlFor="overnight"
-											className="font-medium cursor-pointer"
-										>
-											🚀 Next Day Delivery
-										</Label>
-										<p className="text-sm text-muted-foreground">
-											Next business day
-										</p>
-									</div>
-									<span className="font-medium">$19.99</span>
-								</div>
-							</RadioGroup>
-						</CardContent>
-					</Card>
+					<ServiceOptionSelector
+						title="Delivery Options"
+						description="Select your preferred shipping method"
+						icon={Truck}
+						options={shipmentOptions}
+						selectedOptionId={shipmentOption}
+						onChange={setShipmentOption}
+						providerIconMap={providerIconMap}
+						groupByProvider={true}
+						loading={isLoadingShipment}
+						additionalInfo={() =>
+							quoteData ? (
+								<p className="text-sm text-blue-700 font-medium">
+									Shipping cost: {formatCurrency(quoteData.shipping)}
+								</p>
+							) : null
+						}
+					/>
 
 					{/* Special Instructions */}
 					<Card>
@@ -459,264 +650,37 @@ function Checkout() {
 					</Card>
 
 					{/* Payment Information */}
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center space-x-2">
-								<CreditCard className="h-5 w-5" />
-								<span>Payment</span>
-							</CardTitle>
-							<CardDescription>Secure payment processing</CardDescription>
-						</CardHeader>
-						<CardContent className="space-y-4">
-							<RadioGroup
-								value={paymentMethod}
-								onValueChange={(value) => {
-									setPaymentMethod(value)
-									if (value !== "BankTransfer") {
-										setBankTransferMethod("")
-									}
-								}}
-							>
-								<div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-									<RadioGroupItem value="COD" id="COD" />
-									<Label htmlFor="COD" className="cursor-pointer">
-										💰 Cash on Delivery (COD)
-									</Label>
-								</div>
-								<div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-									<RadioGroupItem value="Card" id="Card" />
-									<Label htmlFor="Card" className="cursor-pointer">
-										💳 Credit/Debit Card
-									</Label>
-								</div>
-								<div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-									<RadioGroupItem value="BankTransfer" id="BankTransfer" />
-									<Label htmlFor="BankTransfer" className="cursor-pointer">
-										🏦 Bank Transfer
-									</Label>
-								</div>
-								<div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors opacity-50">
-									<RadioGroupItem value="Crypto" id="Crypto" disabled />
-									<Label htmlFor="Crypto" className="cursor-not-allowed">
-										₿ Cryptocurrency (Coming Soon)
-									</Label>
-								</div>
-							</RadioGroup>
-
-							{paymentMethod === "COD" && (
-								<div className="p-4 bg-green-50 rounded-lg">
-									<p className="text-sm text-green-800">
-										💰 Pay with cash when your order is delivered. No upfront
-										payment required!
-									</p>
-								</div>
-							)}
-
-							{paymentMethod === "Card" && (
-								<div className="space-y-4 pt-4">
-									<div className="space-y-2">
-										<Label htmlFor="cardName">Cardholder Name *</Label>
-										<Input
-											id="cardName"
-											placeholder="John Doe"
-											value={formData.cardName}
-											onChange={(e) =>
-												setFormData({ ...formData, cardName: e.target.value })
-											}
-											required
-										/>
-									</div>
-
-									<div className="space-y-2">
-										<Label htmlFor="cardNumber">Card Number *</Label>
-										<Input
-											id="cardNumber"
-											placeholder="1234 5678 9012 3456"
-											value={formData.cardNumber}
-											onChange={(e) =>
-												setFormData({ ...formData, cardNumber: e.target.value })
-											}
-											required
-										/>
-									</div>
-
-									<div className="grid gap-4 md:grid-cols-2">
-										<div className="space-y-2">
-											<Label htmlFor="expiryDate">Expiry Date *</Label>
-											<Input
-												id="expiryDate"
-												placeholder="MM/YY"
-												value={formData.expiryDate}
-												onChange={(e) =>
-													setFormData({
-														...formData,
-														expiryDate: e.target.value,
-													})
-												}
-												required
-											/>
-										</div>
-										<div className="space-y-2">
-											<Label htmlFor="cvv">CVV *</Label>
-											<Input
-												id="cvv"
-												placeholder="123"
-												value={formData.cvv}
-												onChange={(e) =>
-													setFormData({ ...formData, cvv: e.target.value })
-												}
-												required
-											/>
-										</div>
-									</div>
-								</div>
-							)}
-
-							{paymentMethod === "BankTransfer" && (
-								<div className="space-y-4 pt-4">
-									<div className="space-y-3">
-										<Label className="text-base font-medium">
-											Choose Payment Provider
-										</Label>
-										<RadioGroup
-											value={bankTransferMethod}
-											onValueChange={setBankTransferMethod}
-											className="grid grid-cols-1 md:grid-cols-3 gap-3"
-										>
-											<div className="flex flex-col items-center space-y-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
-												<RadioGroupItem
-													value="VNPAY"
-													id="VNPAY"
-													className="self-start"
-												/>
-												<div className="flex flex-col items-center space-y-2 text-center">
-													<div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-														<span className="text-blue-600 font-bold text-xl">
-															V
-														</span>
-													</div>
-													<div>
-														<Label
-															htmlFor="VNPAY"
-															className="cursor-pointer font-medium"
-														>
-															VNPAY
-														</Label>
-														<p className="text-xs text-muted-foreground">
-															Secure online banking payment
-														</p>
-													</div>
-												</div>
-											</div>
-
-											<div className="flex flex-col items-center space-y-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
-												<RadioGroupItem
-													value="MOMO"
-													id="MOMO"
-													className="self-start"
-												/>
-												<div className="flex flex-col items-center space-y-2 text-center">
-													<div className="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center">
-														<span className="text-pink-600 font-bold text-xl">
-															M
-														</span>
-													</div>
-													<div>
-														<Label
-															htmlFor="MOMO"
-															className="cursor-pointer font-medium"
-														>
-															MOMO Wallet
-														</Label>
-														<p className="text-xs text-muted-foreground">
-															Instant payment via MOMO app
-														</p>
-													</div>
-												</div>
-											</div>
-
-											<div className="flex flex-col items-center space-y-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
-												<RadioGroupItem
-													value="ZALO"
-													id="ZALO"
-													className="self-start"
-												/>
-												<div className="flex flex-col items-center space-y-2 text-center">
-													<div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-														<span className="text-blue-500 font-bold text-xl">
-															Z
-														</span>
-													</div>
-													<div>
-														<Label
-															htmlFor="ZALO"
-															className="cursor-pointer font-medium"
-														>
-															ZALO Pay
-														</Label>
-														<p className="text-xs text-muted-foreground">
-															Quick payment through ZALO
-														</p>
-													</div>
-												</div>
-											</div>
-										</RadioGroup>
-									</div>
-
-									{bankTransferMethod && (
-										<div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-											<div className="flex items-start space-x-3">
-												<div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-													<span className="text-blue-600 text-sm">ℹ️</span>
-												</div>
-												<div className="space-y-2">
-													<p className="text-sm text-blue-800 font-medium">
-														{bankTransferMethod === "MOMO" &&
-															"MOMO Wallet Payment"}
-														{bankTransferMethod === "VNPAY" && "VNPAY Payment"}
-														{bankTransferMethod === "ZALO" &&
-															"ZALO Pay Payment"}
-													</p>
-													<p className="text-sm text-blue-700">
-														You&apos;ll be redirected to the payment provider to
-														complete your payment securely.
-													</p>
-													<div className="flex items-center space-x-2 text-xs text-blue-600">
-														<span>🔒</span>
-														<span>SSL Encrypted • Secure Payment</span>
-													</div>
-												</div>
-											</div>
-										</div>
-									)}
-								</div>
-							)}
-
-							{paymentMethod === "Crypto" && (
-								<div className="p-4 bg-gray-50 rounded-lg">
-									<p className="text-sm text-gray-700">
-										₿ Cryptocurrency payments are not yet supported. Please
-										choose another payment method.
-									</p>
-								</div>
-							)}
-						</CardContent>
-					</Card>
+					<ServiceOptionSelector
+						title="Payment"
+						description="Secure payment processing"
+						icon={CreditCard}
+						options={paymentOptions}
+						selectedOptionId={selectedPaymentOptionId}
+						onChange={setSelectedPaymentOptionId}
+						providerIconMap={providerIconMap}
+						groupByProvider={true}
+						loading={isLoadingPayment}
+						// additionalInfo={() => (
+						// 	<div className="flex items-center space-x-2 text-xs text-blue-600 mt-2">
+						// 		<span>🔒</span>
+						// 		<span>SSL Encrypted • Secure Payment</span>
+						// 	</div>
+						// )}
+					/>
 
 					<Button
 						type="submit"
 						size="lg"
 						className="w-full"
-						disabled={
-							isLoading ||
-							(paymentMethod === "BankTransfer" && !bankTransferMethod)
-						}
+						disabled={isLoading || !shipmentOption || !selectedPaymentOptionId}
 					>
 						{isLoading
 							? "Processing Order..."
-							: paymentMethod === "BankTransfer" && !bankTransferMethod
-							? "Please select a payment provider"
-							: `Complete Order - $${total.toFixed(2)}`}
+							: !shipmentOption
+							? "Please select a shipping method"
+							: !selectedPaymentOptionId
+							? "Please select a payment method"
+							: `Complete Order - ${formatCurrency(total)}`}
 					</Button>
 				</form>
 			</div>
@@ -730,40 +694,78 @@ function Checkout() {
 						</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
-						{items.map((item) => (
-							<div key={item.sku_id} className="flex space-x-3">
-								<div className="relative h-16 w-16 overflow-hidden rounded-lg border">
-									<img
-										src={item.resource.url || "/placeholder.svg"}
-										alt={item.name}
-										className="h-full w-full object-cover"
-									/>
-								</div>
-								<div className="flex-1 space-y-1">
-									<h4 className="text-sm font-medium line-clamp-2">
-										{item.name}
-									</h4>
-									<div className="text-sm text-muted-foreground">
-										{item.sku_name}
+						{items.map((item) => {
+							const isDiscounted = item.original_price > item.price
+							const discountPercentage = isDiscounted
+								? Math.round(
+										((item.original_price - item.price) / item.original_price) *
+											100
+								  )
+								: 0
+							const itemTotal = item.price * item.quantity
+							const originalTotal = item.original_price * item.quantity
+							const savings = isDiscounted ? originalTotal - itemTotal : 0
+
+							return (
+								<div key={item.sku_id} className="flex space-x-3">
+									<div className="relative h-16 w-16 overflow-hidden rounded-lg border">
+										<Image
+											width={64}
+											height={64}
+											src={item.resources[0]?.url || "/placeholder.svg"}
+											alt={item.name}
+											className="h-full w-full object-cover"
+										/>
+										{isDiscounted && (
+											<div className="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+												-{discountPercentage}%
+											</div>
+										)}
 									</div>
-									<div className="flex justify-between text-sm">
-										<span className="text-muted-foreground">
+									<div className="flex-1 space-y-1">
+										<h4 className="text-sm font-medium line-clamp-2">
+											{item.name}
+										</h4>
+										<div className="text-sm text-muted-foreground">
+											{item.sku_name}
+										</div>
+										<span className="text-muted-foreground text-sm">
 											Qty: {item.quantity}
 										</span>
-										<span className="font-medium">
-											${(item.price * item.quantity).toFixed(2)}
-										</span>
+										<div className="flex flex-col gap-1">
+											<div className="flex justify-between items-center text-sm ">
+												<div className="flex items-center gap-2">
+													{isDiscounted && (
+														<span className="text-xs text-muted-foreground line-through">
+															{formatCurrency(originalTotal)}
+														</span>
+													)}
+													<span
+														className={`font-medium ${
+															isDiscounted ? "text-red-600" : ""
+														}`}
+													>
+														{formatCurrency(itemTotal)}
+													</span>
+												</div>
+											</div>
+											{isDiscounted && savings > 0 && (
+												<div className="text-xs text-green-600 font-medium text-right">
+													Save {formatCurrency(savings)}
+												</div>
+											)}
+										</div>
 									</div>
 								</div>
-							</div>
-						))}
+							)
+						})}
 
 						<Separator />
 
 						<div className="space-y-3">
 							<div className="flex justify-between text-sm">
 								<span>Subtotal:</span>
-								<span>${subtotal.toFixed(2)}</span>
+								<span>{formatCurrency(subtotal)}</span>
 							</div>
 							<div className="flex justify-between text-sm">
 								<span>Shipping:</span>
@@ -772,50 +774,25 @@ function Checkout() {
 										shippingCost === 0 ? "text-green-600 font-medium" : ""
 									}
 								>
-									{shippingCost === 0 ? "FREE" : `$${shippingCost.toFixed(2)}`}
+									{shippingCost === 0 ? "FREE" : formatCurrency(shippingCost)}
 								</span>
 							</div>
-							<div className="flex justify-between text-sm">
-								<span>Tax:</span>
-								<span>${tax.toFixed(2)}</span>
-							</div>
+							{!quoteData && (
+								<p className="text-xs text-muted-foreground">
+									Shipping will be calculated after you enter an address and
+									select a shipping method
+								</p>
+							)}
 							<Separator />
 							<div className="flex justify-between text-lg font-bold">
 								<span>Total:</span>
-								<span>${total.toFixed(2)}</span>
+								<span>{formatCurrency(total)}</span>
 							</div>
 						</div>
 					</CardContent>
 				</Card>
 
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center space-x-2">
-							<Clock className="h-5 w-5" />
-							<span>Delivery Timeline</span>
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="text-center space-y-3">
-							<Badge variant="outline" className="text-lg px-4 py-2">
-								{shippingMethod === "overnight"
-									? "🚀 Tomorrow"
-									: shippingMethod === "expedited"
-									? "⚡ 2-3 Days"
-									: "🚚 5-7 Days"}
-							</Badge>
-							<p className="text-sm text-muted-foreground">
-								{shippingMethod === "overnight"
-									? "Next business day delivery"
-									: shippingMethod === "expedited"
-									? "Fast delivery service"
-									: "Standard delivery with free shipping"}
-							</p>
-						</div>
-					</CardContent>
-				</Card>
-
-				<Card>
+				{/* <Card>
 					<CardHeader>
 						<CardTitle className="flex items-center space-x-2">
 							<span>🔒 Security</span>
@@ -828,7 +805,7 @@ function Checkout() {
 							<p>✅ Your data is protected</p>
 						</div>
 					</CardContent>
-				</Card>
+				</Card> */}
 			</div>
 		</div>
 	)

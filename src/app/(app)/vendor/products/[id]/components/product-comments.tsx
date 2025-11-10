@@ -12,7 +12,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select"
-import { MockComment } from "../../../components/mock-data"
 import {
 	Star,
 	ThumbsUp,
@@ -24,8 +23,22 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
+// Comment type - replace with real API type when available
+type Comment = {
+	id: number
+	product_name: string
+	customer_name: string
+	score: number
+	body: string
+	upvote: number
+	downvote: number
+	ref_type: 'ProductSpu' | 'Comment'
+	ref_id: number
+	date_created: string
+}
+
 interface ProductCommentsProps {
-	comments: MockComment[]
+	comments: Comment[]
 	productId: number
 }
 

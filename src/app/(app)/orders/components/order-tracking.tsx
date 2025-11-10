@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
 import {
 	Card,
@@ -11,37 +12,35 @@ import {
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { Package, Truck, CheckCircle, Clock } from "lucide-react"
+import { TOrder } from "@/core/order/order.customer"
+import { useQuote } from "@/core/order/order.customer"
 
 interface OrderTrackingProps {
-	order: {
-		id: string
-		status: "processing" | "shipped" | "delivered" | "cancelled"
-		orderDate: string
-		estimatedDelivery: string
-		trackingNumber?: string
-		items: Array<{
-			sku_id: string
-			name: string
-			sku_name: string
-			quantity: number
-			price: number
-			resource: {
-				url: string
-			}
-		}>
-		shippingAddress: {
-			company: string
-			address: string
-			city: string
-			state: string
-			zip: string
-		}
-	}
+	order: TOrder
 }
 
 export function OrderTracking({ order }: OrderTrackingProps) {
+	const quoteMutation = useQuote()
+
+	// Get quote for subtotal and shipping
+	useEffect(() => {
+		if (order.items.length > 0 && order.address) {
+			quoteMutation.mutate({
+				address: order.address,
+				skus: order.items.map((item) => ({
+					sku_id: item.sku_id,
+					quantity: item.quantity,
+					shipment_option: "standard", // TODO: get from order data or shipment API
+					...(item.note && { note: item.note }),
+				})),
+			})
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [order.items.length, order.address])
+
 	const getStatusProgress = () => {
-		switch (order.status) {
+		const status = order.items[0]?.status?.toLowerCase() || ""
+		switch (status) {
 			case "processing":
 				return 25
 			case "shipped":
@@ -51,25 +50,19 @@ export function OrderTracking({ order }: OrderTrackingProps) {
 			case "cancelled":
 				return 0
 			default:
-				return 0
+				return 25
 		}
 	}
 
-	const getStatusColor = () => {
-		switch (order.status) {
-			case "processing":
-				return "bg-blue-500"
-			case "shipped":
-				return "bg-orange-500"
-			case "delivered":
-				return "bg-green-500"
-			case "cancelled":
-				return "bg-red-500"
-			default:
-				return "bg-gray-500"
-		}
+	const getOrderStatus = () => {
+		return order.items[0]?.status || "pending"
 	}
 
+	const formatDate = (dateString: string) => {
+		return new Date(dateString).toLocaleDateString()
+	}
+
+	const orderStatus = getOrderStatus().toLowerCase()
 	const trackingSteps = [
 		{
 			id: "ordered",
@@ -77,25 +70,25 @@ export function OrderTracking({ order }: OrderTrackingProps) {
 			description: "Your order has been received and is being processed",
 			icon: Package,
 			completed: true,
-			date: order.orderDate,
+			date: order.date_created,
 		},
 		{
 			id: "processing",
 			title: "Processing",
 			description: "Your order is being prepared for shipment",
 			icon: Clock,
-			completed: order.status !== "processing",
-			date: order.status !== "processing" ? "2024-01-16" : undefined,
+			completed: orderStatus !== "processing",
+			date: orderStatus !== "processing" ? order.date_updated : undefined,
 		},
 		{
 			id: "shipped",
 			title: "Shipped",
 			description: "Your order is on its way",
 			icon: Truck,
-			completed: order.status === "delivered",
+			completed: orderStatus === "delivered",
 			date:
-				order.status === "shipped" || order.status === "delivered"
-					? "2024-01-17"
+				orderStatus === "shipped" || orderStatus === "delivered"
+					? order.date_updated
 					: undefined,
 		},
 		{
@@ -103,8 +96,8 @@ export function OrderTracking({ order }: OrderTrackingProps) {
 			title: "Delivered",
 			description: "Your order has been delivered",
 			icon: CheckCircle,
-			completed: order.status === "delivered",
-			date: order.status === "delivered" ? "2024-01-19" : undefined,
+			completed: orderStatus === "delivered",
+			date: orderStatus === "delivered" ? order.date_updated : undefined,
 		},
 	]
 
@@ -117,14 +110,16 @@ export function OrderTracking({ order }: OrderTrackingProps) {
 						<div>
 							<CardTitle>Order #{order.id}</CardTitle>
 							<CardDescription>
-								Placed on {new Date(order.orderDate).toLocaleDateString()}
+								Placed on {formatDate(order.date_created)}
 							</CardDescription>
 						</div>
 						<Badge
-							variant={order.status === "delivered" ? "default" : "secondary"}
+							variant={
+								orderStatus === "delivered" ? "default" : "secondary"
+							}
 							className="capitalize"
 						>
-							{order.status}
+							{orderStatus}
 						</Badge>
 					</div>
 				</CardHeader>
@@ -138,34 +133,18 @@ export function OrderTracking({ order }: OrderTrackingProps) {
 							<Progress value={getStatusProgress()} className="h-2" />
 						</div>
 
-						{order.trackingNumber && (
-							<div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-								<div>
-									<p className="text-sm font-medium">Tracking Number</p>
-									<p className="text-sm text-muted-foreground">
-										{order.trackingNumber}
-									</p>
-								</div>
-								<Badge variant="outline">Track Package</Badge>
-							</div>
-						)}
 
 						<div className="grid gap-4 md:grid-cols-2">
 							<div>
-								<p className="text-sm font-medium mb-1">Estimated Delivery</p>
-								<p className="text-sm text-muted-foreground">
-									{new Date(order.estimatedDelivery).toLocaleDateString()}
+								<p className="text-sm font-medium mb-1">Payment Status</p>
+								<p className="text-sm text-muted-foreground capitalize">
+									{order.payment_status}
 								</p>
 							</div>
 							<div>
 								<p className="text-sm font-medium mb-1">Delivery Address</p>
 								<div className="text-sm text-muted-foreground">
-									<p>{order.shippingAddress.company}</p>
-									<p>{order.shippingAddress.address}</p>
-									<p>
-										{order.shippingAddress.city}, {order.shippingAddress.state}{" "}
-										{order.shippingAddress.zip}
-									</p>
+									<p>{order.address}</p>
 								</div>
 							</div>
 						</div>
@@ -186,9 +165,9 @@ export function OrderTracking({ order }: OrderTrackingProps) {
 						{trackingSteps.map((step, index) => {
 							const Icon = step.icon
 							const isActive =
-								(order.status === "processing" && step.id === "processing") ||
-								(order.status === "shipped" && step.id === "shipped") ||
-								(order.status === "delivered" && step.id === "delivered")
+								(orderStatus === "processing" && step.id === "processing") ||
+								(orderStatus === "shipped" && step.id === "shipped") ||
+								(orderStatus === "delivered" && step.id === "delivered")
 
 							return (
 								<div key={step.id} className="flex space-x-4">
@@ -254,30 +233,28 @@ export function OrderTracking({ order }: OrderTrackingProps) {
 				<CardContent>
 					<div className="space-y-4">
 						{order.items.map((item) => (
-							<div key={item.sku_id} className="flex space-x-4">
-								<div className="relative h-20 w-20 overflow-hidden rounded-lg border flex-shrink-0">
-									<img
-										src={item.resource.url || "/placeholder.svg"}
-										alt={item.name}
-										className="h-full w-full object-cover"
-									/>
+							<div key={item.id} className="flex space-x-4">
+								<div className="relative h-20 w-20 overflow-hidden rounded-lg border flex-shrink-0 bg-muted flex items-center justify-center">
+									<Package className="h-8 w-8 text-muted-foreground" />
 								</div>
 								<div className="flex-1 space-y-2">
 									<div>
 										<h4 className="text-sm font-medium line-clamp-2">
-											{item.name}
+											SKU #{item.sku_id}
 										</h4>
-										<div className="text-sm text-muted-foreground">
-											{item.sku_name}
-										</div>
+										{item.note && (
+											<div className="text-sm text-muted-foreground">
+												Note: {item.note}
+											</div>
+										)}
 									</div>
-									<div className="flex justify-between text-sm">
+									<div className="flex justify-between items-center text-sm">
 										<span className="text-muted-foreground">
 											Qty: {item.quantity}
 										</span>
-										<span className="font-medium">
-											${(item.price * item.quantity).toFixed(2)}
-										</span>
+										<Badge variant="outline" className="capitalize">
+											{item.status}
+										</Badge>
 									</div>
 								</div>
 							</div>
@@ -285,45 +262,28 @@ export function OrderTracking({ order }: OrderTrackingProps) {
 
 						<Separator />
 
+						{/* TODO: use invoice api */}
 						<div className="space-y-3">
-							<div className="flex justify-between text-sm">
-								<span>Subtotal:</span>
-								<span>
-									$
-									{order.items
-										.reduce((sum, item) => sum + item.price * item.quantity, 0)
-										.toFixed(2)}
-								</span>
-							</div>
-							<div className="flex justify-between text-sm">
-								<span>Shipping:</span>
-								<span className="text-green-600 font-medium">FREE</span>
-							</div>
-							<div className="flex justify-between text-sm">
-								<span>Tax:</span>
-								<span>
-									$
-									{(
-										order.items.reduce(
-											(sum, item) => sum + item.price * item.quantity,
-											0
-										) * 0.08
-									).toFixed(2)}
-								</span>
-							</div>
-							<Separator />
-							<div className="flex justify-between text-lg font-bold">
-								<span>Total:</span>
-								<span>
-									$
-									{(
-										order.items.reduce(
-											(sum, item) => sum + item.price * item.quantity,
-											0
-										) * 1.08
-									).toFixed(2)}
-								</span>
-							</div>
+							{quoteMutation.isPending ? (
+								<div className="text-sm text-muted-foreground text-center py-4">
+									Calculating pricing...
+								</div>
+							) : quoteMutation.isError ? (
+								<div className="text-sm text-muted-foreground text-center py-4">
+									Unable to load pricing
+								</div>
+							) : quoteMutation.data ? (
+								<>
+									<div className="flex justify-between text-sm">
+										<span>Subtotal:</span>
+										<span>${quoteMutation.data.subtotal.toFixed(2)}</span>
+									</div>
+									<div className="flex justify-between text-sm">
+										<span>Shipping:</span>
+										<span>${quoteMutation.data.shipping.toFixed(2)}</span>
+									</div>
+								</>
+							) : null}
 						</div>
 					</div>
 				</CardContent>

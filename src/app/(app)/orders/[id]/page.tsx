@@ -1,44 +1,60 @@
-import { OrderTracking } from "../components/order-tracking"
+"use client"
 
-const sampleOrder = {
-	id: "ORD-2024-001",
-	status: "shipped" as const,
-	orderDate: "2024-01-15",
-	estimatedDelivery: "2024-01-19",
-	trackingNumber: "1Z999AA1234567890",
-	items: [
-		{
-			sku_id: "SKU-001",
-			name: "Professional Office Chair - Ergonomic Design",
-			sku_name: "Black Leather, Adjustable Height",
-			quantity: 8,
-			price: 249.99,
-			resource: { url: "/professional-office-chair.jpg" },
-		},
-		{
-			sku_id: "SKU-002",
-			name: "Premium Paper Pack - 5000 Sheets",
-			sku_name: "A4 White, 80gsm",
-			quantity: 25,
-			price: 39.99,
-			resource: { url: "/office-paper-stack.jpg" },
-		},
-	],
-	shippingAddress: {
-		company: "Acme Corporation",
-		address: "123 Business Ave, Suite 100",
-		city: "New York",
-		state: "NY",
-		zip: "10001",
-	},
-}
+import { OrderTracking } from "../components/order-tracking"
+import { useGetOrder } from "@/core/order/order.customer"
+import { useParams } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 export default function OrderDetailPage() {
+	const params = useParams()
+	const orderId = params?.id ? parseInt(params.id as string, 10) : null
+
+	const { data: order, isLoading, isError } = useGetOrder(orderId || 0)
+
+	if (!orderId) {
+		return (
+			<div className="min-h-screen flex items-center justify-center">
+				<div className="text-center">
+					<h1 className="text-2xl font-bold text-foreground mb-4">
+						Order ID not found
+					</h1>
+					<Button asChild>
+						<Link href="/orders">View Orders</Link>
+					</Button>
+				</div>
+			</div>
+		)
+	}
+
+	if (isLoading) {
+		return (
+			<div className="min-h-screen flex items-center justify-center">
+				<p className="text-muted-foreground">Loading order details...</p>
+			</div>
+		)
+	}
+
+	if (isError || !order) {
+		return (
+			<div className="min-h-screen flex items-center justify-center">
+				<div className="text-center">
+					<h1 className="text-2xl font-bold text-foreground mb-4">
+						Order not found
+					</h1>
+					<Button asChild>
+						<Link href="/orders">View Orders</Link>
+					</Button>
+				</div>
+			</div>
+		)
+	}
+
 	return (
 		<div className="min-h-screen flex flex-col">
 			<main className="flex-1 py-8">
 				<div className="container max-w-4xl mx-auto">
-					<OrderTracking order={sampleOrder} />
+					<OrderTracking order={order} />
 				</div>
 			</main>
 		</div>

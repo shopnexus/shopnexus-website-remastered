@@ -1,18 +1,51 @@
-import { useInfiniteQuery, useMutation } from "@tanstack/react-query"
+import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query"
 import { customFetchPagination, customFetchStandard } from "../../lib/queryclient/custom-fetch"
 import QueryString from "qs"
 import { PaginationParams, SuccessPaginationRes } from "@/lib/queryclient/response.type"
-import { Status } from "../shared/status.type"
 
-type TOrder = {
+export type OrderItem = {
+  id: number
+  order_id: number
+  sku_id: number
+  vendor_id: number
+  confirmed_by_id: number | null
+  shipment_id: number
+  note: string
+  status: string
+  quantity: number
+}
+
+export type TOrder = {
   id: number
   account_id: number
-  payment_gateway: string
-  status: Status
+  payment_option: string
+  payment_status: string
   address: string
   date_created: string
   date_updated: string
+  items: OrderItem[]
 }
+
+export const useQuote = () => useMutation({
+  mutationKey: ['quote'],
+  mutationFn: (params: {
+    address: string
+    skus: Array<{
+      sku_id: number
+      quantity: number
+      promotion_ids?: number[]
+      shipment_option: string
+      note?: string
+    }>
+  }) => customFetchStandard<{
+    total: number
+    subtotal: number
+    shipping: number
+  }>(`order/quote`, {
+    method: 'POST',
+    body: JSON.stringify(params),
+  }),
+})
 
 export const useCheckout = () =>
   useMutation({
@@ -20,19 +53,28 @@ export const useCheckout = () =>
     mutationFn: (params: {
       address: string
       payment_option: string
-      skus: {
+      buy_now: boolean
+      skus: Array<{
         sku_id: number
-        promotion_ids: number[]
+        quantity: number
+        promotion_ids?: number[]
         shipment_option: string
-        note: string
-      }[]
+        note?: string
+      }>
     }) => customFetchStandard<{
       order: TOrder
-      url: string
+      url: string | null
     }>(`order/checkout`, {
       method: 'POST',
       body: JSON.stringify(params),
     }),
+  })
+
+export const useGetOrder = (id: number) =>
+  useQuery({
+    queryKey: ['order', id],
+    queryFn: () => customFetchStandard<TOrder>(`order/${id}`),
+    enabled: !!id,
   })
 
 export const useListOrders = (params: PaginationParams<{

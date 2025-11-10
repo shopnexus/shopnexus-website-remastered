@@ -5,46 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ShoppingCart } from "lucide-react"
 import Link from "next/link"
-
-interface CartItem {
-	id: string
-	name: string
-	price: number
-	quantity: number
-	minOrderQuantity: number
-	image: string
-	category: string
-	bulkPrice?: number
-	bulkThreshold?: number
-}
-
-const sampleCartItems: CartItem[] = [
-	{
-		id: "1",
-		name: "Professional Office Chair - Ergonomic Design",
-		price: 12.5, // Price in USDT
-		quantity: 8,
-		minOrderQuantity: 5,
-		image: "/professional-office-chair.jpg",
-		category: "Furniture",
-		bulkPrice: 10.4, // Bulk price in USDT
-		bulkThreshold: 10,
-	},
-	{
-		id: "2",
-		name: "Premium Paper Pack - 5000 Sheets",
-		price: 2.08, // Price in USDT
-		quantity: 25,
-		minOrderQuantity: 10,
-		image: "/office-paper-stack.jpg",
-		category: "Office Supplies",
-		bulkPrice: 1.67, // Bulk price in USDT
-		bulkThreshold: 20,
-	},
-]
+import { useGetCart } from "@/core/account/cart"
 
 export function CartSidebar() {
-	const [cartItems] = useState<CartItem[]>(sampleCartItems)
+	const { data: cartItems = [] } = useGetCart()
 	const [highlight, setHighlight] = useState(false)
 	const timeoutRef = useRef<number | null>(null)
 

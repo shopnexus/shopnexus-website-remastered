@@ -6,39 +6,10 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Star } from "lucide-react"
 import { useEffect, useRef } from "react"
+import { TProductCard } from "@/core/catalog/product.customer"
 
 interface ProductCardProps {
-	product: {
-		id: string
-		name: string
-		description: string
-		price: number
-		original_price: number
-		resource: {
-			id: number
-			mime: string
-			url: string
-			file_size: number
-			width: number
-			height: number
-			duration: number
-		}
-
-		rating: {
-			score: number
-			total: number
-		}
-		promo?: {
-			id: string
-			title: string
-			description: string
-		}
-		// reviewCount: number
-		// inStock: boolean
-		// minOrderQuantity: number
-		// bulkPrice?: number
-		// bulkThreshold?: number
-	}
+	product: TProductCard
 }
 
 export function ProductCard({ product }: ProductCardProps) {
@@ -57,7 +28,7 @@ export function ProductCard({ product }: ProductCardProps) {
 			<Card className="group overflow-hidden transition-all hover:shadow-md cursor-pointer h-full py-0 gap-y-2 ">
 				<div className="relative aspect-square overflow-hidden">
 					<Image
-						src={product.resource.url || "/placeholder.svg"}
+						src={product.resources[0]?.url || "/placeholder.svg"}
 						alt={product.name}
 						fill
 						className="object-cover transition-transform group-hover:scale-105"

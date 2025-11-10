@@ -3,13 +3,13 @@ import { getQueryClient } from "../../lib/queryclient/query-client"
 import { customFetchPagination, customFetchStandard } from "../../lib/queryclient/custom-fetch"
 import qs from "qs"
 import { PaginationParams } from "../../lib/queryclient/response.type"
-import { Resource } from "../shared/resource.type"
-
-const queryClient = getQueryClient()
+import { Resource } from "../common/resource.type"
+import { CartItem } from "../account/cart"
 
 export type TProductDetail = {
   id: number
   code: string
+  vendor_id: number
   name: string
   description: string
   resources: Resource[]
@@ -28,7 +28,7 @@ export type TProductDetail = {
     original_price: number
     attributes: { name: string; value: string }[]
   }[]
-  specifications: Record<string, string>
+  specifications: { name: string; value: string }[]
 }
 
 export type TProductCard = {
@@ -51,7 +51,7 @@ export type TProductCard = {
     score: number
     total: number
   }
-  resource: Resource
+  resources: Resource[]
   promo?: {
     id: string
     title: string
@@ -59,15 +59,14 @@ export type TProductCard = {
   }
 }
 
-export type ListProductCardsParams = PaginationParams<{
+export const useListProductCards = (params: PaginationParams<{
   search: string
+  vendor_id?: number
   category?: string
   min_price?: number
   max_price?: number
   sort?: 'relevance' | 'price-low' | 'price-high' | 'rating' | 'newest'
-}>
-
-export const useListProductCards = (params: ListProductCardsParams) =>
+}>) =>
   useInfiniteQuery({
     queryKey: ['product', 'cards', params],
     queryFn: async ({ pageParam }) => customFetchPagination<TProductCard>(`catalog/product-card?${qs.stringify(pageParam)}`),
@@ -87,11 +86,7 @@ export const useListProductCards = (params: ListProductCardsParams) =>
   })
 
 
-export type ListProductCardsRecommendedParams = {
-  limit: number
-}
-
-export const useListProductCardsRecommended = (params: ListProductCardsRecommendedParams) =>
+export const useListProductCardsRecommended = (params: { limit: number }) =>
   useInfiniteQuery({
     queryKey: ['product', 'cards', 'recommended', params],
     queryFn: async ({ pageParam }) => customFetchPagination<TProductCard>(`catalog/product-card/recommended?${qs.stringify(pageParam)}`),
@@ -107,15 +102,10 @@ export const useListProductCardsRecommended = (params: ListProductCardsRecommend
     initialPageParam: params,
   })
 
-// export const useListProductCardsRecommended = (params: ListProductCardsRecommendedParams) =>
-//   useQuery({
-//     queryKey: ['product', 'cards', 'recommended', params],
-//     queryFn: () => customFetchStandard<TProductCard[]>(`catalog/product-card/recommended?${qs.stringify(params)}`),
-//   })
-
 
 export const useGetProductDetail = (id: string) =>
   useQuery({
     queryKey: ['product', 'detail', id],
     queryFn: () => customFetchStandard<TProductDetail>(`catalog/product-detail?id=${id}`),
   })
+

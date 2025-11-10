@@ -1,60 +1,100 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useMemo, useState } from "react"
 import { CartItemList } from "./cart-item-list"
 import { CartSummary } from "./cart-summary"
 import { EmptyCart } from "./empty-cart"
 import { CartItem } from "./cart-types"
-import { useGetCart } from "@/core/account/cart.customer"
+import { useGetCart, useUpdateCart, useClearCart } from "@/core/account/cart"
 
 export function CartContainer() {
-	const { data: cartData } = useGetCart()
+	const { data: cartData = [], isLoading } = useGetCart()
+	const updateCartMutation = useUpdateCart()
+	const clearCartMutation = useClearCart()
 
-	const [cartItems, setCartItems] = useState<CartItem[]>([])
+	// Add UI state for selected items (not in API)
+	const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set())
 
-	useEffect(() => {
-		if (cartData) {
-			setCartItems(cartData)
+	// Transform API data to include UI fields
+	const cartItems: CartItem[] = useMemo(() => {
+		return cartData.map((item) => ({
+			...item,
+			selected: selectedItems.has(item.sku_id),
+		}))
+	}, [cartData, selectedItems])
+
+	const updateQuantity = async (id: number, newQuantity: number) => {
+		if (newQuantity <= 0) {
+			// Remove item if quantity is 0 or less
+			await removeItem(id)
+			return
 		}
-	}, [cartData])
-
-	const updateQuantity = (id: string, newQuantity: number) => {
-		setCartItems((items) =>
-			items.map((item) => {
-				if (item.sku_id === id) {
-					// const quantity = Math.max(item.minOrderQuantity, newQuantity)
-					return { ...item, quantity: newQuantity }
-				}
-				return item
+		try {
+			await updateCartMutation.mutateAsync({
+				sku_id: id,
+				quantity: newQuantity,
 			})
-		)
+		} catch (error) {
+			console.error("Failed to update cart:", error)
+		}
 	}
 
-	const removeItem = (id: string) => {
-		setCartItems((items) => items.filter((item) => item.sku_id !== id))
-	}
-
-	const clearCart = () => {
-		setCartItems([])
-	}
-
-	const toggleSelectItem = (id: string, selected: boolean) => {
-		setCartItems((items) =>
-			items.map((item) => {
-				if (item.sku_id === id) {
-					return { ...item, selected }
-				}
-				return item
+	const removeItem = async (id: number) => {
+		try {
+			await updateCartMutation.mutateAsync({
+				sku_id: id,
+				quantity: 0,
 			})
-		)
+			// Remove from selected items if it was selected
+			setSelectedItems((prev) => {
+				const next = new Set(prev)
+				next.delete(id)
+				return next
+			})
+		} catch (error) {
+			console.error("Failed to remove item:", error)
+		}
+	}
+
+	const clearCart = async () => {
+		try {
+			await clearCartMutation.mutateAsync()
+			setSelectedItems(new Set())
+		} catch (error) {
+			console.error("Failed to clear cart:", error)
+		}
+	}
+
+	const toggleSelectItem = (id: number, selected: boolean) => {
+		setSelectedItems((prev) => {
+			const next = new Set(prev)
+			if (selected) {
+				next.add(id)
+			} else {
+				next.delete(id)
+			}
+			return next
+		})
 	}
 
 	const selectAllItems = (selected: boolean) => {
-		setCartItems((items) => items.map((item) => ({ ...item, selected })))
+		if (selected) {
+			setSelectedItems(new Set(cartItems.map((item) => item.sku_id)))
+		} else {
+			setSelectedItems(new Set())
+		}
 	}
 
 	const getSelectedItems = () => {
 		return cartItems.filter((item) => item.selected)
+	}
+
+	if (isLoading) {
+		return (
+			<div className="flex items-center justify-center py-12">
+				<div className="text-muted-foreground">Loading cart...</div>
+			</div>
+		)
 	}
 
 	if (cartItems.length === 0) {

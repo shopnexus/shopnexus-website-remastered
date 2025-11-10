@@ -65,6 +65,7 @@ export function useInfiniteScroll<Entity, TPageParams = unknown, TError = Error>
     isFetching,
     isPending,
     isLoading,
+    hasNextPage,
     error,
   }
 }

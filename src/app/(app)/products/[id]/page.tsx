@@ -1,8 +1,12 @@
 "use client"
 
-import { use, useState, useEffect } from "react"
+import { use, useState, useEffect, useMemo } from "react"
 import Link from "next/link"
-import { useGetProductDetail } from "@/core/product/product.customer"
+import {
+	useGetProductDetail,
+	useListProductCards,
+	useListProductCardsRecommended,
+} from "@/core/catalog/product.customer"
 import {
 	ProductMainSection,
 	SellerInfo,
@@ -19,7 +23,7 @@ import {
 	BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
-import { useListComments } from "@/core/comment/comment.customer"
+import { useListComments } from "@/core/catalog/comment.customer"
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
 import { useCreateInteraction } from "@/core/analytic/analytic.customer"
 
@@ -43,7 +47,7 @@ interface Product {
 	sold: number
 	promo_id?: number
 	skus: SkuDetail[]
-	specifications: Record<string, string>
+	specifications: { name: string; value: string }[]
 	// Optional fields that might not be in API response
 	reviews?: Review[]
 	seller?: Seller
@@ -61,7 +65,7 @@ interface SkuDetail {
 	id: number
 	price: number
 	original_price: number
-	attributes: Record<string, string>
+	attributes: { name: string; value: string }[]
 }
 
 interface Review {
@@ -116,10 +120,28 @@ export default function ProductDetailPage({
 	const infiniteComments = useListComments({
 		limit: 10,
 		ref_type: "ProductSpu",
-		ref_id: [Number(id)],
+		ref_id: Number(id),
 	})
 	const { items: comments } = useInfiniteScroll(infiniteComments)
 	const { mutateAsync: mutateCreateInteraction } = useCreateInteraction()
+
+	// Fetch related products from the same vendor
+	const sameShopProductsQuery = useListProductCards({
+		search: "",
+		vendor_id: product?.vendor_id ?? 0,
+		limit: 10,
+	})
+	const { items: sameShopProductCards } = useInfiniteScroll(
+		sameShopProductsQuery
+	)
+
+	// You May Also Like
+	const recommendedProductsQuery = useListProductCardsRecommended({
+		limit: 10,
+	})
+	const { items: recommendedProductCards } = useInfiniteScroll(
+		recommendedProductsQuery
+	)
 
 	// Set default selected SKU when product data loads
 	// useEffect(() => {
@@ -222,12 +244,18 @@ export default function ProductDetailPage({
 			<ReviewsSection rating={product.rating} reviews={comments || []} />
 
 			{/* From Same Shop */}
-			<RelatedProducts products={[]} title="From the Same Shop" />
+			<RelatedProducts
+				products={sameShopProductCards}
+				title="From the Same Shop"
+			/>
 
 			{/* You May Also Like */}
-			<RelatedProducts products={[]} title="You May Also Like" />
+			<RelatedProducts
+				products={recommendedProductCards}
+				title="You May Also Like"
+			/>
 
-			<div className=""></div>
+			<div className="py-3"></div>
 		</div>
 	)
 }

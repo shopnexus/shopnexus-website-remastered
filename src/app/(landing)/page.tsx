@@ -3,9 +3,9 @@
 import { HeroSection } from "./components/hero-section"
 import { FeaturedCategories } from "./components/featured-categories"
 import { ProductGrid } from "@/components/product/product-grid"
-import { useListProductCardsRecommended } from "@/core/product/product.customer"
+import { useListProductCardsRecommended } from "@/core/catalog/product.customer"
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
-import { useGetMe } from "@/core/account/account.customer"
+import { useGetMe } from "@/core/account/account"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -59,6 +59,7 @@ export default function HomePage() {
 						</div>
 						<div className="sm:px-16 lg:px-32 xl:px-48">
 							<ProductGrid products={products} />
+							<div ref={ref} />
 						</div>
 
 						{/* Additional CTA for logged in users */}
@@ -83,7 +84,7 @@ export default function HomePage() {
 				<FeaturedCategories />
 
 				{/* Why Choose Us / Account Benefits */}
-				<section className="py-16 bg-muted/50" ref={ref}>
+				<section className="py-16 bg-muted/50">
 					<div className="container">
 						<div className="text-center space-y-4 mb-12">
 							<h2 className="text-3xl font-bold text-balance">

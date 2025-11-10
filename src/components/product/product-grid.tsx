@@ -1,4 +1,4 @@
-import { TProductCard } from "@/core/product/product.customer"
+import { TProductCard } from "@/core/catalog/product.customer"
 import { ProductCard } from "./product-card"
 import { forwardRef } from "react"
 

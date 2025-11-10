@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
@@ -18,15 +17,16 @@ import {
 	EyeOff,
 	Image as ImageIcon,
 	Tag,
-	Plus,
-	X,
 	Upload,
 } from "lucide-react"
 import {
 	useGetProductSPU,
 	useUpdateProductSPU,
 	ProductSPU,
-} from "@/core/product/product.vendor"
+} from "@/core/catalog/product.vendor"
+import FileUpload from "@/components/shared/file-upload"
+import { TagInput } from "@/components/shared/tag-input"
+import { Resource } from "@/core/common/resource.type"
 
 interface ProductEditPageProps {
 	params: {
@@ -36,19 +36,10 @@ interface ProductEditPageProps {
 
 export default function ProductEditPage({ params }: ProductEditPageProps) {
 	const router = useRouter()
-	const [product, setProduct] = useState<
-		| (ProductSPU & {
-				views: number
-				sales: number
-				review_count: number
-				skus: unknown[]
-		  })
-		| null
-	>(null)
+	const [product, setProduct] = useState<ProductSPU | null>(null)
 	const [isPreview, setIsPreview] = useState(false)
 	const [isLoading, setIsLoading] = useState(false)
-	const [newTag, setNewTag] = useState("")
-	const [newImage, setNewImage] = useState("")
+	const [resources, setResources] = useState<{ id: string; url: string }[]>([])
 
 	const productId = Number.parseInt(params.id)
 	const { data: apiProduct, isLoading: isLoadingProduct } = useGetProductSPU(
@@ -58,14 +49,11 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
 
 	useEffect(() => {
 		if (!apiProduct) return
-		// Map API product to local UI shape with defaults for fields not in API
-		setProduct({
-			...apiProduct,
-			views: 0,
-			sales: 0,
-			review_count: apiProduct.rating?.total ?? 0,
-			skus: [],
-		})
+		setProduct(apiProduct)
+		// Map resources to file-upload format
+		setResources(
+			apiProduct.resources.map((r) => ({ id: r.id.toString(), url: r.url }))
+		)
 	}, [apiProduct])
 
 	const handleSave = async () => {
@@ -96,40 +84,40 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
 		}
 	}
 
-	const handleAddTag = () => {
-		if (newTag.trim() && product) {
-			setProduct({
-				...product,
-				tags: [...product.tags, newTag.trim()],
-			})
-			setNewTag("")
-		}
-	}
-
-	const handleRemoveTag = (tagToRemove: string) => {
+	const handleTagsChange = (tags: string[]) => {
 		if (product) {
 			setProduct({
 				...product,
-				tags: product.tags.filter((tag) => tag !== tagToRemove),
+				tags,
 			})
 		}
 	}
 
-	const handleAddImage = () => {
-		if (newImage.trim() && product) {
-			setProduct({
-				...product,
-				resources: [...product.resources, newImage.trim()],
-			})
-			setNewImage("")
-		}
-	}
-
-	const handleRemoveImage = (imageToRemove: string) => {
+	const handleUploadComplete = (urls: { id: string; url: string }[]) => {
+		setResources([...resources, ...urls])
 		if (product) {
 			setProduct({
 				...product,
-				resources: product.resources.filter((image) => image !== imageToRemove),
+				resources: [
+					...product.resources,
+					...urls.map((r) => ({
+						id: Number(r.id),
+						url: r.url,
+						mime: "image/*",
+						size: 0,
+						checksum: null,
+					})),
+				],
+			})
+		}
+	}
+
+	const handleRemoveImage = (index: number) => {
+		setResources((prev) => prev.filter((_, i) => i !== index))
+		if (product) {
+			setProduct({
+				...product,
+				resources: product.resources.filter((_, i) => i !== index),
 			})
 		}
 	}
@@ -231,22 +219,18 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
 											<Label htmlFor="brand">Brand</Label>
 											<Input
 												id="brand"
-												value={product.brand}
-												onChange={(e) =>
-													setProduct({ ...product, brand: e.target.value })
-												}
-												placeholder="Enter brand name"
+												value={product.brand.name}
+												disabled
+												placeholder="Brand (read-only)"
 											/>
 										</div>
 										<div className="space-y-2">
 											<Label htmlFor="category">Category</Label>
 											<Input
 												id="category"
-												value={product.category}
-												onChange={(e) =>
-													setProduct({ ...product, category: e.target.value })
-												}
-												placeholder="Enter category"
+												value={product.category.name}
+												disabled
+												placeholder="Category (read-only)"
 											/>
 										</div>
 									</div>
@@ -300,37 +284,11 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
 									</CardTitle>
 								</CardHeader>
 								<CardContent className="space-y-4">
-									<div className="flex gap-2">
-										<Input
-											value={newImage}
-											onChange={(e) => setNewImage(e.target.value)}
-											placeholder="Enter image URL"
-											className="flex-1"
-										/>
-										<Button onClick={handleAddImage} size="sm">
-											<Plus className="h-4 w-4" />
-										</Button>
-									</div>
-
-									<div className="grid gap-4 md:grid-cols-2">
-										{product.resources.map((image, index) => (
-											<div key={index} className="relative group">
-												<img
-													src={image}
-													alt={`Product image ${index + 1}`}
-													className="w-full h-32 object-cover rounded-lg border"
-												/>
-												<Button
-													size="sm"
-													variant="destructive"
-													className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-													onClick={() => handleRemoveImage(image)}
-												>
-													<X className="h-4 w-4" />
-												</Button>
-											</div>
-										))}
-									</div>
+									<FileUpload
+										onUploadComplete={handleUploadComplete}
+										onRemoveImage={handleRemoveImage}
+										resources={resources}
+									/>
 								</CardContent>
 							</Card>
 						</div>
@@ -369,34 +327,12 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
 										Tags
 									</CardTitle>
 								</CardHeader>
-								<CardContent className="space-y-4">
-									<div className="flex gap-2">
-										<Input
-											value={newTag}
-											onChange={(e) => setNewTag(e.target.value)}
-											placeholder="Add tag"
-											onKeyPress={(e) => e.key === "Enter" && handleAddTag()}
-										/>
-										<Button onClick={handleAddTag} size="sm">
-											<Plus className="h-4 w-4" />
-										</Button>
-									</div>
-
-									<div className="flex flex-wrap gap-2">
-										{product.tags.map((tag, index) => (
-											<Badge
-												key={index}
-												variant="secondary"
-												className="flex items-center gap-1"
-											>
-												{tag}
-												<X
-													className="h-3 w-3 cursor-pointer hover:text-destructive"
-													onClick={() => handleRemoveTag(tag)}
-												/>
-											</Badge>
-										))}
-									</div>
+								<CardContent>
+									<TagInput
+										tags={product.tags}
+										onTagsChange={handleTagsChange}
+										placeholder="Add tags (separate multiple with spaces)"
+									/>
 								</CardContent>
 							</Card>
 
@@ -406,16 +342,6 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
 									<CardTitle>Statistics</CardTitle>
 								</CardHeader>
 								<CardContent className="space-y-4">
-									<div className="flex justify-between">
-										<span className="text-sm text-muted-foreground">Views</span>
-										<span className="font-medium">
-											{product.views.toLocaleString()}
-										</span>
-									</div>
-									<div className="flex justify-between">
-										<span className="text-sm text-muted-foreground">Sales</span>
-										<span className="font-medium">{product.sales}</span>
-									</div>
 									<div className="flex justify-between">
 										<span className="text-sm text-muted-foreground">
 											Rating
@@ -428,11 +354,9 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
 										<span className="text-sm text-muted-foreground">
 											Reviews
 										</span>
-										<span className="font-medium">{product.review_count}</span>
-									</div>
-									<div className="flex justify-between">
-										<span className="text-sm text-muted-foreground">SKUs</span>
-										<span className="font-medium">{product.skus.length}</span>
+										<span className="font-medium">
+											{product.rating?.total ?? 0}
+										</span>
 									</div>
 								</CardContent>
 							</Card>

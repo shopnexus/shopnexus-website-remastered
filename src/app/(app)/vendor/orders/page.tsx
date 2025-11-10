@@ -4,21 +4,35 @@ import { useEffect, useMemo, useState } from "react"
 import { PageHeader } from "../components/page-header"
 import { OrderTable } from "./components/order-table"
 import { OrderDetailDialog } from "./components/order-detail-dialog"
+import { ConfirmOrderDialog } from "./components/confirm-order-dialog"
 import { MockOrder } from "../components/mock-data"
 import { toast } from "sonner"
 import { Download, RefreshCw, BarChart3, Settings } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
 	useConfirmOrder,
 	useListVendorOrders,
 	TOrder,
 } from "@/core/order/order.vendor"
-import { Status } from "@/core/shared/status.type"
+import { Status } from "@/core/common/status.type"
 
 export default function OrdersPage() {
-	const { data, refetch } = useListVendorOrders({ limit: 20 })
+	const {
+		data,
+		refetch,
+		isLoading,
+		fetchNextPage,
+		hasNextPage,
+		isFetchingNextPage,
+	} = useListVendorOrders({ limit: 20 })
 	const [orders, setOrders] = useState<MockOrder[]>([])
 	const [selectedOrder, setSelectedOrder] = useState<MockOrder | null>(null)
 	const [showDetailDialog, setShowDetailDialog] = useState(false)
+	const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+	const [selectedItem, setSelectedItem] = useState<{
+		orderId: number
+		itemId: number
+	} | null>(null)
 	const confirmMutation = useConfirmOrder()
 
 	// Transform BE data -> UI mock shape expected by table/dialog
@@ -127,25 +141,63 @@ export default function OrdersPage() {
 		setShowDetailDialog(true)
 	}
 
-	const handleConfirmItem = async (orderId: number, itemId: number) => {
+	const handleConfirmItem = async (
+		orderId: number,
+		itemId: number,
+		specs?: Record<string, string>
+	) => {
 		try {
 			const theOrder = orders.find((o) => o.id === orderId)
 			const theItem = theOrder?.items.find((i) => i.id === itemId)
 			if (!theItem) throw new Error("Item not found")
 
+			// Validate specs
+			if (!specs || Object.keys(specs).length === 0) {
+				throw new Error("Shipping specifications are required")
+			}
+
+			// Extract from_address from specs if present
+			const { from_address, ...shippingSpecs } = specs
+
 			await confirmMutation.mutateAsync({
 				order_item_id: theItem.id,
-				weight_grams: theItem.weight ? Math.round(theItem.weight * 1000) : 1000,
-				length_cm: theItem.dimensions?.length ?? 10,
-				width_cm: theItem.dimensions?.width ?? 10,
-				height_cm: theItem.dimensions?.height ?? 10,
+				specs: shippingSpecs,
+				from_address: from_address || undefined,
 			})
 
-			toast.success("Order item confirmed")
-			await refetch()
-		} catch {
-			toast.error("Failed to confirm order item")
+			toast.success("Order item confirmed successfully")
+			// Query will be automatically invalidated by the mutation hook
+			setShowConfirmDialog(false)
+			setSelectedItem(null)
+		} catch (error) {
+			toast.error("Failed to confirm order item: " + (error as Error).message)
 		}
+	}
+
+	const handleConfirmClick = (orderId: number, itemId: number) => {
+		setSelectedItem({ orderId, itemId })
+		setShowConfirmDialog(true)
+	}
+
+	const handleConfirmWithSpecs = async (
+		specs: Record<string, string>,
+		fromAddress?: string
+	) => {
+		if (!selectedItem) return
+
+		// Combine specs and from_address into one object for handleConfirmItem
+		const combinedSpecs: Record<string, string> = {
+			...specs,
+		}
+		if (fromAddress) {
+			combinedSpecs.from_address = fromAddress
+		}
+
+		await handleConfirmItem(
+			selectedItem.orderId,
+			selectedItem.itemId,
+			combinedSpecs
+		)
 	}
 
 	const handleUpdateItemStatus = (
@@ -166,8 +218,13 @@ export default function OrdersPage() {
 
 	// const handleImport = () => {}
 
-	const handleRefresh = () => {
-		toast.info("Data refreshed")
+	const handleRefresh = async () => {
+		try {
+			await refetch()
+			toast.success("Data refreshed")
+		} catch {
+			toast.error("Failed to refresh data")
+		}
 	}
 
 	const handleViewAnalytics = () => {
@@ -218,22 +275,52 @@ export default function OrdersPage() {
 						secondaryActions={secondaryActions}
 					/>
 
-					<OrderTable
-						orders={orders}
-						onViewDetails={handleViewDetails}
-						onConfirmItem={handleConfirmItem}
-						onUpdateItemStatus={handleUpdateItemStatus}
-					/>
+					{isLoading && orders.length === 0 ? (
+						<div className="text-center py-8">
+							<p className="text-muted-foreground">Loading orders...</p>
+						</div>
+					) : (
+						<>
+							<OrderTable
+								orders={orders}
+								onViewDetails={handleViewDetails}
+								onConfirmItem={handleConfirmClick}
+								onUpdateItemStatus={handleUpdateItemStatus}
+							/>
+
+							{hasNextPage && (
+								<div className="flex justify-center mt-4">
+									<Button
+										variant="outline"
+										onClick={() => fetchNextPage()}
+										disabled={isFetchingNextPage}
+									>
+										{isFetchingNextPage ? "Loading..." : "Load More"}
+									</Button>
+								</div>
+							)}
+						</>
+					)}
 
 					{showDetailDialog && selectedOrder && (
 						<OrderDetailDialog
 							order={selectedOrder}
-							onConfirmItem={handleConfirmItem}
+							onConfirmItem={handleConfirmClick}
 							onUpdateItemStatus={handleUpdateItemStatus}
 							onClose={() => {
 								setShowDetailDialog(false)
 								setSelectedOrder(null)
 							}}
+						/>
+					)}
+
+					{showConfirmDialog && selectedItem && (
+						<ConfirmOrderDialog
+							open={showConfirmDialog}
+							onOpenChange={setShowConfirmDialog}
+							onConfirm={handleConfirmWithSpecs}
+							isLoading={confirmMutation.isPending}
+							orderItemId={selectedItem.itemId}
 						/>
 					)}
 				</div>

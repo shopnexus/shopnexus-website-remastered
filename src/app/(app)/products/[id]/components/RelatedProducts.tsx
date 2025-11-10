@@ -9,6 +9,7 @@ import {
 	CarouselItem,
 } from "@/components/ui/carousel"
 import { cn } from "@/lib/utils"
+import { TProductCard } from "@/core/catalog/product.customer"
 
 interface RelatedProduct {
 	id: string
@@ -33,7 +34,7 @@ interface RelatedProduct {
 }
 
 interface RelatedProductsProps {
-	products: RelatedProduct[]
+	products: TProductCard[]
 	title: string
 	viewAllLink?: string
 }

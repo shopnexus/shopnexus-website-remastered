@@ -2,37 +2,28 @@ import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-q
 import { customFetchPagination, customFetchStandard } from "@/lib/queryclient/custom-fetch"
 import qs from "qs"
 import { PaginationParams, SuccessPaginationRes } from "@/lib/queryclient/response.type"
+import { Status } from "../common/status.type"
+import { Resource } from "../common/resource.type"
+import { RefundMethod } from "./refund.customer"
 
-// Reuse the same shapes for vendor-side access
+
 export type TRefund = {
   id: number
-  order_id: number
+  account_id: number
   order_item_id: number
-  method: string
-  status: string
+  reviewed_by_id: number | null
+  shipment_id: number | null
+  method: RefundMethod
+  status: Status
   reason: string
-  address?: string | null
+  address: string | null
   date_created: string
-  date_updated: string
+  resources: Resource[]
 }
 
-type RefundListFilters = {
+export const useListRefundsVendor = (params: PaginationParams<{
   status?: string
-}
-
-export type ListRefundsParams = PaginationParams<RefundListFilters>
-
-export type UpdateRefundParams = {
-  id: number
-  method?: string
-  address?: string
-  reason?: string
-}
-
-export type CancelRefundParams = { id: number }
-export type ConfirmRefundParams = { id: number }
-
-export const useListRefundsVendor = (params: ListRefundsParams) =>
+}>) =>
   useInfiniteQuery({
     queryKey: ['order', 'refund', 'list', 'vendor', params],
     queryFn: async ({ pageParam }) =>
@@ -52,7 +43,13 @@ export const useListRefundsVendor = (params: ListRefundsParams) =>
 export const useUpdateRefundVendor = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (params: UpdateRefundParams) =>
+    mutationFn: (params: {
+      id: number
+      method?: string
+      address?: string | null
+      reason?: string
+      resource_ids?: string[]
+    }) =>
       customFetchStandard<TRefund>(`order/refund`, {
         method: 'PATCH',
         body: JSON.stringify(params),
@@ -66,7 +63,7 @@ export const useUpdateRefundVendor = () => {
 export const useCancelRefundVendor = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (params: CancelRefundParams) =>
+    mutationFn: (params: { id: number }) =>
       customFetchStandard<{ message: string }>(`order/refund`, {
         method: 'DELETE',
         body: JSON.stringify(params),
@@ -80,7 +77,7 @@ export const useCancelRefundVendor = () => {
 export const useConfirmRefundVendor = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (params: ConfirmRefundParams) =>
+    mutationFn: (params: { id: number }) =>
       customFetchStandard<TRefund>(`order/refund/confirm`, {
         method: 'POST',
         body: JSON.stringify(params),

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { useListProductCards } from "@/core/product/product.customer"
+import { useListProductCards } from "@/core/catalog/product.customer"
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
 import {
 	SearchHeader,

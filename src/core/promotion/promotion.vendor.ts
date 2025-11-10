@@ -18,54 +18,27 @@ export type Promotion = {
   date_ended?: string | null
 }
 
-export type CreateDiscountParams = {
-  code: string
-  ref_type: string
-  ref_id?: number
-  type: string
-  title: string
-  description?: string
-  is_active: boolean
-  date_started: string
-  date_ended?: string
-  order_wide: boolean
-  min_spend: number
-  max_discount: number
-  discount_percent?: number
-  discount_price?: number
-}
-
-export type UpdateDiscountParams = {
-  id: number
-  code?: string
-  owner_id?: number
-  ref_type?: string
-  ref_id?: number
-  title?: string
-  description?: string
-  is_active?: boolean
-  date_started?: string
-  date_ended?: string
-  null_date_ended?: boolean
-  order_wide?: boolean
-  min_spend?: number
-  max_discount?: number
-  discount_percent?: number
-  discount_price?: number
-}
-
-type PromotionListFilters = {
-  is_active?: boolean
-}
-
-export type ListPromotionParams = PaginationParams<PromotionListFilters>
-
 // ===== Hooks =====
 
 export const useCreateDiscount = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (params: CreateDiscountParams) =>
+    mutationFn: (params: {
+      code: string
+      ref_type: string
+      ref_id?: number
+      type: string
+      title: string
+      description?: string
+      is_active: boolean
+      date_started: string
+      date_ended?: string
+      order_wide: boolean
+      min_spend: number
+      max_discount: number
+      discount_percent?: number
+      discount_price?: number
+    }) =>
       customFetchStandard<Promotion>(`catalog/promotion/discount`, {
         method: 'POST',
         body: JSON.stringify(params),
@@ -79,7 +52,24 @@ export const useCreateDiscount = () => {
 export const useUpdateDiscount = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (params: UpdateDiscountParams) =>
+    mutationFn: (params: {
+      id: number
+      code?: string
+      owner_id?: number
+      ref_type?: string
+      ref_id?: number
+      title?: string
+      description?: string
+      is_active?: boolean
+      date_started?: string
+      date_ended?: string
+      null_date_ended?: boolean
+      order_wide?: boolean
+      min_spend?: number
+      max_discount?: number
+      discount_percent?: number
+      discount_price?: number
+    }) =>
       customFetchStandard<Promotion>(`catalog/promotion/discount`, {
         method: 'PATCH',
         body: JSON.stringify(params),
@@ -90,7 +80,9 @@ export const useUpdateDiscount = () => {
   })
 }
 
-export const useListPromotionVendor = (params: ListPromotionParams) =>
+export const useListPromotionVendor = (params: PaginationParams<{
+  is_active?: boolean
+}>) =>
   useInfiniteQuery({
     queryKey: ['promotion', 'list', 'vendor', params],
     queryFn: async ({ pageParam }) =>

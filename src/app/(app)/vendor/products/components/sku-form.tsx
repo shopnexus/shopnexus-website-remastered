@@ -15,12 +15,12 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { X, Plus } from "lucide-react"
-import { MockSKU, MockSPU } from "../../components/mock-data"
+import { ProductSku, ProductSPU } from "@/core/catalog/product.vendor"
 
 interface SKUFormProps {
-	sku: MockSKU | null
-	spu: MockSPU
-	onSave: (skuData: Partial<MockSKU>) => void
+	sku: ProductSku | null
+	spu: ProductSPU
+	onSave: (skuData: Partial<ProductSku> & { price?: number; can_combine?: boolean; attributes?: { name: string; value: string }[]; stock?: number }) => void
 	onCancel: () => void
 }
 

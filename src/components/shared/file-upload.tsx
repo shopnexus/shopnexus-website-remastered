@@ -5,8 +5,8 @@ import { customFetch } from "@/lib/queryclient/custom-fetch"
 import { SuccessResponse } from "@/lib/queryclient/response.type"
 import Image from "next/image"
 interface FileUploadProps {
-	onUploadComplete: (urls: { key: string; url: string }[]) => void
-	resources: { key: string; url: string }[]
+	onUploadComplete: (urls: { id: string; url: string }[]) => void
+	resources: { id: string; url: string }[]
 	onRemoveImage: (index: number) => void
 }
 
@@ -21,38 +21,13 @@ const FileUpload = ({
 	const [isUploading, setIsUploading] = useState(false)
 	const fileInputRef = useRef<HTMLInputElement>(null)
 
-	const uploadFile = useCallback(async (file: File) => {
-		const apiUrl = new URL(
-			"shared/files",
-			String(process.env.NEXT_PUBLIC_API_URL)
-		).toString()
-
-		const form = new FormData()
-		form.append("file", file)
-
-		const response = await fetch(apiUrl, {
-			method: "POST",
-			body: form,
-			headers: {
-				Authorization: `Bearer ${globalThis?.localStorage?.getItem?.("token")}`, // TODO: create custom fetch without headers application/json
-			},
-			// DO NOT set Content-Type header - let browser set it automatically
-		})
-
-		const data = (await response.json()) as SuccessResponse<{
-			key: string
-			url: string
-		}>
-		return data.data
-	}, [])
-
 	const handleFileSelect = useCallback(
 		async (e: React.ChangeEvent<HTMLInputElement>) => {
 			const files = e.target.files
 			if (!files || files.length === 0) return
 
 			setIsUploading(true)
-			const resources: { key: string; url: string }[] = []
+			const resources: { id: string; url: string }[] = []
 
 			try {
 				for (let i = 0; i < files.length; i++) {
@@ -89,7 +64,7 @@ const FileUpload = ({
 			if (!files || files.length === 0) return
 
 			setIsUploading(true)
-			const resources: { key: string; url: string }[] = []
+			const resources: { id: string; url: string }[] = []
 
 			try {
 				for (let i = 0; i < files.length; i++) {
@@ -187,3 +162,28 @@ const FileUpload = ({
 }
 
 export default FileUpload
+
+export const uploadFile = async (file: File) => {
+	const apiUrl = new URL(
+		"shared/files",
+		String(process.env.NEXT_PUBLIC_API_URL)
+	).toString()
+
+	const form = new FormData()
+	form.append("file", file)
+
+	const response = await fetch(apiUrl, {
+		method: "POST",
+		body: form,
+		headers: {
+			Authorization: `Bearer ${globalThis?.localStorage?.getItem?.("token")}`, // TODO: create custom fetch without headers application/json
+		},
+		// DO NOT set Content-Type header - let browser set it automatically
+	})
+
+	const data = (await response.json()) as SuccessResponse<{
+		id: string
+		url: string
+	}>
+	return data.data
+}

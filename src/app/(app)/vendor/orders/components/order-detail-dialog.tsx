@@ -113,25 +113,14 @@ export function OrderDetailDialog({
 											<StatusBadge status={item.status} />
 
 											{item.status === "Pending" && !item.confirmed_by_id && (
-												<>
-													<Button
-														size="sm"
-														onClick={() => onConfirmItem(order.id, item.id)}
-														className="flex items-center gap-1"
-													>
-														<CheckCircle className="h-4 w-4" />
-														Confirm
-													</Button>
-													<Button
-														size="sm"
-														onClick={() => onConfirmItem(order.id, item.id)}
-														className="flex items-center gap-1"
-														variant="destructive"
-													>
-														<AlertTriangle className="h-4 w-4" />
-														Cancel
-													</Button>
-												</>
+												<Button
+													size="sm"
+													onClick={() => onConfirmItem(order.id, item.id)}
+													className="flex items-center gap-1"
+												>
+													<CheckCircle className="h-4 w-4" />
+													Confirm
+												</Button>
 											)}
 										</div>
 									</div>

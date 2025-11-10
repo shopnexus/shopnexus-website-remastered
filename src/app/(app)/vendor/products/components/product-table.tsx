@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { CardContent, CardHeader } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { MockSPU, MockSKU } from "../../components/mock-data"
 import {
 	Edit,
 	Trash2,
@@ -23,10 +22,15 @@ import {
 } from "lucide-react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useListProductSKU } from "@/core/product/product.vendor"
+import {
+	ProductSPU,
+	ProductSku,
+	useListProductSKU,
+} from "@/core/catalog/product.vendor"
+import { Resource } from "@/core/common/resource.type"
 
 // SKU columns definition
-const skuColumns: Column<MockSKU>[] = [
+const skuColumns: Column<ProductSku>[] = [
 	{
 		key: "id",
 		label: "SKU ID",
@@ -94,32 +98,20 @@ function SKUTable({
 	onEditSKU,
 	onDeleteSKU,
 	onManageInventory,
+	spu,
 }: {
 	spuId: number
-	onCreateSKU: (spu: MockSPU) => void
-	onEditSKU: (sku: MockSKU, spu: MockSPU) => void
+	spu: ProductSPU
+	onCreateSKU: (spu: ProductSPU) => void
+	onEditSKU: (sku: ProductSku, spu: ProductSPU) => void
 	onDeleteSKU: (skuId: number, spuId: number) => void
-	onManageInventory: (sku: MockSKU, spu: MockSPU) => void
+	onManageInventory: (sku: ProductSku, spu: ProductSPU) => void
 }) {
-	const { data: skus = [] } = useListProductSKU({ spu_id: spuId, limit: 10 })
-
-	// Map API SKUs to MockSKU format for compatibility
-	const mockSkus: MockSKU[] = skus.map((sku) => ({
-		id: sku.id,
-		spu_id: sku.spu_id,
-		price: sku.price,
-		stock: sku.stock || 0, // Default stock if not provided
-		can_combine: sku.can_combine,
-		attributes: sku.attributes, // ProductAttribute[] is compatible with { name: string; value: string }[]
-		date_created: sku.date_created,
-		date_updated: sku.date_created, // Use date_created as fallback
-		is_featured: false, // Default value
-	}))
+	const { data: skusData } = useListProductSKU({ spu_id: spuId, limit: 10 })
+	const skus: ProductSku[] = Array.isArray(skusData) ? skusData : []
 
 	const handleCreateSKU = () => {
-		// Create a minimal SPU object for the callback
-		const mockSpu: MockSPU = { id: spuId } as MockSPU
-		onCreateSKU(mockSpu)
+		onCreateSKU(spu)
 	}
 
 	return (
@@ -140,14 +132,14 @@ function SKUTable({
 			</CardHeader>
 			<CardContent>
 				<DataTable
-					data={mockSkus}
+					data={skus}
 					columns={skuColumns}
 					actions={(sku) => (
 						<div className="flex items-center gap-1">
 							<Button
 								size="sm"
 								variant="ghost"
-								onClick={() => onManageInventory(sku, { id: spuId } as MockSPU)}
+								onClick={() => onManageInventory(sku, spu)}
 								title="Manage Inventory"
 							>
 								<Warehouse className="h-4 w-4" />
@@ -155,7 +147,7 @@ function SKUTable({
 							<Button
 								size="sm"
 								variant="ghost"
-								onClick={() => onEditSKU(sku, { id: spuId } as MockSPU)}
+								onClick={() => onEditSKU(sku, spu)}
 								title="Edit SKU"
 							>
 								<Edit className="h-4 w-4" />
@@ -177,14 +169,14 @@ function SKUTable({
 }
 
 interface ProductTableProps {
-	spus: MockSPU[]
-	onEditSPU: (spu: MockSPU) => void
+	spus: ProductSPU[]
+	onEditSPU: (spu: ProductSPU) => void
 	onDeleteSPU: (spuId: number) => void
 	onToggleSPUStatus: (spuId: number) => void
-	onCreateSKU: (spu: MockSPU) => void
-	onEditSKU: (sku: MockSKU, spu: MockSPU) => void
+	onCreateSKU: (spu: ProductSPU) => void
+	onEditSKU: (sku: ProductSku, spu: ProductSPU) => void
 	onDeleteSKU: (skuId: number, spuId: number) => void
-	onManageInventory: (sku: MockSKU, spu: MockSPU) => void
+	onManageInventory: (sku: ProductSku, spu: ProductSPU) => void
 }
 
 export function ProductTable({
@@ -216,23 +208,18 @@ export function ProductTable({
 		setDeleteConfirm(null)
 	}
 
-	const spuColumns: Column<MockSPU>[] = [
+	const spuColumns: Column<ProductSPU>[] = [
 		{
 			key: "resources",
 			label: "Image",
-			render: (resources: string[], spu: MockSPU) => (
+			render: (resources: Resource[], spu: ProductSPU) => (
 				<div className="flex items-center space-x-2">
 					<Avatar className="h-10 w-10">
-						<AvatarImage src={resources[0]} alt={spu.name} />
+						<AvatarImage src={resources?.[0]?.url} alt={spu.name} />
 						<AvatarFallback>
 							<ImageIcon className="h-4 w-4" />
 						</AvatarFallback>
 					</Avatar>
-					{/* {images.length > 1 && (
-						<Badge variant="secondary" className="text-xs">
-							+{images.length - 1}
-						</Badge>
-					)} */}
 				</div>
 			),
 			className: "w-20",
@@ -240,7 +227,7 @@ export function ProductTable({
 		{
 			key: "name",
 			label: "Product",
-			render: (value: string, spu: MockSPU) => (
+			render: (value: string, spu: ProductSPU) => (
 				<div className="space-y-1">
 					<div className="font-medium w-100 truncate">{value}</div>
 					<div className="text-sm text-muted-foreground w-100 truncate">
@@ -259,28 +246,17 @@ export function ProductTable({
 			),
 			sortable: true,
 		},
-		// {
-		// 	key: "brand",
-		// 	label: "Brand",
-		// 	render: (value: string) => <Badge variant="outline">{value}</Badge>,
-		// 	sortable: true,
-		// },
-		// {
-		// 	key: "category",
-		// 	label: "Category",
-		// 	render: (value: string) => <Badge variant="secondary">{value}</Badge>,
-		// 	sortable: true,
-		// },
 		{
 			key: "sales",
 			label: "Performance",
-			render: (sales: number, spu: MockSPU) => (
+			render: () => (
 				<div className="space-y-1">
 					<div className="flex items-center space-x-2">
 						<TrendingUp className="h-3 w-3 text-green-500" />
-						<span className="text-sm font-medium">{sales} sales</span>
+						<span className="text-sm font-medium text-muted-foreground">
+							N/A
+						</span>
 					</div>
-					<div className="text-xs text-muted-foreground">{spu.views} views</div>
 				</div>
 			),
 			sortable: true,
@@ -288,23 +264,16 @@ export function ProductTable({
 		{
 			key: "skus",
 			label: "SKUs & Stock",
-			render: (skus: MockSKU[]) => {
-				const totalStock = skus.reduce((sum, sku) => sum + sku.stock, 0)
-				const lowStockCount = skus.filter((sku) => sku.stock < 10).length
+			render: () => {
+				// SKUs are loaded dynamically in expanded rows
 				return (
 					<div className="space-y-1">
 						<div className="flex items-center space-x-2">
 							<Package className="h-3 w-3" />
-							<span className="text-sm font-medium">{skus.length} SKUs</span>
+							<span className="text-sm font-medium text-muted-foreground">
+								Click to view SKUs
+							</span>
 						</div>
-						<div className="text-xs text-muted-foreground">
-							{totalStock} total stock
-						</div>
-						{lowStockCount > 0 && (
-							<Badge variant="destructive" className="text-xs">
-								{lowStockCount} low stock
-							</Badge>
-						)}
 					</div>
 				)
 			},
@@ -326,10 +295,11 @@ export function ProductTable({
 		// },
 	]
 
-	const renderExpandedRow = (spu: MockSPU) => {
+	const renderExpandedRow = (spu: ProductSPU) => {
 		return (
 			<SKUTable
 				spuId={spu.id}
+				spu={spu}
 				onCreateSKU={onCreateSKU}
 				onEditSKU={onEditSKU}
 				onDeleteSKU={(skuId, spuId) =>

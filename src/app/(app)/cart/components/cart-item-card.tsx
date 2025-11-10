@@ -77,7 +77,7 @@ export function CartItemCard({
 				{/* Product Image */}
 				<div className="relative h-32 w-full sm:h-24 sm:w-24 lg:h-28 lg:w-28 overflow-hidden rounded-md border bg-muted/20 flex-shrink-0">
 					<Image
-						src={item.resource.url || "/placeholder.svg"}
+						src={item.resources[0]?.url || "/placeholder.svg"}
 						alt={item.name}
 						fill
 						className="object-cover hover:scale-105 transition-transform duration-200"

@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label"
 import {
 	useListProductSPU,
 	useListProductSKU,
-} from "@/core/product/product.vendor"
+} from "@/core/catalog/product.vendor"
 
 interface ImportStockDialogProps {
 	selectedSkuId: number

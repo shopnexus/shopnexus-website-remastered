@@ -18,13 +18,9 @@ export const useGetPromotion = (id?: number) => useQuery({
   enabled: !!id,
 })
 
-type PromotionListFilters = {
+export const useListPromotion = (params: PaginationParams<{
   is_active?: boolean
-}
-
-export type ListPromotionParams = PaginationParams<PromotionListFilters>
-
-export const useListPromotion = (params: ListPromotionParams) =>
+}>) =>
   useInfiniteQuery({
     queryKey: ['promotion', 'list', params],
     queryFn: async ({ pageParam }) =>

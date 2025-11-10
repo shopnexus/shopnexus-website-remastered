@@ -1,8 +1,9 @@
-import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query"
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { customFetchPagination, customFetchStandard } from "@/lib/queryclient/custom-fetch"
 import QueryString from "qs"
 import { PaginationParams, SuccessPaginationRes } from "@/lib/queryclient/response.type"
-import { Status } from "../shared/status.type"
+import { Status } from "../common/status.type"
+import { OrderItem } from "./order.customer"
 
 export type TOrder = {
   id: number
@@ -33,23 +34,32 @@ export const useListVendorOrders = (params: PaginationParams<unknown>) =>
     initialPageParam: params,
   })
 
-export type ConfirmOrderParams = {
-  order_item_id: number
-  from_address?: string
-  weight_grams: number
-  length_cm: number
-  width_cm: number
-  height_cm: number
-}
-
-export const useConfirmOrder = () =>
-  useMutation({
+export const useConfirmOrder = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
     mutationKey: ['order', 'confirm'],
-    mutationFn: (params: ConfirmOrderParams) =>
-      customFetchStandard<{ message: string }>(`order/confirm`, {
+    mutationFn: (params: {
+      order_item_id: number
+      from_address?: string | null
+      specs: Record<string, string> // weight_grams, length_cm, width_cm, height_cm, ...
+    }) =>
+      customFetchStandard<{
+        id: number
+        account_id: number
+        payment_option: string
+        payment_status: string
+        address: string
+        date_created: string
+        date_updated: string
+        items: OrderItem[]
+      }>(`order/confirm`, {
         method: 'POST',
         body: JSON.stringify(params),
       }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['order', 'list'] })
+    },
   })
+}
 
 
