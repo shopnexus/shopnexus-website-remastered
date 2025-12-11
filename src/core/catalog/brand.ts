@@ -1,7 +1,9 @@
-import { customFetchPagination, customFetchStandard } from "@/lib/queryclient/custom-fetch"
-import { PaginationParams, SuccessPaginationRes } from "@/lib/queryclient/response.type"
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
-import QueryString from "qs"
+import { useQuery } from '@tanstack/react-query'
+import { customFetchStandard } from '@/lib/queryclient/custom-fetch'
+import { useInfiniteQueryPagination } from '@/lib/queryclient/use-infinite-query'
+import type { PaginationParams } from '@/lib/queryclient/response.type'
+
+// ===== Types =====
 
 export type Brand = {
   id: number
@@ -10,28 +12,20 @@ export type Brand = {
   description: string
 }
 
-export const useListBrands = (params: PaginationParams<{
+// ===== Hooks =====
+
+export const useListBrand = (params: PaginationParams<{
   search?: string
 }>) =>
-  useInfiniteQuery({
-    queryKey: ['brand', 'list', params],
-    queryFn: async ({ pageParam }) =>
-      customFetchPagination<Brand>(`catalog/brand?${QueryString.stringify(pageParam)}`),
-    getNextPageParam: (lastPageRes: SuccessPaginationRes<Brand>, _, lastPageParam) => {
-      if (!lastPageRes.pagination.next_page && !lastPageRes.pagination.next_cursor) return undefined
-      return {
-        ...lastPageParam,
-        page: lastPageRes.pagination.next_page,
-        cursor: lastPageRes.pagination.next_cursor,
-        limit: lastPageParam.limit,
-      }
-    },
-    initialPageParam: params,
-  })
+  useInfiniteQueryPagination<Brand>(
+    ['brand', 'list'],
+    'catalog/brand',
+    params
+  )
 
-export const useGetBrand = (id: number) =>
+export const useGetBrand = (id: string) =>
   useQuery({
     queryKey: ['brand', 'detail', id],
     queryFn: () => customFetchStandard<Brand>(`catalog/brand/${id}`),
-    enabled: typeof id === 'number' && id > 0,
   })
+

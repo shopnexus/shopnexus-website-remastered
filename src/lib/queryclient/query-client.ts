@@ -12,14 +12,14 @@ type ErrorObject = {
 }
 
 function handleErrorQuery(error: ErrorObject) {
-  if (error.code == "401") {
+  if (error.code === "401") {
     // window.location.href="/login"
     alert("Unauthorized")
   }
 }
 
 function handleErrorMutation(error: ErrorObject) {
-  if (error.code == "401") {
+  if (error.code === "401") {
     window.location.href="/login"
   }
 }

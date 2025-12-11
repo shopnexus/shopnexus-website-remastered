@@ -49,7 +49,7 @@ import {
 } from "lucide-react"
 import { useCheckout, useQuote } from "@/core/order/order.customer"
 import { toast } from "sonner"
-import { useGetCart, useListCheckoutSkus } from "@/core/account/cart"
+import { useGetCart, useListCheckoutSkus } from "@/core/order/cart"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useCurrency } from "@/components/currency/currency-context"
 import { useMemo } from "react"

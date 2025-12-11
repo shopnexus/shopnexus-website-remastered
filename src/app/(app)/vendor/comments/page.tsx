@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { PageHeader } from "../components/page-header"
 import { CommentTable } from "./components/comment-table"
-import { mockComments, MockComment } from "../components/mock-data"
+import { mockComments, MockComment } from "@/lib/mocks/mock-data"
 import { toast } from "sonner"
 
 export default function CommentsPage() {

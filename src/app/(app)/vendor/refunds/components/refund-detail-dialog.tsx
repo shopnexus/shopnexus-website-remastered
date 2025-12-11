@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { StatusBadge } from "../../components/status-badge"
 import { Badge } from "@/components/ui/badge"
-import { MockRefund } from "../../components/mock-data"
+import { MockRefund } from "@/lib/mocks/mock-data"
 import { AlertTriangle } from "lucide-react"
 
 interface RefundDetailDialogProps {

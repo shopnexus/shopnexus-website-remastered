@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
-import { MockSPU } from "../../components/mock-data"
+import { MockSPU } from "@/lib/mocks/mock-data"
 
 interface SPUFormProps {
 	spu: MockSPU | null

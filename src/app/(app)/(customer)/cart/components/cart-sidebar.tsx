@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ShoppingCart } from "lucide-react"
 import Link from "next/link"
-import { useGetCart } from "@/core/account/cart"
+import { useGetCart } from "@/core/order/cart"
 
 export function CartSidebar() {
 	const { data: cartItems = [] } = useGetCart()

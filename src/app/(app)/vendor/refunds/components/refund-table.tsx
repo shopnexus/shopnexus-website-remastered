@@ -12,7 +12,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select"
-import { MockRefund } from "../../components/mock-data"
+import { MockRefund } from "@/lib/mocks/mock-data"
 import { Eye, AlertTriangle } from "lucide-react"
 
 interface RefundTableProps {

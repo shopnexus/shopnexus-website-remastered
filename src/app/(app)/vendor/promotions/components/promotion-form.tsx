@@ -21,7 +21,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select"
-import { MockPromotion } from "../../components/mock-data"
+import { MockPromotion } from "@/lib/mocks/mock-data"
 
 interface PromotionFormProps {
 	promotion: MockPromotion | null

@@ -1,8 +1,10 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { customFetchPagination, customFetchStandard } from '@/lib/queryclient/custom-fetch'
-import type { PaginationParams, SuccessPaginationRes } from '@/lib/queryclient/response.type'
-import qs from 'qs'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { customFetchStandard } from '@/lib/queryclient/custom-fetch'
+import type { PaginationParams } from '@/lib/queryclient/response.type'
+import { useInfiniteQueryPagination } from '@/lib/queryclient/use-infinite-query'
 import { Resource } from '../common/resource.type'
+
+// ===== Types =====
 
 export type TComment = {
   id: number
@@ -21,36 +23,28 @@ export type TComment = {
   resources: Resource[]
 }
 
+// ===== Hooks =====
+
 export const useListComments = (params: PaginationParams<{
   ref_type: string
-  ref_id: number
-  id?: number[]
-  account_id?: number[]
+  ref_id: string
+  id?: string[]
+  account_id?: string[]
   score_from?: number
   score_to?: number
 }>) =>
-  useInfiniteQuery({
-    queryKey: ['comment', 'list', params],
-    queryFn: async ({ pageParam }) =>
-      customFetchPagination<TComment>(`catalog/comment?${qs.stringify(pageParam, { arrayFormat: 'repeat' })}`),
-    getNextPageParam: (lastPageRes: SuccessPaginationRes<TComment>, _, lastPageParam) => {
-      if (!lastPageRes.pagination.next_page && !lastPageRes.pagination.next_cursor) return undefined
-      return {
-        ...lastPageParam,
-        page: lastPageRes.pagination.next_page,
-        cursor: lastPageRes.pagination.next_cursor,
-        limit: lastPageParam.limit,
-      }
-    },
-    initialPageParam: params,
-  })
+  useInfiniteQueryPagination<TComment>(
+    ['comment', 'list'],
+    'catalog/comment',
+    params
+  )
 
 export const useCreateComment = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (params: {
       ref_type: string
-      ref_id: number
+      ref_id: string
       body: string
       score: number
       resource_ids: string[]
@@ -69,10 +63,10 @@ export const useUpdateComment = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (params: {
-      id: number
-      body?: string
-      score?: number
-      resource_ids?: string[]
+      id: string
+      body: string
+      score: number
+      resource_ids: string[]
       empty_resources?: boolean
     }) =>
       customFetchStandard<TComment>('catalog/comment', {
@@ -89,7 +83,7 @@ export const useUpdateComment = () => {
 export const useDeleteComment = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (params: { ids: number[] }) =>
+    mutationFn: (params: { ids: string[] }) =>
       customFetchStandard<{ message: string }>('catalog/comment', {
         method: 'DELETE',
         body: JSON.stringify(params),

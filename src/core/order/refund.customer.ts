@@ -1,25 +1,23 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { customFetchPagination, customFetchStandard } from "../../lib/queryclient/custom-fetch"
-import qs from "qs"
-import { PaginationParams, SuccessPaginationRes } from "@/lib/queryclient/response.type"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { customFetchStandard } from "@/lib/queryclient/custom-fetch"
+import { useInfiniteQueryPagination } from "@/lib/queryclient/use-infinite-query"
+import { PaginationParams } from "@/lib/queryclient/response.type"
 import { Status } from "../common/status.type"
 import { Resource } from "../common/resource.type"
 
-// ===== TYPES =====
+// ===== Types =====
 
 export enum RefundMethod {
   PickUp = "PickUp",
   DropOff = "DropOff",
 }
 
-
-
 export type TRefund = {
-  id: number
-  account_id: number
-  order_item_id: number
-  reviewed_by_id: number | null
-  shipment_id: number | null
+  id: string
+  account_id: string
+  order_id: string
+  reviewed_by_id: string | null
+  shipment_id: string | null
   method: RefundMethod
   status: Status
   reason: string
@@ -28,13 +26,13 @@ export type TRefund = {
   resources: Resource[]
 }
 
-// ===== REACT QUERY HOOKS =====
+// ===== Hooks =====
 
 export const useCreateRefund = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (params: {
-      order_item_id: number
+      order_id: string
       method: string
       reason: string
       address: string | null
@@ -53,31 +51,21 @@ export const useCreateRefund = () => {
 export const useListRefunds = (params: PaginationParams<{
   status?: string
 }>) =>
-  useInfiniteQuery({
-    queryKey: ['order', 'refund', 'list', params],
-    queryFn: async ({ pageParam }) =>
-      customFetchPagination<TRefund>(`order/refund?${qs.stringify(pageParam, { arrayFormat: 'repeat' })}`),
-    getNextPageParam: (lastPageRes: SuccessPaginationRes<TRefund>, _, lastPageParam) => {
-      if (!lastPageRes.pagination.next_page && !lastPageRes.pagination.next_cursor) return undefined
-      return {
-        ...lastPageParam,
-        page: lastPageRes.pagination.next_page,
-        cursor: lastPageRes.pagination.next_cursor,
-        limit: lastPageParam.limit,
-      }
-    },
-    initialPageParam: params,
-  })
+  useInfiniteQueryPagination<TRefund>(
+    ['order', 'refund', 'list'],
+    'order/refund',
+    params
+  )
 
 export const useUpdateRefund = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (params: {
-      id: number
+      id: string
       method?: string
       address?: string | null
-      reason?: string
-      resource_ids?: string[]
+      reason?: string | null
+      resource_ids: string[]
     }) =>
       customFetchStandard<TRefund>(`order/refund`, {
         method: 'PATCH',
@@ -92,8 +80,8 @@ export const useUpdateRefund = () => {
 export const useCancelRefund = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (params: { id: number }) =>
-      customFetchStandard<{ message: string }>(`order/refund`, {
+    mutationFn: (params: { id: string }) =>
+      customFetchStandard<void>(`order/refund`, {
         method: 'DELETE',
         body: JSON.stringify(params),
       }),
@@ -106,7 +94,7 @@ export const useCancelRefund = () => {
 export const useConfirmRefund = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (params: { id: number }) =>
+    mutationFn: (params: { id: string }) =>
       customFetchStandard<TRefund>(`order/refund/confirm`, {
         method: 'POST',
         body: JSON.stringify(params),

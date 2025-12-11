@@ -1,12 +1,12 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { getQueryClient } from '../../lib/queryclient/query-client'
-import { customFetchStandard } from '../../lib/queryclient/custom-fetch'
+import { getQueryClient } from '@/lib/queryclient/query-client'
+import { customFetchStandard } from '@/lib/queryclient/custom-fetch'
 
-const queryClient = getQueryClient()
+// ===== Types =====
 
 export type Contact = {
-  id: number
-  account_id: number
+  id: string // UUID
+  account_id: string // UUID
   full_name: string
   phone: string
   phone_verified: boolean
@@ -16,7 +16,9 @@ export type Contact = {
   date_updated: string
 }
 
-export const useGetContact = (contactId: string | number) =>
+// ===== Hooks =====
+
+export const useGetContact = (contactId: string) =>
   useQuery({
     queryKey: ['account', 'contact', contactId],
     queryFn: async () => customFetchStandard<Contact>(`account/contact/${contactId}`),
@@ -44,6 +46,7 @@ export const useCreateContact = () =>
         body: JSON.stringify(params),
       }),
     onSuccess: async () => {
+      const queryClient = getQueryClient()
       await queryClient.invalidateQueries({ queryKey: ['account', 'contact'] })
     },
   })
@@ -51,11 +54,11 @@ export const useCreateContact = () =>
 export const useUpdateContact = () =>
   useMutation({
     mutationFn: async (params: {
-      contact_id: number
+      contact_id: string // UUID
       full_name?: string
       phone?: string
       address?: string
-      address_type?: string
+      address_type?: 'Home' | 'Work'
       phone_verified?: boolean
     }) =>
       customFetchStandard<Contact>('account/contact', {
@@ -63,6 +66,7 @@ export const useUpdateContact = () =>
         body: JSON.stringify(params),
       }),
     onSuccess: async (data) => {
+      const queryClient = getQueryClient()
       await queryClient.invalidateQueries({ queryKey: ['account', 'contact'] })
       await queryClient.invalidateQueries({ queryKey: ['account', 'contact', data.id] })
     },
@@ -70,12 +74,13 @@ export const useUpdateContact = () =>
 
 export const useDeleteContact = () =>
   useMutation({
-    mutationFn: async (params: { contact_id: number }) =>
+    mutationFn: async (params: { contact_id: string }) => // UUID
       customFetchStandard<{ message: string }>('account/contact', {
         method: 'DELETE',
         body: JSON.stringify(params),
       }),
     onSuccess: async () => {
+      const queryClient = getQueryClient()
       await queryClient.invalidateQueries({ queryKey: ['account', 'contact'] })
     },
   })

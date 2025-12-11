@@ -19,7 +19,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select"
-import { MockOrder } from "../../components/mock-data"
+import { MockOrder } from "@/lib/mocks/mock-data"
 import { AlertTriangle, CheckCircle } from "lucide-react"
 
 interface OrderDetailDialogProps {

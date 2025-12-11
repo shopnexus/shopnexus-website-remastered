@@ -64,7 +64,7 @@ export async function customFetch<TResponse = unknown>(
     throw new ResponseError(data.error.code, data.error.message)
   }
 
-  return data as Promise<TResponse>
+  return data as TResponse
 }
 
 export async function customFetchStandard<Data = unknown>(

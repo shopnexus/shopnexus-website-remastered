@@ -1,36 +1,37 @@
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query"
-import { customFetchStandard, customFetchPagination } from "../../lib/queryclient/custom-fetch"
-import { PaginationParams } from "../../lib/queryclient/response.type"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { customFetchStandard } from "@/lib/queryclient/custom-fetch"
+import { useInfiniteQueryPagination } from "@/lib/queryclient/use-infinite-query"
+import { PaginationParams } from "@/lib/queryclient/response.type"
 import qs from "qs"
 
-// Types for inventory management
+// ===== Types =====
+
 export interface Serial {
-  id: number
-  serial_id: string
-  sku_id: number
-  status: "Active" | "Inactive" | "Sold" | "Damaged"
+  id: string
+  ref_type: "ProductSku" | "Promotion"
+  ref_id: string
+  status: "Active" | "Inactive" | "Taken" | "Damaged"
   date_created: string
 }
 
 export interface Stock {
   id: number
   ref_type: "ProductSku" | "Promotion"
-  ref_id: number
-  current_stock: number
-  sold: number
+  ref_id: string
+  stock: number
+  taken: number
   date_created: string
 }
 
 export interface StockHistory {
   id: number
-  stock_id: number
   change: number
   date_created: string
 }
 
-// Query functions
+// ===== Hooks =====
 export function useGetStock(params: {
-  ref_id: number
+  ref_id: string
   ref_type: "ProductSku" | "Promotion"
 }) {
   return useQuery({
@@ -41,48 +42,31 @@ export function useGetStock(params: {
 }
 
 export function useListStockHistory(params: PaginationParams<{
-  ref_id: number
+  ref_id: string
   ref_type: "ProductSku" | "Promotion"
 }>) {
-  return useInfiniteQuery({
-    queryKey: ["inventory", "stock-history", params],
-    queryFn: async ({ pageParam }) => customFetchPagination<StockHistory>(`inventory/stock/history?${qs.stringify(pageParam)}`),
-    getNextPageParam: (lastPageRes, _, lastPageParam) => {
-      if (!lastPageRes.pagination.next_page && !lastPageRes.pagination.next_cursor) {
-        return undefined
-      }
-      return {
-        ...lastPageParam,
-        page: lastPageRes.pagination.next_page,
-        cursor: lastPageRes.pagination.next_cursor,
-        limit: lastPageParam.limit,
-      }
-    },
-    initialPageParam: params,
-    enabled: !!params.ref_id && !!params.ref_type,
-  })
+  return useInfiniteQueryPagination<StockHistory>(
+    ["inventory", "stock-history"],
+    "inventory/stock/history",
+    params,
+    {
+      enabled: !!params.ref_id && !!params.ref_type,
+    }
+  )
 }
 
 export function useListProductSerials(params: PaginationParams<{
-  sku_id: number
+  ref_id: string
+  ref_type: "ProductSku" | "Promotion"
 }>) {
-  return useInfiniteQuery({
-    queryKey: ["inventory", "serials", params],
-    queryFn: async ({ pageParam }) => customFetchPagination<Serial>(`inventory/serial?${qs.stringify(pageParam)}`),
-    getNextPageParam: (lastPageRes, _, lastPageParam) => {
-      if (!lastPageRes.pagination.next_page && !lastPageRes.pagination.next_cursor) {
-        return undefined
-      }
-      return {
-        ...lastPageParam,
-        page: lastPageRes.pagination.next_page,
-        cursor: lastPageRes.pagination.next_cursor,
-        limit: lastPageParam.limit,
-      }
-    },
-    initialPageParam: params,
-    enabled: !!params.sku_id,
-  })
+  return useInfiniteQueryPagination<Serial>(
+    ["inventory", "serials"],
+    "inventory/serial",
+    params,
+    {
+      enabled: !!params.ref_id && !!params.ref_type,
+    }
+  )
 }
 
 // Mutation functions
@@ -91,7 +75,7 @@ export function useImportStock() {
 
   return useMutation({
     mutationFn: (data: {
-      ref_id: number
+      ref_id: string
       ref_type: "ProductSku" | "Promotion"
       change: number
       serial_ids: string[]
@@ -115,7 +99,7 @@ export function useUpdateSkuSerial() {
   return useMutation({
     mutationFn: (data: {
       serial_ids: string[]
-      status: "Active" | "Inactive" | "Sold" | "Damaged"
+      status: "Active" | "Inactive" | "Taken" | "Damaged"
     }) =>
       customFetchStandard<string>(`inventory/serial`, {
         method: 'PATCH',
@@ -127,3 +111,4 @@ export function useUpdateSkuSerial() {
     },
   })
 }
+

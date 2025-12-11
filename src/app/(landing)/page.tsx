@@ -4,7 +4,6 @@ import { HeroSection } from "./components/hero-section"
 import { FeaturedCategories } from "./components/featured-categories"
 import { ProductGrid } from "@/components/product/product-grid"
 import { useListProductCardsRecommended } from "@/core/catalog/product.customer"
-import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
 import { useGetMe } from "@/core/account/account"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,10 +30,10 @@ export default function HomePage() {
 		redirect("/vendor/products")
 	}
 
-	const infiniteProductCards = useListProductCardsRecommended({
+	const recommendedProductsQuery = useListProductCardsRecommended({
 		limit: 8,
 	})
-	const { ref, items: products } = useInfiniteScroll(infiniteProductCards)
+	const products = recommendedProductsQuery.data ?? []
 
 	return (
 		<div className="min-h-screen flex flex-col">
@@ -63,7 +62,6 @@ export default function HomePage() {
 						</div>
 						<div className="sm:px-16 lg:px-32 xl:px-48">
 							<ProductGrid products={products} />
-							<div ref={ref} />
 						</div>
 
 						{/* Additional CTA for logged in users */}

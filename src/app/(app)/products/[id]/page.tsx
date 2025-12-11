@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useState, useEffect, useMemo } from "react"
+import { use, useState, useEffect } from "react"
 import Link from "next/link"
 import {
 	useGetProductDetail,
@@ -22,10 +22,9 @@ import {
 	BreadcrumbPage,
 	BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
-import { useListComments } from "@/core/catalog/comment.customer"
+import { useListComments, type TComment } from "@/core/catalog/comment.customer"
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
-import { useCreateInteraction } from "@/core/analytic/analytic.customer"
+import { useCreateInteraction } from "@/core/analytic/analytic"
 
 interface Resource {
 	id: number
@@ -120,17 +119,22 @@ export default function ProductDetailPage({
 	const infiniteComments = useListComments({
 		limit: 10,
 		ref_type: "ProductSpu",
-		ref_id: Number(id),
+		ref_id: id,
 	})
 	const { items: comments } = useInfiniteScroll(infiniteComments)
 	const { mutateAsync: mutateCreateInteraction } = useCreateInteraction()
 
 	// Fetch related products from the same vendor
-	const sameShopProductsQuery = useListProductCards({
-		search: "",
-		vendor_id: product?.vendor_id ?? 0,
-		limit: 10,
-	})
+	const sameShopProductsQuery = useListProductCards(
+		{
+			search: "",
+			vendor_id: product?.vendor_id?.toString() ?? "",
+			limit: 10,
+		},
+		{
+			enabled: !!product?.vendor_id,
+		}
+	)
 	const { items: sameShopProductCards } = useInfiniteScroll(
 		sameShopProductsQuery
 	)
@@ -139,23 +143,17 @@ export default function ProductDetailPage({
 	const recommendedProductsQuery = useListProductCardsRecommended({
 		limit: 10,
 	})
-	const { items: recommendedProductCards } = useInfiniteScroll(
-		recommendedProductsQuery
-	)
-
-	// Set default selected SKU when product data loads
-	// useEffect(() => {
-	// 	if (productData?.skus && productData.skus.length > 0 && !selectedSku) {
-	// 		setSelectedSku(productData.skus[0])
-	// 	}
-	// }, [productData, selectedSku])
+	const recommendedProductCards = recommendedProductsQuery.data ?? []
 
 	useEffect(() => {
 		mutateCreateInteraction({
-			event_type: "view",
-			ref_type: "Product",
-			ref_id: Number(id),
-			metadata: {},
+			interactions: [
+				{
+					event_type: "view",
+					ref_type: "Product",
+					ref_id: id,
+				},
+			],
 		})
 	}, [id])
 
@@ -241,7 +239,10 @@ export default function ProductDetailPage({
 			/>
 
 			{/* Customer Reviews */}
-			<ReviewsSection rating={product.rating} reviews={comments || []} />
+			<ReviewsSection
+				rating={product.rating}
+				reviews={(comments as TComment[]) || []}
+			/>
 
 			{/* From Same Shop */}
 			<RelatedProducts

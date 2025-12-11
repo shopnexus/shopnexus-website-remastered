@@ -4,7 +4,7 @@ import { useState } from "react"
 import { PageHeader } from "../components/page-header"
 import { RefundTable } from "./components/refund-table"
 import { RefundDetailDialog } from "./components/refund-detail-dialog"
-import { mockRefunds, MockRefund } from "../components/mock-data"
+import { mockRefunds, MockRefund } from "@/lib/mocks/mock-data"
 import { toast } from "sonner"
 
 export default function RefundsPage() {

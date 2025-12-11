@@ -1,38 +1,45 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
-import { customFetchPagination, customFetchStandard } from "../../lib/queryclient/custom-fetch"
-import qs from "qs"
-import { PaginationParams, SuccessPaginationRes } from "@/lib/queryclient/response.type"
+import { useQuery } from "@tanstack/react-query"
+import { customFetchStandard } from "@/lib/queryclient/custom-fetch"
+import { useInfiniteQueryPagination } from "@/lib/queryclient/use-infinite-query"
+import { PaginationParams } from "@/lib/queryclient/response.type"
 
-export type Promotion = {
-  id: number
-  name: string
-  description: string
-  start_date: string
-  end_date: string
-  is_active: boolean
+// ===== Types =====
+
+export type PromotionRef = {
+  ref_type: string
+  ref_id: string
 }
 
-export const useGetPromotion = (id?: number) => useQuery({
+export type Promotion = {
+  id: string
+  code: string
+  owner_id: string | null
+  type: string
+  title: string
+  description: string | null
+  is_active: boolean
+  auto_apply: boolean
+  date_started: string
+  date_ended: string | null
+  date_created: string
+  date_updated: string
+  refs: PromotionRef[]
+}
+
+// ===== Hooks =====
+
+export const useGetPromotion = (id?: string) => useQuery({
   queryKey: ['promotion', id],
-  queryFn: async () => customFetchStandard<Promotion>(`promotion/${id}`),
+  queryFn: async () => customFetchStandard<Promotion>(`catalog/promotion/${id}`),
   enabled: !!id,
 })
 
 export const useListPromotion = (params: PaginationParams<{
   is_active?: boolean
 }>) =>
-  useInfiniteQuery({
-    queryKey: ['promotion', 'list', params],
-    queryFn: async ({ pageParam }) =>
-      customFetchPagination<Promotion>(`catalog/promotion?${qs.stringify(pageParam, { arrayFormat: 'repeat' })}`),
-    getNextPageParam: (lastPageRes: SuccessPaginationRes<Promotion>, _, lastPageParam) => {
-      if (!lastPageRes.pagination.next_page && !lastPageRes.pagination.next_cursor) return undefined
-      return {
-        ...lastPageParam,
-        page: lastPageRes.pagination.next_page,
-        cursor: lastPageRes.pagination.next_cursor,
-        limit: lastPageParam.limit,
-      }
-    },
-    initialPageParam: params,
-  })
+  useInfiniteQueryPagination<Promotion>(
+    ['promotion', 'list'],
+    'catalog/promotion',
+    params
+  )
+

@@ -5,7 +5,7 @@ import { StatusBadge } from "../../components/status-badge"
 import { ConfirmDialog } from "../../components/confirm-dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MockPromotion } from "../../components/mock-data"
+import { MockPromotion } from "@/lib/mocks/mock-data"
 import { Edit, Trash2, ToggleLeft, ToggleRight, Calendar } from "lucide-react"
 import { useState } from "react"
 

@@ -5,7 +5,7 @@ import { CartItemList } from "./cart-item-list"
 import { CartSummary } from "./cart-summary"
 import { EmptyCart } from "./empty-cart"
 import { CartItem } from "./cart-types"
-import { useGetCart, useUpdateCart, useClearCart } from "@/core/account/cart"
+import { useGetCart, useUpdateCart, useClearCart } from "@/core/order/cart"
 
 export function CartContainer() {
 	const { data: cartData = [], isLoading } = useGetCart()

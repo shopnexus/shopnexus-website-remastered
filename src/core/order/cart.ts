@@ -1,15 +1,13 @@
 import { customFetchStandard } from "@/lib/queryclient/custom-fetch"
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { getQueryClient } from "../../lib/queryclient/query-client"
+import { getQueryClient } from "@/lib/queryclient/query-client"
 import { Resource } from "../common/resource.type"
-import qs from "qs"
 
-const queryClient = getQueryClient()
+// ===== Types =====
 
-// Type matching CartItemDTO from contract
 export type CartItem = {
-  sku_id: number
-  spu_id: number
+  sku_id: string
+  spu_id: string
   name: string
   sku_name: string
   original_price: number
@@ -22,25 +20,27 @@ export type CartItem = {
 
 export type Cart = CartItem[]
 
-// Cart queries
+// ===== Hooks =====
+
 export const useGetCart = () =>
   useQuery({
     queryKey: ['account', 'cart'],
-    queryFn: async () => customFetchStandard<Cart>('account/cart'),
+    queryFn: async () => customFetchStandard<Cart>('order/cart'),
   })
 
 export const useUpdateCart = () =>
   useMutation({
     mutationFn: async (params: {
-      sku_id: number
+      sku_id: string
       quantity?: number // either quantity or delta_quantity must be provided
       delta_quantity?: number
     }) =>
-      customFetchStandard<Cart>('account/cart', {
+      customFetchStandard<{ message: string }>('order/cart', {
         method: 'POST',
         body: JSON.stringify(params),
       }),
     onSuccess: async () => {
+      const queryClient = getQueryClient()
       await queryClient.invalidateQueries({ queryKey: ['account', 'cart'] })
     },
   })
@@ -48,24 +48,12 @@ export const useUpdateCart = () =>
 export const useClearCart = () =>
   useMutation({
     mutationFn: async () =>
-      customFetchStandard<{ message: string }>('account/cart', {
+      customFetchStandard<{ message: string }>('order/cart', {
         method: 'DELETE',
       }),
     onSuccess: async () => {
+      const queryClient = getQueryClient()
       await queryClient.invalidateQueries({ queryKey: ['account', 'cart'] })
     },
   })
 
-  
-export const useListCheckoutSkus = (
-  params?: {
-    sku_id: number
-    quantity: number
-  }) =>
-  useQuery({
-    queryKey: ['cart', 'list', params],
-    queryFn: () => {
-      return customFetchStandard<CartItem[]>(`account/cart/buynow?${qs.stringify(params)}`)
-    },
-    enabled: params !== undefined,
-  })

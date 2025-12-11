@@ -13,7 +13,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select"
-import { MockComment } from "../../components/mock-data"
+import { MockComment } from "@/lib/mocks/mock-data"
 import {
 	MessageSquare,
 	Flag,

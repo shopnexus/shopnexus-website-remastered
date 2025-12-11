@@ -3,7 +3,7 @@
 import { DataTable, Column } from "../../components/data-table"
 import { StatusBadge } from "../../components/status-badge"
 import { Badge } from "@/components/ui/badge"
-import { MockStock, MockStockHistory } from "../../components/mock-data"
+import { MockStock, MockStockHistory } from "@/lib/mocks/mock-data"
 import { useState } from "react"
 
 interface StockTableProps {

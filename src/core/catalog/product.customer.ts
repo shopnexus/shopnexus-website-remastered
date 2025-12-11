@@ -1,10 +1,11 @@
-import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query"
-import { getQueryClient } from "../../lib/queryclient/query-client"
-import { customFetchPagination, customFetchStandard } from "../../lib/queryclient/custom-fetch"
+import { useQuery } from "@tanstack/react-query"
+import { customFetchStandard } from "@/lib/queryclient/custom-fetch"
+import { useInfiniteQueryPagination } from "@/lib/queryclient/use-infinite-query"
 import qs from "qs"
-import { PaginationParams } from "../../lib/queryclient/response.type"
+import { PaginationParams } from "@/lib/queryclient/response.type"
 import { Resource } from "../common/resource.type"
-import { CartItem } from "../account/cart"
+
+// ===== Types =====
 
 export type TProductDetail = {
   id: number
@@ -59,53 +60,41 @@ export type TProductCard = {
   }
 }
 
-export const useListProductCards = (params: PaginationParams<{
-  search: string
-  vendor_id?: number
-  category?: string
-  min_price?: number
-  max_price?: number
-  sort?: 'relevance' | 'price-low' | 'price-high' | 'rating' | 'newest'
-}>) =>
-  useInfiniteQuery({
-    queryKey: ['product', 'cards', params],
-    queryFn: async ({ pageParam }) => customFetchPagination<TProductCard>(`catalog/product-card?${qs.stringify(pageParam)}`),
-    getNextPageParam: (lastPageRes, _, lastPageParam) => {
-      if (!lastPageRes.pagination.next_page && !lastPageRes.pagination.next_cursor) {
-        return undefined
-      }
+// ===== Hooks =====
 
-      return {
-        ...lastPageParam,
-        page: lastPageRes.pagination.next_page,
-        cursor: lastPageRes.pagination.next_cursor,
-        limit: lastPageParam.limit,
-      }
-    },
-    initialPageParam: params,
-  })
+export const useListProductCards = (
+  params: PaginationParams<{
+    search?: string
+    vendor_id?: string
+  }>,
+  options?: {
+    enabled?: boolean
+    staleTime?: number
+    gcTime?: number
+    refetchOnWindowFocus?: boolean
+    refetchOnMount?: boolean
+    refetchOnReconnect?: boolean
+    retry?: number | boolean
+    retryDelay?: number | ((attemptIndex: number) => number)
+  }
+) =>
+  useInfiniteQueryPagination<TProductCard>(
+    ['product', 'cards'],
+    'catalog/product-card',
+    params,
+    options
+  )
 
-
-export const useListProductCardsRecommended = (params: { limit: number }) =>
-  useInfiniteQuery({
+export const useListProductCardsRecommended = (params: { limit?: number }) =>
+  useQuery({
     queryKey: ['product', 'cards', 'recommended', params],
-    queryFn: async ({ pageParam }) => customFetchPagination<TProductCard>(`catalog/product-card/recommended?${qs.stringify(pageParam)}`),
-    getNextPageParam: (lastPageRes, _, lastPageParam) => {
-      // if (!lastPageRes.pagination.next_page && !lastPageRes.pagination.next_cursor) return undefined
-      return {
-        ...lastPageParam,
-        // page: lastPageRes.pagination.next_page,
-        // cursor: lastPageRes.pagination.next_cursor,
-        limit: lastPageParam.limit,
-      }
-    },
-    initialPageParam: params,
+    queryFn: async () => customFetchStandard<TProductCard[]>(`catalog/product-card/recommended?${qs.stringify(params)}`),
   })
-
 
 export const useGetProductDetail = (id: string) =>
   useQuery({
     queryKey: ['product', 'detail', id],
     queryFn: () => customFetchStandard<TProductDetail>(`catalog/product-detail?id=${id}`),
   })
+
 

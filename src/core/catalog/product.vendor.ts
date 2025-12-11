@@ -1,10 +1,11 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { customFetchPagination, customFetchStandard } from "@/lib/queryclient/custom-fetch"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { customFetchStandard } from "@/lib/queryclient/custom-fetch"
+import { useInfiniteQueryPagination } from "@/lib/queryclient/use-infinite-query"
 import { PaginationParams } from "@/lib/queryclient/response.type"
 import qs from "qs"
 import { Resource } from "../common/resource.type"
 
-// ===== TYPES =====
+// ===== Types =====
 
 export type ProductAttribute = {
   name: string
@@ -64,45 +65,34 @@ export type ProductSPU = {
   specifications?: ProductSpecification[]
 }
 
-// ===== REACT QUERY HOOKS =====
+// ===== Hooks =====
 
 // List Product SPU (Infinite Query)
 export const useListProductSPU = (params: PaginationParams<{
   code?: string[]
-  category_id?: number[]
-  brand_id?: number[]
+  category_id?: string[]
+  brand_id?: string[]
   is_active?: boolean[]
 }>) =>
-  useInfiniteQuery({
-    queryKey: ['product-spu', 'list', params],
-    queryFn: async ({ pageParam }) => customFetchPagination<ProductSPU>(`catalog/product-spu?${qs.stringify(pageParam)}`),
-    getNextPageParam: (lastPageRes, _, lastPageParam) => {
-      if (!lastPageRes.pagination.next_page && !lastPageRes.pagination.next_cursor) {
-        return undefined
-      }
-      return {
-        ...lastPageParam,
-        page: lastPageRes.pagination.next_page,
-        cursor: lastPageRes.pagination.next_cursor,
-        limit: lastPageParam.limit,
-      }
-    },
-    initialPageParam: params,
-  })
+  useInfiniteQueryPagination<ProductSPU>(
+    ['product-spu', 'list'],
+    'catalog/product-spu',
+    params
+  )
 
 // Create Product SPU
 export const useCreateProductSPU = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (params: {
-      category_id: number
-      brand_id: number
+      category_id: string
+      brand_id: string
       name: string
       description: string
       is_active: boolean
       tags: string[]
-      resource_ids: string[]
-      specifications: ProductSpecification[]
+      resource_ids?: string[]
+      specifications?: Array<{ name: string; value: string }>
     }) =>
       customFetchStandard<ProductSPU>('catalog/product-spu', {
         method: 'POST',
@@ -119,14 +109,16 @@ export const useUpdateProductSPU = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (params: {
-      id: number
-      category_id?: number
-      featured_sku_id?: number
-      brand_id?: number
+      id: string
+      category_id?: string
+      featured_sku_id?: string
+      brand_id?: string
       name?: string
       description?: string
       is_active?: boolean
-      specifications?: ProductSpecification[]
+      tags?: string[]
+      resource_ids?: string[]
+      specifications?: Array<{ name: string; value: string }>
     }) =>
       customFetchStandard<ProductSPU>('catalog/product-spu', {
         method: 'PATCH',
@@ -142,7 +134,7 @@ export const useUpdateProductSPU = () => {
 export const useDeleteProductSPU = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (params: { id: number }) =>
+    mutationFn: (params: { id: string }) =>
       customFetchStandard<{ message: string }>(`catalog/product-spu/${params.id}`, {
         method: 'DELETE',
       }),
@@ -153,19 +145,19 @@ export const useDeleteProductSPU = () => {
 }
 
 // Get Product SPU by ID
-export const useGetProductSPU = (id: number | undefined) =>
+export const useGetProductSPU = (id: string | undefined) =>
   useQuery({
     queryKey: ['product-spu', 'detail', id],
     queryFn: () => customFetchStandard<ProductSPU>(`catalog/product-spu/${id}`),
-    enabled: typeof id === 'number' && id > 0,
+    enabled: !!id,
   })
 
-export const useListProductSKU = (params: PaginationParams<{
-  spu_id?: number
+export const useListProductSKU = (params?: {
+  spu_id?: string
   price_from?: number
   price_to?: number
   can_combine?: boolean
-}>) =>
+}) =>
   useQuery({
     queryKey: ['product-sku', 'list', params],
     queryFn: () => customFetchStandard<ProductSku[]>(`catalog/product-sku?${qs.stringify(params)}`),
@@ -176,11 +168,11 @@ export const useCreateProductSKU = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (params: {
-      spu_id: number
+      spu_id: string
       price: number
       can_combine: boolean
-      attributes: ProductAttribute[]
-      package_details: PackageDetails
+      attributes?: ProductAttribute[]
+      package_details: Record<string, any>
     }) =>
       customFetchStandard<ProductSku>('catalog/product-sku', {
         method: 'POST',
@@ -197,11 +189,11 @@ export const useUpdateProductSKU = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (params: {
-      id: number
+      id: string
       price?: number
       can_combine?: boolean
       attributes?: ProductAttribute[]
-      package_details?: PackageDetails
+      package_details?: Record<string, any>
     }) =>
       customFetchStandard<ProductSku>('catalog/product-sku', {
         method: 'PATCH',
@@ -217,7 +209,7 @@ export const useUpdateProductSKU = () => {
 export const useDeleteProductSKU = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (params: { id: number }) =>
+    mutationFn: (params: { id: string }) =>
       customFetchStandard<{ message: string }>('catalog/product-sku', {
         method: 'DELETE',
         body: JSON.stringify(params),
@@ -227,3 +219,4 @@ export const useDeleteProductSKU = () => {
     },
   })
 }
+

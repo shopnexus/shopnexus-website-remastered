@@ -1,21 +1,36 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { customFetchPagination, customFetchStandard } from "@/lib/queryclient/custom-fetch"
-import qs from "qs"
-import { PaginationParams, SuccessPaginationRes } from "@/lib/queryclient/response.type"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { customFetchStandard } from "@/lib/queryclient/custom-fetch"
+import { useInfiniteQueryPagination } from "@/lib/queryclient/use-infinite-query"
+import { PaginationParams } from "@/lib/queryclient/response.type"
 
 // ===== Types =====
 
-export type Promotion = {
-  id: number
-  code: string
+export type PromotionRef = {
   ref_type: string
-  ref_id?: number | null
+  ref_id: string
+}
+
+export type Promotion = {
+  id: string
+  code: string
+  owner_id: string | null
   type: string
   title: string
-  description?: string | null
+  description: string | null
   is_active: boolean
+  auto_apply: boolean
   date_started: string
-  date_ended?: string | null
+  date_ended: string | null
+  date_created: string
+  date_updated: string
+  refs: PromotionRef[]
+}
+
+export type PromotionDiscount = Promotion & {
+  min_spend: number
+  max_discount: number
+  discount_percent: number | null
+  discount_price: number | null
 }
 
 // ===== Hooks =====
@@ -25,21 +40,22 @@ export const useCreateDiscount = () => {
   return useMutation({
     mutationFn: (params: {
       code: string
-      ref_type: string
-      ref_id?: number
-      type: string
+      refs: Array<{
+        ref_type: string
+        ref_id: string
+      }>
       title: string
-      description?: string
+      description?: string | null
       is_active: boolean
+      auto_apply: boolean
       date_started: string
-      date_ended?: string
-      order_wide: boolean
+      date_ended?: string | null
       min_spend: number
       max_discount: number
-      discount_percent?: number
-      discount_price?: number
+      discount_percent?: number | null
+      discount_price?: number | null
     }) =>
-      customFetchStandard<Promotion>(`catalog/promotion/discount`, {
+      customFetchStandard<PromotionDiscount>(`catalog/promotion/discount`, {
         method: 'POST',
         body: JSON.stringify(params),
       }),
@@ -53,24 +69,25 @@ export const useUpdateDiscount = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (params: {
-      id: number
-      code?: string
-      owner_id?: number
-      ref_type?: string
-      ref_id?: number
-      title?: string
-      description?: string
-      is_active?: boolean
-      date_started?: string
-      date_ended?: string
+      id: string
+      code?: string | null
+      owner_id?: string | null
+      refs?: Array<{
+        ref_type: string
+        ref_id: string
+      }>
+      title?: string | null
+      description?: string | null
+      is_active?: boolean | null
+      date_started?: string | null
+      date_ended?: string | null
       null_date_ended?: boolean
-      order_wide?: boolean
-      min_spend?: number
-      max_discount?: number
-      discount_percent?: number
-      discount_price?: number
+      min_spend?: number | null
+      max_discount?: number | null
+      discount_percent?: number | null
+      discount_price?: number | null
     }) =>
-      customFetchStandard<Promotion>(`catalog/promotion/discount`, {
+      customFetchStandard<PromotionDiscount>(`catalog/promotion/discount`, {
         method: 'PATCH',
         body: JSON.stringify(params),
       }),
@@ -83,26 +100,16 @@ export const useUpdateDiscount = () => {
 export const useListPromotionVendor = (params: PaginationParams<{
   is_active?: boolean
 }>) =>
-  useInfiniteQuery({
-    queryKey: ['promotion', 'list', 'vendor', params],
-    queryFn: async ({ pageParam }) =>
-      customFetchPagination<Promotion>(`catalog/promotion?${qs.stringify(pageParam, { arrayFormat: 'repeat' })}`),
-    getNextPageParam: (lastPageRes: SuccessPaginationRes<Promotion>, _, lastPageParam) => {
-      if (!lastPageRes.pagination.next_page && !lastPageRes.pagination.next_cursor) return undefined
-      return {
-        ...lastPageParam,
-        page: lastPageRes.pagination.next_page,
-        cursor: lastPageRes.pagination.next_cursor,
-        limit: lastPageParam.limit,
-      }
-    },
-    initialPageParam: params,
-  })
+  useInfiniteQueryPagination<Promotion>(
+    ['promotion', 'list', 'vendor'],
+    'catalog/promotion',
+    params
+  )
 
 export const useDeletePromotion = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => customFetchStandard<{ message: string }>(`catalog/promotion/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: string) => customFetchStandard<{ message: string }>(`catalog/promotion/${id}`, { method: 'DELETE' }),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['promotion'] })
     },

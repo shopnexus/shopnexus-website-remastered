@@ -4,7 +4,7 @@ import { useState } from "react"
 import { PageHeader } from "../components/page-header"
 import { PromotionTable } from "./components/promotion-table"
 import { PromotionForm } from "./components/promotion-form"
-import { mockPromotions, MockPromotion } from "../components/mock-data"
+import { mockPromotions, MockPromotion } from "@/lib/mocks/mock-data"
 import { toast } from "sonner"
 
 export default function PromotionsPage() {

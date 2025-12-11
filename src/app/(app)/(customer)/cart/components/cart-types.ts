@@ -1,4 +1,4 @@
-import { CartItem as ApiCartItem } from "@/core/account/cart"
+import { CartItem as ApiCartItem } from "@/core/order/cart"
 
 // Extend API CartItem with UI-specific fields
 export interface CartItem extends ApiCartItem {
