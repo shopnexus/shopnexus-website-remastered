@@ -22,10 +22,14 @@ import {
 	BarChart3,
 } from "lucide-react"
 import Link from "next/link"
+import { redirect } from "next/navigation"
 
 export default function HomePage() {
 	const { data: account } = useGetMe()
 	const isLoggedIn = !!account
+	if (account?.type === "Vendor") {
+		redirect("/vendor/products")
+	}
 
 	const infiniteProductCards = useListProductCardsRecommended({
 		limit: 8,

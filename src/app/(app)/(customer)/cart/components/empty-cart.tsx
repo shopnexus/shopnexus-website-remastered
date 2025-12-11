@@ -57,7 +57,7 @@ export function EmptyCart() {
 						{/* Action Buttons */}
 						<div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
 							<Button size="lg" asChild className="min-w-[160px]">
-								<Link href="/products">
+								<Link href="/search">
 									<Package className="h-4 w-4 mr-2" />
 									Browse Products
 								</Link>
@@ -74,67 +74,6 @@ export function EmptyCart() {
 									Back to Home
 								</Link>
 							</Button>
-						</div>
-					</div>
-				</CardContent>
-			</Card>
-
-			{/* Suggested Categories */}
-			<div className="mt-12">
-				<h3 className="text-lg font-semibold text-center mb-6">
-					Popular Categories
-				</h3>
-				<div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-					{suggestedCategories.map((category) => (
-						<Link key={category.name} href={category.href}>
-							<Card className="hover:shadow-md transition-shadow cursor-pointer group h-full">
-								<CardContent className="p-6 text-center space-y-3">
-									<div className="text-3xl">{category.icon}</div>
-									<h4 className="font-medium text-sm group-hover:text-primary transition-colors">
-										{category.name}
-									</h4>
-								</CardContent>
-							</Card>
-						</Link>
-					))}
-				</div>
-			</div>
-
-			{/* Benefits Section */}
-			<Card className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-				<CardContent className="p-6">
-					<div className="text-center space-y-4">
-						<h3 className="text-lg font-semibold text-blue-900">
-							Why Choose ShopNexus?
-						</h3>
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
-							<div className="space-y-2">
-								<div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-									🚚
-								</div>
-								<h4 className="font-medium text-blue-900">Fast Delivery</h4>
-								<p className="text-blue-700">
-									Free shipping on orders over 42 USDT
-								</p>
-							</div>
-
-							<div className="space-y-2">
-								<div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-									💰
-								</div>
-								<h4 className="font-medium text-blue-900">Best Prices</h4>
-								<p className="text-blue-700">
-									Special discounts for bulk orders
-								</p>
-							</div>
-
-							<div className="space-y-2">
-								<div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-									🛡️
-								</div>
-								<h4 className="font-medium text-blue-900">Reliable Warranty</h4>
-								<p className="text-blue-700">Official support and warranty</p>
-							</div>
 						</div>
 					</div>
 				</CardContent>

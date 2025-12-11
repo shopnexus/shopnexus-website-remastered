@@ -9,7 +9,7 @@ export type AccountProfile = {
   id: number
   date_created: string
   date_updated: string
-  type: string
+  type: 'Customer' | 'Vendor'
   status: string
   phone: string | null
   email: string | null

@@ -39,11 +39,11 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
 
 	const { id } = use(params)
 	const productId = Number(id)
-	const { data: product, isLoading } = useGetProductSPU(productId)
-	const { data: skusData } = useListProductSKU({
+	const { data: product } = useGetProductSPU(productId)
+	const { data: skus = [] } = useListProductSKU({
 		spu_id: productId,
+		limit: 10,
 	})
-	const skus: ProductSku[] = Array.isArray(skusData) ? skusData : []
 
 	if (!product) {
 		return (
@@ -74,7 +74,8 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
 							<div>
 								<h1 className="text-3xl font-bold">{product.name}</h1>
 								<p className="text-muted-foreground">
-									{product.code} • {product.brand.name} • {product.category.name}
+									{product.code} • {product.brand.name} •{" "}
+									{product.category.name}
 								</p>
 							</div>
 						</div>
@@ -116,7 +117,10 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
 								<CardContent>
 									<div className="grid gap-4 md:grid-cols-2">
 										{product.resources.map((resource, index) => (
-											<div key={resource.id || index} className="relative group">
+											<div
+												key={resource.id || index}
+												className="relative group"
+											>
 												<img
 													src={resource.url}
 													alt={`Product image ${index + 1}`}

@@ -1,14 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { Separator } from "@/components/ui/separator"
+import ProductDescriptionCard from "@/components/product/product-description-card"
 import { toast } from "sonner"
 import {
 	ArrowLeft,
@@ -17,7 +16,8 @@ import {
 	EyeOff,
 	Image as ImageIcon,
 	Tag,
-	Upload,
+	Plus,
+	Trash2,
 } from "lucide-react"
 import {
 	useGetProductSPU,
@@ -27,19 +27,24 @@ import {
 import FileUpload from "@/components/shared/file-upload"
 import { TagInput } from "@/components/shared/tag-input"
 import { Resource } from "@/core/common/resource.type"
+import {
+	BrandSelect,
+	CategorySelect,
+} from "@/components/shared/brand-category-select"
 
 interface ProductEditPageProps {
-	params: {
+	params: Promise<{
 		id: string
-	}
+	}>
 }
 
-export default function ProductEditPage({ params }: ProductEditPageProps) {
+export default function ProductEditPage(props: ProductEditPageProps) {
+	const params = use(props.params)
 	const router = useRouter()
 	const [product, setProduct] = useState<ProductSPU | null>(null)
 	const [isPreview, setIsPreview] = useState(false)
 	const [isLoading, setIsLoading] = useState(false)
-	const [resources, setResources] = useState<{ id: string; url: string }[]>([])
+	const [resources, setResources] = useState<Resource[]>([])
 
 	const productId = Number.parseInt(params.id)
 	const { data: apiProduct, isLoading: isLoadingProduct } = useGetProductSPU(
@@ -49,11 +54,20 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
 
 	useEffect(() => {
 		if (!apiProduct) return
-		setProduct(apiProduct)
+		setProduct({
+			...apiProduct,
+			specifications:
+				apiProduct.specifications && apiProduct.specifications.length > 0
+					? apiProduct.specifications
+					: [
+							{
+								name: "",
+								value: "",
+							},
+					  ],
+		})
 		// Map resources to file-upload format
-		setResources(
-			apiProduct.resources.map((r) => ({ id: r.id.toString(), url: r.url }))
-		)
+		setResources(apiProduct.resources)
 	}, [apiProduct])
 
 	const handleSave = async () => {
@@ -65,9 +79,15 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
 				updateSpu.mutate(
 					{
 						id: product.id,
+						brand_id: product.brand.id,
+						category_id: product.category.id,
 						name: product.name,
 						description: product.description,
 						is_active: product.is_active,
+						specifications:
+							product.specifications?.filter(
+								(spec) => spec.name.trim() && spec.value.trim()
+							),
 					},
 					{
 						onSuccess: () => resolve(),
@@ -76,8 +96,8 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
 				)
 			})
 			toast.success("Product updated successfully")
-			router.push("/vendor/products")
-		} catch (error) {
+			// router.push("/vendor/products")
+		} catch {
 			toast.error("Failed to update product")
 		} finally {
 			setIsLoading(false)
@@ -94,22 +114,14 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
 	}
 
 	const handleUploadComplete = (urls: { id: string; url: string }[]) => {
-		setResources([...resources, ...urls])
-		if (product) {
-			setProduct({
-				...product,
-				resources: [
-					...product.resources,
-					...urls.map((r) => ({
-						id: Number(r.id),
-						url: r.url,
-						mime: "image/*",
-						size: 0,
-						checksum: null,
-					})),
-				],
-			})
-		}
+		setResources([
+			...resources,
+			...urls.map((url) => ({
+				id: url.id,
+				url: url.url,
+				size: 0,
+			})),
+		])
 	}
 
 	const handleRemoveImage = (index: number) => {
@@ -217,20 +229,36 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
 									<div className="grid gap-4 md:grid-cols-2">
 										<div className="space-y-2">
 											<Label htmlFor="brand">Brand</Label>
-											<Input
-												id="brand"
-												value={product.brand.name}
-												disabled
-												placeholder="Brand (read-only)"
+											<BrandSelect
+												valueId={product.brand.id}
+												onChange={(b) =>
+													setProduct({
+														...product,
+														brand: {
+															id: b.id,
+															code: b.code,
+															name: b.name,
+															description: b.description,
+														},
+													})
+												}
 											/>
 										</div>
 										<div className="space-y-2">
 											<Label htmlFor="category">Category</Label>
-											<Input
-												id="category"
-												value={product.category.name}
-												disabled
-												placeholder="Category (read-only)"
+											<CategorySelect
+												valueId={product.category.id}
+												onChange={(c) =>
+													setProduct({
+														...product,
+														category: {
+															id: c.id,
+															name: c.name,
+															description: c.description,
+															parent_id: product.category.parent_id,
+														},
+													})
+												}
 											/>
 										</div>
 									</div>
@@ -238,40 +266,126 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
 							</Card>
 
 							{/* Description */}
+							<ProductDescriptionCard
+								value={product.description}
+								isPreview={isPreview}
+								onChange={(next) =>
+									setProduct({ ...product, description: next })
+								}
+							/>
+
+							{/* Specifications */}
 							<Card>
 								<CardHeader>
-									<CardTitle>Description</CardTitle>
-									<p className="text-sm text-muted-foreground">
-										Write your product description using Markdown. You can use
-										**bold**, *italic*, lists, and more.
-									</p>
+									<CardTitle className="flex items-center gap-2">
+										<Plus className="h-5 w-5" />
+										Product Specifications
+									</CardTitle>
 								</CardHeader>
-								<CardContent>
-									{isPreview ? (
-										<div className="prose max-w-none">
-											<div className="p-4 border rounded-lg bg-muted/50">
-												<h3 className="text-lg font-semibold mb-2">Preview</h3>
-												<div
-													className="prose prose-sm max-w-none"
-													dangerouslySetInnerHTML={{
-														__html: product.description
-															.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-															.replace(/\*(.*?)\*/g, "<em>$1</em>")
-															.replace(/\n/g, "<br/>"),
-													}}
-												/>
+								<CardContent className="space-y-4">
+									<p className="text-sm text-muted-foreground">
+										Add or edit product specifications such as material, origin,
+										or warranty.
+									</p>
+									<div className="space-y-4">
+										{product.specifications?.map((spec, index) => (
+											<div
+												key={`spec-${index}`}
+												className="grid gap-2 md:grid-cols-[1fr,1fr,auto]"
+											>
+												<div className="space-y-2">
+													<Label htmlFor={`spec-name-${index}`}>Name</Label>
+													<Input
+														id={`spec-name-${index}`}
+														value={spec.name}
+														onChange={(e) =>
+															setProduct((prev) =>
+																prev
+																	? {
+																			...prev,
+																			specifications: (prev.specifications ??
+																				[]).map((s, i) =>
+																				i === index
+																					? { ...s, name: e.target.value }
+																					: s
+																			),
+																	  }
+																	: prev
+															)
+														}
+														placeholder="e.g. Material"
+													/>
+												</div>
+												<div className="space-y-2">
+													<Label htmlFor={`spec-value-${index}`}>Value</Label>
+													<Input
+														id={`spec-value-${index}`}
+														value={spec.value}
+														onChange={(e) =>
+															setProduct((prev) =>
+																prev
+																	? {
+																			...prev,
+																			specifications: (prev.specifications ??
+																				[]).map((s, i) =>
+																				i === index
+																					? { ...s, value: e.target.value }
+																					: s
+																			),
+																	  }
+																	: prev
+															)
+														}
+														placeholder="e.g. 100% Cotton"
+													/>
+												</div>
+												<div className="flex items-end">
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon"
+														onClick={() =>
+															setProduct((prev) =>
+																prev
+																	? {
+																			...prev,
+																			specifications: (prev.specifications ??
+																				[]).filter((_, i) => i !== index),
+																	  }
+																	: prev
+															)
+														}
+														disabled={(product.specifications?.length ?? 0) === 1}
+														aria-label="Remove specification"
+													>
+														<Trash2 className="h-4 w-4" />
+													</Button>
+												</div>
 											</div>
-										</div>
-									) : (
-										<Textarea
-											value={product.description}
-											onChange={(e) =>
-												setProduct({ ...product, description: e.target.value })
-											}
-											placeholder="Enter product description using Markdown..."
-											className="min-h-[300px] font-mono text-sm"
-										/>
-									)}
+										))}
+									</div>
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										className="flex items-center gap-2"
+										onClick={() =>
+											setProduct((prev) =>
+												prev
+													? {
+															...prev,
+															specifications: [
+																...(prev.specifications ?? []),
+																{ name: "", value: "" },
+															],
+													  }
+													: prev
+											)
+										}
+									>
+										<Plus className="h-4 w-4" />
+										Add Specification
+									</Button>
 								</CardContent>
 							</Card>
 

@@ -49,11 +49,11 @@ export const FiltersSidebar = memo(
 					className={`space-y-4 ${showFilters ? "block" : "hidden lg:block"}`}
 				>
 					{/* Category Filter */}
-					<CategoryFilter
+					{/* <CategoryFilter
 						categories={categories}
 						selectedCategory={selectedCategory}
 						onCategoryChange={onCategoryChange}
-					/>
+					/> */}
 
 					<Separator />
 

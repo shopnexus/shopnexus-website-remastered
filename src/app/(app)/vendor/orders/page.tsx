@@ -238,30 +238,30 @@ export default function OrdersPage() {
 	// const handleBulkAction = (action: string) => {}
 
 	const secondaryActions = [
-		{
-			label: "Export",
-			icon: <Download className="h-4 w-4" />,
-			onClick: handleExport,
-			variant: "outline" as const,
-		},
-		{
-			label: "Analytics",
-			icon: <BarChart3 className="h-4 w-4" />,
-			onClick: handleViewAnalytics,
-			variant: "outline" as const,
-		},
+		// {
+		// 	label: "Export",
+		// 	icon: <Download className="h-4 w-4" />,
+		// 	onClick: handleExport,
+		// 	variant: "outline" as const,
+		// },
+		// {
+		// 	label: "Analytics",
+		// 	icon: <BarChart3 className="h-4 w-4" />,
+		// 	onClick: handleViewAnalytics,
+		// 	variant: "outline" as const,
+		// },
 		{
 			label: "Refresh",
 			icon: <RefreshCw className="h-4 w-4" />,
 			onClick: handleRefresh,
 			variant: "ghost" as const,
 		},
-		{
-			label: "Settings",
-			icon: <Settings className="h-4 w-4" />,
-			onClick: handleSettings,
-			variant: "ghost" as const,
-		},
+		// {
+		// 	label: "Settings",
+		// 	icon: <Settings className="h-4 w-4" />,
+		// 	onClick: handleSettings,
+		// 	variant: "ghost" as const,
+		// },
 	]
 
 	return (
@@ -271,7 +271,7 @@ export default function OrdersPage() {
 					<PageHeader
 						title="Order Management"
 						description="Manage customer orders and track fulfillment"
-						stats={stats}
+						// stats={stats}
 						secondaryActions={secondaryActions}
 					/>
 

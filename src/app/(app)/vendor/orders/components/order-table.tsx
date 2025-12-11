@@ -172,7 +172,7 @@ export function OrderTable({
 					</Select>
 				</div>
 
-				<div className="flex items-center gap-2">
+				{/* <div className="flex items-center gap-2">
 					<span className="text-sm font-medium">Priority:</span>
 					<Select defaultValue="all">
 						<SelectTrigger className="w-32">
@@ -186,7 +186,7 @@ export function OrderTable({
 							<SelectItem value="Low">Low</SelectItem>
 						</SelectContent>
 					</Select>
-				</div>
+				</div> */}
 
 				<div className="flex items-center gap-2">
 					<span className="text-sm font-medium">Shipping:</span>
@@ -206,6 +206,7 @@ export function OrderTable({
 			</div>
 
 			<DataTable
+				className="min-w-3xl"
 				data={filteredOrders}
 				columns={orderColumns}
 				searchKey="customer_name"

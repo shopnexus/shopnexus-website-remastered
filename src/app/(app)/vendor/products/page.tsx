@@ -8,7 +8,7 @@ import { ProductTable } from "./components/product-table"
 // import { SPUForm } from "./components/spu-form" // Now using dedicated edit page
 import { SKUForm } from "./components/sku-form"
 import { toast } from "sonner"
-import { Download, Upload, RefreshCw, BarChart3, Settings } from "lucide-react"
+import { RefreshCw } from "lucide-react"
 import {
 	useListProductSPU,
 	useDeleteProductSPU,
@@ -52,7 +52,7 @@ export default function ProductsPage() {
 	const handleEditSPU = (spu: ProductSPU) => {
 		// router.push(`/vendor/products/${spu.id}`)
 		// open in new tab
-		window.open(`/vendor/products/${spu.id}`, "_blank")
+		window.open(`/vendor/products/${spu.id}/edit`, "_blank")
 	}
 
 	const handleDeleteSPU = (spuId: number) => {
@@ -99,6 +99,12 @@ export default function ProductsPage() {
 			can_combine?: boolean
 			attributes?: { name: string; value: string }[]
 			stock?: number
+			package_details?: {
+				weight_grams: number
+				length_cm: number
+				width_cm: number
+				height_cm: number
+			}
 		}
 	) => {
 		if (!selectedSPU) return
@@ -111,7 +117,8 @@ export default function ProductsPage() {
 					id: editingSKU.id,
 					price: skuData.price,
 					can_combine: skuData.can_combine,
-					attributes: skuData.attributes,
+					attributes: skuData.attributes ?? [],
+					package_details: skuData.package_details,
 				},
 				{
 					onSuccess: () => {
@@ -131,7 +138,13 @@ export default function ProductsPage() {
 					spu_id: selectedSPU.id,
 					price: skuData.price || 0,
 					can_combine: skuData.can_combine ?? false,
-					attributes: skuData.attributes,
+					attributes: skuData.attributes ?? [],
+					package_details: skuData.package_details ?? {
+						weight_grams: 0,
+						length_cm: 0,
+						width_cm: 0,
+						height_cm: 0,
+					},
 				},
 				{
 					onSuccess: () => {
@@ -157,7 +170,8 @@ export default function ProductsPage() {
 		)
 	}
 
-	const handleManageInventory = (sku: ProductSku, spu: ProductSPU) => {
+	const handleManageInventory = (sku: ProductSku, _spu: ProductSPU) => {
+		void _spu
 		// Navigate to inventory page with SKU filter
 		router.push(`/vendor/inventory?sku=${sku.id}`)
 	}
@@ -166,57 +180,41 @@ export default function ProductsPage() {
 	// 	toast.info(`Bulk ${action} action would be implemented`)
 	// }
 
-	const handleExport = () => {
-		toast.info("Export functionality would be implemented")
-	}
-
-	const handleImport = () => {
-		toast.info("Import functionality would be implemented")
-	}
-
 	const handleRefresh = () => {
 		toast.info("Data refreshed")
 	}
 
-	const handleViewAnalytics = () => {
-		toast.info("Analytics view would be implemented")
-	}
-
-	const handleSettings = () => {
-		toast.info("Settings would be implemented")
-	}
-
 	const secondaryActions = [
-		{
-			label: "Import",
-			icon: <Upload className="h-4 w-4" />,
-			onClick: handleImport,
-			variant: "outline" as const,
-		},
-		{
-			label: "Export",
-			icon: <Download className="h-4 w-4" />,
-			onClick: handleExport,
-			variant: "outline" as const,
-		},
-		{
-			label: "Analytics",
-			icon: <BarChart3 className="h-4 w-4" />,
-			onClick: handleViewAnalytics,
-			variant: "outline" as const,
-		},
+		// {
+		// 	label: "Import",
+		// 	icon: <Upload className="h-4 w-4" />,
+		// 	onClick: handleImport,
+		// 	variant: "outline" as const,
+		// },
+		// {
+		// 	label: "Export",
+		// 	icon: <Download className="h-4 w-4" />,
+		// 	onClick: handleExport,
+		// 	variant: "outline" as const,
+		// },
+		// {
+		// 	label: "Analytics",
+		// 	icon: <BarChart3 className="h-4 w-4" />,
+		// 	onClick: handleViewAnalytics,
+		// 	variant: "outline" as const,
+		// },
 		{
 			label: "Refresh",
 			icon: <RefreshCw className="h-4 w-4" />,
 			onClick: handleRefresh,
 			variant: "ghost" as const,
 		},
-		{
-			label: "Settings",
-			icon: <Settings className="h-4 w-4" />,
-			onClick: handleSettings,
-			variant: "ghost" as const,
-		},
+		// {
+		// 	label: "Settings",
+		// 	icon: <Settings className="h-4 w-4" />,
+		// 	onClick: handleSettings,
+		// 	variant: "ghost" as const,
+		// },
 	]
 
 	if (!listSpuResult.isLoading && spus.length === 0) {
@@ -226,7 +224,7 @@ export default function ProductsPage() {
 					<div className="container max-w-7xl">
 						<PageHeader
 							title="Product Management"
-							description="Manage your product catalog including SPUs and SKUs"
+							description="Manage your product catalog"
 							actionLabel="Add Product"
 							onAction={handleCreateSPU}
 							stats={stats}
@@ -246,12 +244,12 @@ export default function ProductsPage() {
 	}
 
 	return (
-		<div className="min-h-screen min-w-3xl flex flex-col">
+		<div className="min-h-screen lg:min-w-3xl min-w-xl flex flex-col">
 			<main className="flex-1 py-8 mx-auto">
 				<div className="container max-w-7xl">
 					<PageHeader
 						title="Product Management"
-						description="Manage your product catalog including SPUs and SKUs"
+						description="Manage your product catalog"
 						actionLabel="Add Product"
 						onAction={handleCreateSPU}
 						stats={stats}

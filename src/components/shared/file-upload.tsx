@@ -165,7 +165,7 @@ export default FileUpload
 
 export const uploadFile = async (file: File) => {
 	const apiUrl = new URL(
-		"shared/files",
+		"common/files",
 		String(process.env.NEXT_PUBLIC_API_URL)
 	).toString()
 

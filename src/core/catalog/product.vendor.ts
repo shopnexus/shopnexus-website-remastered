@@ -11,6 +11,18 @@ export type ProductAttribute = {
   value: string
 }
 
+export type PackageDetails = {
+  weight_grams: number
+  length_cm: number
+  width_cm: number
+  height_cm: number
+}
+
+export type ProductSpecification = {
+  name: string
+  value: string
+}
+
 export type ProductSku = {
   id: number
   spu_id: number
@@ -19,6 +31,7 @@ export type ProductSku = {
   date_created: string
   stock: number
   attributes: ProductAttribute[]
+  package_details: PackageDetails
 }
 
 export type ProductSPU = {
@@ -48,6 +61,7 @@ export type ProductSPU = {
     total: number
   }
   tags: string[]
+  specifications?: ProductSpecification[]
 }
 
 // ===== REACT QUERY HOOKS =====
@@ -88,6 +102,7 @@ export const useCreateProductSPU = () => {
       is_active: boolean
       tags: string[]
       resource_ids: string[]
+      specifications: ProductSpecification[]
     }) =>
       customFetchStandard<ProductSPU>('catalog/product-spu', {
         method: 'POST',
@@ -111,6 +126,7 @@ export const useUpdateProductSPU = () => {
       name?: string
       description?: string
       is_active?: boolean
+      specifications?: ProductSpecification[]
     }) =>
       customFetchStandard<ProductSPU>('catalog/product-spu', {
         method: 'PATCH',
@@ -163,7 +179,8 @@ export const useCreateProductSKU = () => {
       spu_id: number
       price: number
       can_combine: boolean
-      attributes?: ProductAttribute[]
+      attributes: ProductAttribute[]
+      package_details: PackageDetails
     }) =>
       customFetchStandard<ProductSku>('catalog/product-sku', {
         method: 'POST',
@@ -184,6 +201,7 @@ export const useUpdateProductSKU = () => {
       price?: number
       can_combine?: boolean
       attributes?: ProductAttribute[]
+      package_details?: PackageDetails
     }) =>
       customFetchStandard<ProductSku>('catalog/product-sku', {
         method: 'PATCH',

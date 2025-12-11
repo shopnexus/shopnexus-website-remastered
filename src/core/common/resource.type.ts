@@ -1,7 +1,6 @@
 export type Resource = {
-  id: number
-  mime: string
+  id: string
   url: string
-  size?: number
+  size: number
   checksum?: string | null
 }

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
@@ -16,17 +15,17 @@ import {
 	EyeOff,
 	Image as ImageIcon,
 	Tag,
+	Plus,
+	Trash2,
 } from "lucide-react"
 import FileUpload from "@/components/shared/file-upload"
 import { TagInput } from "@/components/shared/tag-input"
 import { useCreateProductSPU } from "@/core/catalog/product.vendor"
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select"
+	BrandSelect,
+	CategorySelect,
+} from "@/components/shared/brand-category-select"
+import ProductDescriptionCard from "@/components/product/product-description-card"
 
 export default function NewProductPage() {
 	const router = useRouter()
@@ -34,10 +33,7 @@ export default function NewProductPage() {
 	const [isLoading, setIsLoading] = useState(false)
 	const [resources, setResources] = useState<{ id: string; url: string }[]>([])
 	const { mutateAsync: mutateCreateProductSPU } = useCreateProductSPU()
-	// const { data: categories = [] } = useListBra()
-	// const { data: brands = [] } = useGetBrands()
-	const categories = [{ id: 1, name: "Camisas y Blusas" }]
-	const brands = [{ id: 1, name: "Unknown" }]
+	// brand and category are selected via searchable dropdowns
 
 	const [product, setProduct] = useState({
 		name: "",
@@ -46,6 +42,12 @@ export default function NewProductPage() {
 		category_id: "",
 		is_active: true,
 		tags: [] as string[],
+		specifications: [
+			{
+				name: "",
+				value: "",
+			},
+		],
 	})
 
 	const handleUploadComplete = (urls: { id: string; url: string }[]) => {
@@ -72,6 +74,9 @@ export default function NewProductPage() {
 				is_active: product.is_active,
 				tags: product.tags,
 				resource_ids: resources.map((r) => r.id),
+				specifications: product.specifications.filter(
+					(spec) => spec.name.trim() && spec.value.trim()
+				),
 			})
 			toast.success("Product created successfully")
 			router.push("/vendor/products")
@@ -176,89 +181,136 @@ export default function NewProductPage() {
 									<div className="grid gap-4 md:grid-cols-2">
 										<div className="space-y-2">
 											<Label htmlFor="brand">Brand</Label>
-											<Select
-												value={product.brand_id}
-												onValueChange={(value) =>
-													setProduct({ ...product, brand_id: value })
+											<BrandSelect
+												valueId={
+													product.brand_id ? Number(product.brand_id) : null
 												}
-											>
-												<SelectTrigger>
-													<SelectValue placeholder="Select a brand" />
-												</SelectTrigger>
-												<SelectContent>
-													{brands.map((brand) => (
-														<SelectItem
-															key={brand.id}
-															value={brand.id.toString()}
-														>
-															{brand.name}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
+												onChange={(b) =>
+													setProduct({ ...product, brand_id: String(b.id) })
+												}
+											/>
 										</div>
 										<div className="space-y-2">
 											<Label htmlFor="category">Category</Label>
-											<Select
-												value={product.category_id}
-												onValueChange={(value) =>
-													setProduct({ ...product, category_id: value })
+											<CategorySelect
+												valueId={
+													product.category_id
+														? Number(product.category_id)
+														: null
 												}
-											>
-												<SelectTrigger>
-													<SelectValue placeholder="Select a category" />
-												</SelectTrigger>
-												<SelectContent>
-													{categories.map((category) => (
-														<SelectItem
-															key={category.id}
-															value={category.id.toString()}
-														>
-															{category.name}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
+												onChange={(c) =>
+													setProduct({ ...product, category_id: String(c.id) })
+												}
+											/>
 										</div>
 									</div>
 								</CardContent>
 							</Card>
 
 							{/* Description */}
+							<ProductDescriptionCard
+								value={product.description}
+								isPreview={isPreview}
+								onChange={(next) =>
+									setProduct({ ...product, description: next })
+								}
+							/>
+
+							{/* Specifications */}
 							<Card>
 								<CardHeader>
-									<CardTitle>Description</CardTitle>
-									<p className="text-sm text-muted-foreground">
-										Write your product description using Markdown. You can use
-										**bold**, *italic*, lists, and more.
-									</p>
+									<CardTitle className="flex items-center gap-2">
+										<Plus className="h-5 w-5" />
+										Product Specifications
+									</CardTitle>
 								</CardHeader>
-								<CardContent>
-									{isPreview ? (
-										<div className="prose max-w-none">
-											<div className="p-4 border rounded-lg bg-muted/50">
-												<h3 className="text-lg font-semibold mb-2">Preview</h3>
-												<div
-													className="prose prose-sm max-w-none"
-													dangerouslySetInnerHTML={{
-														__html: product.description
-															.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-															.replace(/\*(.*?)\*/g, "<em>$1</em>")
-															.replace(/\n/g, "<br/>"),
-													}}
-												/>
+								<CardContent className="space-y-4">
+									<p className="text-sm text-muted-foreground">
+										Add key product specifications such as material, origin, or
+										warranty information.
+									</p>
+									<div className="space-y-4">
+										{product.specifications.map((spec, index) => (
+											<div
+												key={`spec-${index}`}
+												className="grid gap-2 md:grid-cols-[1fr,1fr,auto]"
+											>
+												<div className="space-y-2">
+													<Label htmlFor={`spec-name-${index}`}>Name</Label>
+													<Input
+														id={`spec-name-${index}`}
+														value={spec.name}
+														onChange={(e) =>
+															setProduct((prev) => {
+																const nextSpecs = [...prev.specifications]
+																nextSpecs[index] = {
+																	...nextSpecs[index],
+																	name: e.target.value,
+																}
+																return { ...prev, specifications: nextSpecs }
+															})
+														}
+														placeholder="e.g. Material"
+													/>
+												</div>
+												<div className="space-y-2">
+													<Label htmlFor={`spec-value-${index}`}>Value</Label>
+													<Input
+														id={`spec-value-${index}`}
+														value={spec.value}
+														onChange={(e) =>
+															setProduct((prev) => {
+																const nextSpecs = [...prev.specifications]
+																nextSpecs[index] = {
+																	...nextSpecs[index],
+																	value: e.target.value,
+																}
+																return { ...prev, specifications: nextSpecs }
+															})
+														}
+														placeholder="e.g. 100% Cotton"
+													/>
+												</div>
+												<div className="flex items-end">
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon"
+														onClick={() =>
+															setProduct((prev) => ({
+																...prev,
+																specifications: prev.specifications.filter(
+																	(_, i) => i !== index
+																),
+															}))
+														}
+														disabled={product.specifications.length === 1}
+														aria-label="Remove specification"
+													>
+														<Trash2 className="h-4 w-4" />
+													</Button>
+												</div>
 											</div>
-										</div>
-									) : (
-										<Textarea
-											value={product.description}
-											onChange={(e) =>
-												setProduct({ ...product, description: e.target.value })
-											}
-											placeholder="Enter product description using Markdown..."
-											className="min-h-[300px] font-mono text-sm"
-										/>
-									)}
+										))}
+									</div>
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										className="flex items-center gap-2"
+										onClick={() =>
+											setProduct((prev) => ({
+												...prev,
+												specifications: [
+													...prev.specifications,
+													{ name: "", value: "" },
+												],
+											}))
+										}
+									>
+										<Plus className="h-4 w-4" />
+										Add Specification
+									</Button>
 								</CardContent>
 							</Card>
 

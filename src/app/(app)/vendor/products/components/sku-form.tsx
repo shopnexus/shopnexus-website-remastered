@@ -20,7 +20,20 @@ import { ProductSku, ProductSPU } from "@/core/catalog/product.vendor"
 interface SKUFormProps {
 	sku: ProductSku | null
 	spu: ProductSPU
-	onSave: (skuData: Partial<ProductSku> & { price?: number; can_combine?: boolean; attributes?: { name: string; value: string }[]; stock?: number }) => void
+	onSave: (
+		skuData: Partial<ProductSku> & {
+			price?: number
+			can_combine?: boolean
+			attributes?: { name: string; value: string }[]
+			stock?: number
+			package_details?: {
+				weight_grams: number
+				length_cm: number
+				width_cm: number
+				height_cm: number
+			}
+		}
+	) => void
 	onCancel: () => void
 }
 
@@ -30,6 +43,12 @@ export function SKUForm({ sku, spu, onSave, onCancel }: SKUFormProps) {
 		stock: 0,
 		can_combine: true,
 		attributes: [] as { name: string; value: string }[],
+		package_details: {
+			weight_grams: 0,
+			length_cm: 0,
+			width_cm: 0,
+			height_cm: 0,
+		},
 	})
 
 	const [newAttribute, setNewAttribute] = useState({ name: "", value: "" })
@@ -41,6 +60,12 @@ export function SKUForm({ sku, spu, onSave, onCancel }: SKUFormProps) {
 				stock: sku.stock,
 				can_combine: sku.can_combine,
 				attributes: sku.attributes,
+				package_details: {
+					weight_grams: sku.package_details?.weight_grams ?? 0,
+					length_cm: sku.package_details?.length_cm ?? 0,
+					width_cm: sku.package_details?.width_cm ?? 0,
+					height_cm: sku.package_details?.height_cm ?? 0,
+				},
 			})
 		} else {
 			setFormData({
@@ -48,6 +73,12 @@ export function SKUForm({ sku, spu, onSave, onCancel }: SKUFormProps) {
 				stock: 0,
 				can_combine: true,
 				attributes: [],
+				package_details: {
+					weight_grams: 0,
+					length_cm: 0,
+					width_cm: 0,
+					height_cm: 0,
+				},
 			})
 		}
 	}, [sku])
@@ -59,6 +90,18 @@ export function SKUForm({ sku, spu, onSave, onCancel }: SKUFormProps) {
 
 	const handleChange = (field: string, value: unknown) => {
 		setFormData((prev) => ({ ...prev, [field]: value }))
+	}
+	const handlePackageChange = (
+		field: "weight_grams" | "length_cm" | "width_cm" | "height_cm",
+		value: number
+	) => {
+		setFormData((prev) => ({
+			...prev,
+			package_details: {
+				...prev.package_details,
+				[field]: value,
+			},
+		}))
 	}
 
 	const addAttribute = () => {
@@ -108,7 +151,7 @@ export function SKUForm({ sku, spu, onSave, onCancel }: SKUFormProps) {
 						/>
 					</div>
 
-					<div className="space-y-2">
+					{/* <div className="space-y-2">
 						<Label htmlFor="stock">Initial Stock</Label>
 						<Input
 							id="stock"
@@ -121,7 +164,7 @@ export function SKUForm({ sku, spu, onSave, onCancel }: SKUFormProps) {
 							placeholder="0"
 							required
 						/>
-					</div>
+					</div> */}
 
 					<div className="flex items-center space-x-2">
 						<Switch
@@ -132,6 +175,84 @@ export function SKUForm({ sku, spu, onSave, onCancel }: SKUFormProps) {
 							}
 						/>
 						<Label htmlFor="can_combine">Can Combine</Label>
+					</div>
+
+					<div className="space-y-2">
+						<Label>Package Details</Label>
+						<div className="grid grid-cols-2 gap-3">
+							<div className="space-y-1">
+								<Label htmlFor="weight_grams">Weight (g)</Label>
+								<Input
+									id="weight_grams"
+									type="number"
+									min="0"
+									step="1"
+									value={formData.package_details.weight_grams}
+									onChange={(e) =>
+										handlePackageChange(
+											"weight_grams",
+											parseInt(e.target.value) || 0
+										)
+									}
+									placeholder="e.g. 500"
+									required
+								/>
+							</div>
+							<div className="space-y-1">
+								<Label htmlFor="length_cm">Length (cm)</Label>
+								<Input
+									id="length_cm"
+									type="number"
+									min="0"
+									step="0.1"
+									value={formData.package_details.length_cm}
+									onChange={(e) =>
+										handlePackageChange(
+											"length_cm",
+											parseFloat(e.target.value) || 0
+										)
+									}
+									placeholder="e.g. 20"
+									required
+								/>
+							</div>
+							<div className="space-y-1">
+								<Label htmlFor="width_cm">Width (cm)</Label>
+								<Input
+									id="width_cm"
+									type="number"
+									min="0"
+									step="0.1"
+									value={formData.package_details.width_cm}
+									onChange={(e) =>
+										handlePackageChange(
+											"width_cm",
+											parseFloat(e.target.value) || 0
+										)
+									}
+									placeholder="e.g. 10"
+									required
+								/>
+							</div>
+							<div className="space-y-1">
+								<Label htmlFor="height_cm">Height (cm)</Label>
+								<Input
+									id="height_cm"
+									type="number"
+									min="0"
+									step="0.1"
+									value={formData.package_details.height_cm}
+									onChange={(e) =>
+										handlePackageChange(
+											"height_cm",
+											parseFloat(e.target.value) || 0
+										)
+									}
+									placeholder="e.g. 5"
+									required
+								/>
+							</div>
+						</div>
 					</div>
 
 					<div className="space-y-2">

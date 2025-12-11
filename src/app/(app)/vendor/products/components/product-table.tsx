@@ -15,13 +15,11 @@ import {
 	ToggleRight,
 	Eye,
 	Star,
-	TrendingUp,
-	Package,
 	Image as ImageIcon,
 	Warehouse,
 } from "lucide-react"
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+
 import {
 	ProductSPU,
 	ProductSku,
@@ -82,6 +80,31 @@ const skuColumns: Column<ProductSku>[] = [
 				))}
 			</div>
 		),
+	},
+	{
+		key: "package_details",
+		label: "Package",
+		render: (pkg: {
+			weight_grams: number
+			length_cm: number
+			width_cm: number
+			height_cm: number
+		}) => (
+			<div className="space-y-1 text-xs">
+				<div>
+					<span className="text-muted-foreground">Weight:</span>{" "}
+					<span className="font-medium">{pkg.weight_grams}</span> g
+				</div>
+				<div>
+					<span className="text-muted-foreground">Size:</span>{" "}
+					<span className="font-medium">
+						{pkg.length_cm}×{pkg.width_cm}×{pkg.height_cm}
+					</span>{" "}
+					cm
+				</div>
+			</div>
+		),
+		className: "w-44",
 	},
 	{
 		key: "can_combine",
@@ -189,7 +212,6 @@ export function ProductTable({
 	onDeleteSKU,
 	onManageInventory,
 }: ProductTableProps) {
-	const router = useRouter()
 	const [deleteConfirm, setDeleteConfirm] = useState<{
 		type: "spu" | "sku"
 		id: number
@@ -229,14 +251,14 @@ export function ProductTable({
 			label: "Product",
 			render: (value: string, spu: ProductSPU) => (
 				<div className="space-y-1">
-					<div className="font-medium w-100 truncate">{value}</div>
+					<div className="font-medium max-w-3xl truncate">{value}</div>
 					<div className="text-sm text-muted-foreground w-100 truncate">
-						{spu.code}
+						{spu.description}
 					</div>
 					<div className="flex items-center space-x-2">
 						<div className="flex items-center space-x-1">
 							<Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-							<span className="text-xs">{spu.rating.score}</span>
+							<span className="text-xs">{spu.rating.score.toFixed(1)}</span>
 						</div>
 						<span className="text-xs text-muted-foreground">
 							({spu.rating.total} reviews)
@@ -246,45 +268,45 @@ export function ProductTable({
 			),
 			sortable: true,
 		},
-		{
-			key: "sales",
-			label: "Performance",
-			render: () => (
-				<div className="space-y-1">
-					<div className="flex items-center space-x-2">
-						<TrendingUp className="h-3 w-3 text-green-500" />
-						<span className="text-sm font-medium text-muted-foreground">
-							N/A
-						</span>
-					</div>
-				</div>
-			),
-			sortable: true,
-		},
-		{
-			key: "skus",
-			label: "SKUs & Stock",
-			render: () => {
-				// SKUs are loaded dynamically in expanded rows
-				return (
-					<div className="space-y-1">
-						<div className="flex items-center space-x-2">
-							<Package className="h-3 w-3" />
-							<span className="text-sm font-medium text-muted-foreground">
-								Click to view SKUs
-							</span>
-						</div>
-					</div>
-				)
-			},
-		},
-		{
-			key: "is_active",
-			label: "Status",
-			render: (value: boolean) => (
-				<StatusBadge status={value ? "Active" : "Inactive"} />
-			),
-		},
+		// {
+		// 	key: "sales",
+		// 	label: "Performance",
+		// 	render: () => (
+		// 		<div className="space-y-1">
+		// 			<div className="flex items-center space-x-2">
+		// 				<TrendingUp className="h-3 w-3 text-green-500" />
+		// 				<span className="text-sm font-medium text-muted-foreground">
+		// 					N/A
+		// 				</span>
+		// 			</div>
+		// 		</div>
+		// 	),
+		// 	sortable: true,
+		// },
+		// {
+		// 	key: "skus",
+		// 	label: "SKUs & Stock",
+		// 	render: () => {
+		// 		// SKUs are loaded dynamically in expanded rows
+		// 		return (
+		// 			<div className="space-y-1">
+		// 				<div className="flex items-center space-x-2">
+		// 					<Package className="h-3 w-3" />
+		// 					<span className="text-sm font-medium text-muted-foreground">
+		// 						Click to view SKUs
+		// 					</span>
+		// 				</div>
+		// 			</div>
+		// 		)
+		// 	},
+		// },
+		// {
+		// 	key: "is_active",
+		// 	label: "Status",
+		// 	render: (value: boolean) => (
+		// 		<StatusBadge status={value ? "Active" : "Inactive"} />
+		// 	),
+		// },
 		// {
 		// 	key: "date_updated",
 		// 	label: "Last Updated",
@@ -318,6 +340,7 @@ export function ProductTable({
 	return (
 		<>
 			<DataTable
+				className=""
 				data={spus}
 				columns={spuColumns}
 				searchKey="name"
@@ -329,7 +352,7 @@ export function ProductTable({
 						<Button
 							size="sm"
 							variant="ghost"
-							onClick={() => router.push(`/vendor/products/${spu.id}`)}
+							onClick={() => window.open(`/products/${spu.id}`, "_blank")}
 							title="View Product"
 						>
 							<Eye className="h-4 w-4" />

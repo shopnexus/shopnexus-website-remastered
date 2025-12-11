@@ -128,7 +128,7 @@ export function InventoryTable({ selectedSkuId }: InventoryTableProps) {
 	]
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-6 min-w-3xl">
 			<Tabs defaultValue="serials" className="w-full">
 				<TabsList className="grid w-full grid-cols-3">
 					<TabsTrigger value="serials">Product Serials</TabsTrigger>

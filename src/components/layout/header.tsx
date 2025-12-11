@@ -12,7 +12,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { CartSidebar } from "@/app/(app)/cart/components/cart-sidebar"
+import { CartSidebar } from "@/app/(app)/(customer)/cart/components/cart-sidebar"
 import { Search, User, Menu, LogOut, Settings, BarChart3 } from "lucide-react"
 import {
 	Sheet,
@@ -137,10 +137,12 @@ export function Header({ hideSearch = false }: { hideSearch?: boolean }) {
 									</Link>
 								</DropdownMenuItem>
 								<DropdownMenuItem asChild>
-									<Link href="/dashboard" className="flex items-center">
-										<BarChart3 className="mr-2 h-4 w-4" />
-										Dashboard
-									</Link>
+									{account?.type === "Vendor" && (
+										<Link href="/dashboard" className="flex items-center">
+											<BarChart3 className="mr-2 h-4 w-4" />
+											Dashboard
+										</Link>
+									)}
 								</DropdownMenuItem>
 								<DropdownMenuSeparator />
 								<DropdownMenuItem
@@ -210,9 +212,11 @@ export function Header({ hideSearch = false }: { hideSearch?: boolean }) {
 											<Link href="/account" className="text-sm">
 												Profile & Settings
 											</Link>
-											<Link href="/dashboard" className="text-sm">
-												Dashboard
-											</Link>
+											{account?.type === "Vendor" && (
+												<Link href="/dashboard" className="text-sm">
+													Dashboard
+												</Link>
+											)}
 											<button
 												onClick={handleSignOut}
 												className="text-left text-sm text-destructive"

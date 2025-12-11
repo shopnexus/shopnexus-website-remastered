@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { CartItem } from "@/app/(app)/cart/components/cart-types"
+import { CartItem } from "@/app/(app)/(customer)/cart/components/cart-types"
 
 const sampleCartItems: CartItem[] = [
   {
