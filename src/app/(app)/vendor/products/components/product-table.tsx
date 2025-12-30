@@ -1,8 +1,8 @@
 "use client"
 
-import { DataTable, Column } from "../../components/data-table"
-import { StatusBadge } from "../../components/status-badge"
-import { ConfirmDialog } from "../../components/confirm-dialog"
+import { DataTable, Column } from "@/components/shared/data-table"
+import { StatusBadge } from "@/components/shared/status-badge"
+import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { CardContent, CardHeader } from "@/components/ui/card"

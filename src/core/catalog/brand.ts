@@ -14,7 +14,7 @@ export type Brand = {
 
 // ===== Hooks =====
 
-export const useListBrand = (params: PaginationParams<{
+export const useListBrands = (params: PaginationParams<{
   search?: string
 }>) =>
   useInfiniteQueryPagination<Brand>(

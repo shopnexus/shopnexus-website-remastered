@@ -1,11 +1,42 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { PageHeader } from "../components/page-header"
+import { PageHeader } from "@/components/shared/page-header"
 import { OrderTable } from "./components/order-table"
 import { OrderDetailDialog } from "./components/order-detail-dialog"
 import { ConfirmOrderDialog } from "./components/confirm-order-dialog"
-import { MockOrder } from "@/lib/mocks/mock-data"
+// UI-friendly order type derived from API data
+type UIOrder = {
+	id: string
+	order_number: string
+	customer_name: string
+	customer_email: string
+	payment_status: Status
+	shipping_status: Status
+	total_items: number
+	total_amount: number
+	shipping_address: {
+		street: string
+		city: string
+		state: string
+		zip: string
+		country: string
+	}
+	date_created: string
+	date_updated: string
+	items: Array<{
+		id: string
+		sku_name: string
+		sku_id: string
+		quantity: number
+		price: number
+		status: Status
+		confirmed_by_id?: string
+	}>
+	priority?: "Low" | "Normal" | "High" | "Urgent"
+	tracking_number?: string
+	estimated_delivery?: string
+}
 import { toast } from "sonner"
 import { Download, RefreshCw, BarChart3, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -25,8 +56,8 @@ export default function OrdersPage() {
 		hasNextPage,
 		isFetchingNextPage,
 	} = useListVendorOrders({ limit: 20 })
-	const [orders, setOrders] = useState<MockOrder[]>([])
-	const [selectedOrder, setSelectedOrder] = useState<MockOrder | null>(null)
+	const [orders, setOrders] = useState<UIOrder[]>([])
+	const [selectedOrder, setSelectedOrder] = useState<UIOrder | null>(null)
 	const [showDetailDialog, setShowDetailDialog] = useState(false)
 	const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 	const [selectedItem, setSelectedItem] = useState<{
@@ -35,11 +66,11 @@ export default function OrdersPage() {
 	} | null>(null)
 	const confirmMutation = useConfirmOrder()
 
-	// Transform BE data -> UI mock shape expected by table/dialog
+	// Transform BE data -> UI shape expected by table/dialog
 	const transformedOrders = useMemo(() => {
 		const pages = data?.pages ?? []
 		const flat: TOrder[] = pages.flatMap((p) => p.data)
-		const byOrderId = new Map<number, MockOrder>()
+		const byOrderId = new Map<string, UIOrder>()
 
 		for (const item of flat) {
 			const orderId = item.order_id
@@ -136,14 +167,14 @@ export default function OrdersPage() {
 		]
 	}, [orders])
 
-	const handleViewDetails = (order: MockOrder) => {
+	const handleViewDetails = (order: UIOrder) => {
 		setSelectedOrder(order)
 		setShowDetailDialog(true)
 	}
 
 	const handleConfirmItem = async (
-		orderId: number,
-		itemId: number,
+		orderId: string,
+		itemId: string,
 		specs?: Record<string, string>
 	) => {
 		try {
@@ -159,10 +190,17 @@ export default function OrdersPage() {
 			// Extract from_address from specs if present
 			const { from_address, ...shippingSpecs } = specs
 
+			// Convert shippingSpecs to package format expected by API
+			const packageDetails: Record<string, any> = {}
+			if (shippingSpecs.weight_grams) packageDetails.weight_grams = parseInt(shippingSpecs.weight_grams)
+			if (shippingSpecs.length_cm) packageDetails.length_cm = parseInt(shippingSpecs.length_cm)
+			if (shippingSpecs.width_cm) packageDetails.width_cm = parseInt(shippingSpecs.width_cm)
+			if (shippingSpecs.height_cm) packageDetails.height_cm = parseInt(shippingSpecs.height_cm)
+
 			await confirmMutation.mutateAsync({
-				order_item_id: theItem.id,
-				specs: shippingSpecs,
+				order_id: orderId,
 				from_address: from_address || undefined,
+				package: packageDetails,
 			})
 
 			toast.success("Order item confirmed successfully")
@@ -174,7 +212,7 @@ export default function OrdersPage() {
 		}
 	}
 
-	const handleConfirmClick = (orderId: number, itemId: number) => {
+	const handleConfirmClick = (orderId: string, itemId: string) => {
 		setSelectedItem({ orderId, itemId })
 		setShowConfirmDialog(true)
 	}
@@ -201,9 +239,9 @@ export default function OrdersPage() {
 	}
 
 	const handleUpdateItemStatus = (
-		orderId: number,
-		itemId: number,
-		newStatus: MockOrder["items"][0]["status"]
+		orderId: string,
+		itemId: string,
+		newStatus: Status
 	) => {
 		void orderId
 		void itemId

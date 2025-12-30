@@ -13,7 +13,7 @@ export type Category = {
 
 // ===== Hooks =====
 
-export const useListCategory = (params: PaginationParams<{
+export const useListCategories = (params: PaginationParams<{
   search?: string
   id?: string[]
 }>) =>

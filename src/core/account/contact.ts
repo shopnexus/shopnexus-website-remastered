@@ -22,14 +22,13 @@ export const useGetContact = (contactId: string) =>
   useQuery({
     queryKey: ['account', 'contact', contactId],
     queryFn: async () => customFetchStandard<Contact>(`account/contact/${contactId}`),
-    enabled: !!contactId && !!globalThis?.localStorage?.getItem?.('token'),
+    enabled: !!contactId,
   })
 
 export const useListContacts = () =>
   useQuery({
     queryKey: ['account', 'contact'],
     queryFn: async () => customFetchStandard<Contact[]>('account/contact'),
-    enabled: !!globalThis?.localStorage?.getItem?.('token'),
   })
 
 export const useCreateContact = () =>

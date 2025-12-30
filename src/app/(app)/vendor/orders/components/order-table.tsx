@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { DataTable, Column } from "../../components/data-table"
-import { StatusBadge } from "../../components/status-badge"
+import { DataTable, Column } from "@/components/shared/data-table"
+import { StatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,7 +14,41 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select"
-import { MockOrder } from "@/lib/mocks/mock-data"
+import { Status } from "@/core/common/status.type"
+
+// UI-friendly order type
+type UIOrder = {
+	id: string
+	order_number: string
+	customer_name: string
+	customer_email: string
+	customer_phone?: string
+	payment_status: Status
+	shipping_status: Status
+	total_items: number
+	total_amount: number
+	shipping_address: {
+		street: string
+		city: string
+		state: string
+		zip: string
+		country: string
+	}
+	date_created: string
+	date_updated: string
+	items: Array<{
+		id: string
+		sku_name: string
+		sku_id: string
+		quantity: number
+		price: number
+		status: Status
+		confirmed_by_id?: string
+	}>
+	priority?: "Low" | "Normal" | "High" | "Urgent"
+	tracking_number?: string
+	estimated_delivery?: string
+}
 import {
 	Eye,
 	CheckCircle,
@@ -31,13 +65,13 @@ import {
 } from "lucide-react"
 
 interface OrderTableProps {
-	orders: MockOrder[]
-	onViewDetails: (order: MockOrder) => void
-	onConfirmItem: (orderId: number, itemId: number) => void
+	orders: UIOrder[]
+	onViewDetails: (order: UIOrder) => void
+	onConfirmItem: (orderId: string, itemId: string) => void
 	onUpdateItemStatus: (
-		orderId: number,
-		itemId: number,
-		status: MockOrder["items"][0]["status"]
+		orderId: string,
+		itemId: string,
+		status: Status
 	) => void
 }
 
@@ -53,11 +87,11 @@ export function OrderTable({
 		(order) => statusFilter === "all" || order.payment_status === statusFilter
 	)
 
-	const orderColumns: Column<MockOrder>[] = [
+	const orderColumns: Column<UIOrder>[] = [
 		{
 			key: "order_number",
 			label: "Order",
-			render: (value: string, order: MockOrder) => (
+			render: (value: string, order: UIOrder) => (
 				<div className="space-y-1">
 					<div className="font-medium">{value}</div>
 					<div className="text-xs text-muted-foreground">#{order.id}</div>
@@ -82,7 +116,7 @@ export function OrderTable({
 		{
 			key: "customer_name",
 			label: "Customer",
-			render: (value: string, order: MockOrder) => (
+			render: (value: string, order: UIOrder) => (
 				<div className="space-y-1">
 					<div className="font-medium">{value}</div>
 					<div className="text-xs text-muted-foreground flex items-center gap-1">
@@ -102,7 +136,7 @@ export function OrderTable({
 		{
 			key: "shipping_status",
 			label: "Status",
-			render: (shippingStatus: string, order: MockOrder) => (
+			render: (shippingStatus: Status, order: UIOrder) => (
 				<div className="space-y-1">
 					<div className="flex items-center gap-2">
 						<StatusBadge status={order.payment_status} />
@@ -122,7 +156,7 @@ export function OrderTable({
 		// {
 		// 	key: "shipping_address",
 		// 	label: "Shipping",
-		// 	render: (address: MockOrder["shipping_address"]) => (
+		// 	render: (address: UIOrder["shipping_address"]) => (
 		// 		<div className="space-y-1">
 		// 			<div className="text-sm font-medium">
 		// 				{address.city}, {address.state}
@@ -137,7 +171,7 @@ export function OrderTable({
 		{
 			key: "date_created",
 			label: "Date",
-			render: (value: string, order: MockOrder) => (
+			render: (value: string, order: UIOrder) => (
 				<div className="space-y-1">
 					<div className="text-sm">{new Date(value).toLocaleDateString()}</div>
 					{order.estimated_delivery && (

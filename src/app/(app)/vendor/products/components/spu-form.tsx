@@ -14,11 +14,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
-import { MockSPU } from "@/lib/mocks/mock-data"
+import { ProductSPU } from "@/core/catalog/product.vendor"
 
 interface SPUFormProps {
-	spu: MockSPU | null
-	onSave: (spuData: Partial<MockSPU>) => void
+	spu: ProductSPU | null
+	onSave: (spuData: Partial<ProductSPU>) => void
 	onCancel: () => void
 }
 
@@ -38,8 +38,8 @@ export function SPUForm({ spu, onSave, onCancel }: SPUFormProps) {
 				code: spu.code,
 				name: spu.name,
 				description: spu.description,
-				brand: spu.brand,
-				category: spu.category,
+				brand: spu.brand?.name || "",
+				category: spu.category?.name || "",
 				is_active: spu.is_active,
 			})
 		} else {

@@ -2,9 +2,9 @@
 
 import { Suspense, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { PageHeader } from "../components/page-header"
+import { PageHeader } from "@/components/shared/page-header"
 import { InventoryTable } from "./components/inventory-table"
-import { ImportStockDialog } from "./components/import-stock-dialog"
+import { ImportStockDialog } from "../components/import-stock-dialog"
 import { toast } from "sonner"
 import { useImportStock } from "@/core/inventory/inventory.vendor"
 
@@ -70,7 +70,7 @@ function Inventory() {
 
 					{showImportDialog && selectedSkuId && (
 						<ImportStockDialog
-							selectedSkuId={selectedSkuId}
+							skuId={selectedSkuId}
 							onImport={handleImportStock}
 							onCancel={() => setShowImportDialog(false)}
 						/>

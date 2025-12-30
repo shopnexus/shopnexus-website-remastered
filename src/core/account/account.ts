@@ -28,20 +28,18 @@ export const useGetAccount = (accountId: string) =>
   useQuery({
     queryKey: ['account', accountId],
     queryFn: async () => customFetchStandard<AccountProfile>(`account?account_id=${accountId}`),
-    enabled: !!accountId && !!globalThis?.localStorage?.getItem?.('token'),
+    enabled: !!accountId,
   })
 
 export const useGetMe = () =>
   useQuery({
     queryKey: ['account', 'me'],
     queryFn: async () => customFetchStandard<AccountProfile>('account/me'),
-    enabled: !!globalThis?.localStorage?.getItem?.('token'),
   })
 
 export const useUpdateMe = () =>
   useMutation({
     mutationFn: async (params: {
-      status?: 'Active' | 'Suspended'
       username?: string | null
       phone?: string | null
       email?: string | null

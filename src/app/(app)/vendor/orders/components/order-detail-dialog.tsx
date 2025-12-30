@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { StatusBadge } from "../../components/status-badge"
+import { StatusBadge } from "@/components/shared/status-badge"
 import { Label } from "@/components/ui/label"
 import {
 	Select,
@@ -19,16 +19,49 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select"
-import { MockOrder } from "@/lib/mocks/mock-data"
+import { Status } from "@/core/common/status.type"
+
+// UI-friendly order type
+type UIOrder = {
+	id: string
+	order_number: string
+	customer_name: string
+	customer_email: string
+	payment_status: Status
+	shipping_status: Status
+	total_items: number
+	total_amount: number
+	shipping_address: {
+		street: string
+		city: string
+		state: string
+		zip: string
+		country: string
+	}
+	date_created: string
+	date_updated: string
+	items: Array<{
+		id: string
+		sku_name: string
+		sku_id: string
+		quantity: number
+		price: number
+		status: Status
+		confirmed_by_id?: string
+	}>
+	priority?: "Low" | "Normal" | "High" | "Urgent"
+	tracking_number?: string
+	estimated_delivery?: string
+}
 import { AlertTriangle, CheckCircle } from "lucide-react"
 
 interface OrderDetailDialogProps {
-	order: MockOrder
-	onConfirmItem: (orderId: number, itemId: number) => void
+	order: UIOrder
+	onConfirmItem: (orderId: string, itemId: string) => void
 	onUpdateItemStatus: (
-		orderId: number,
-		itemId: number,
-		status: MockOrder["items"][0]["status"]
+		orderId: string,
+		itemId: string,
+		status: Status
 	) => void
 	onClose: () => void
 }

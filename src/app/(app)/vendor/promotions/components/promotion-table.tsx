@@ -1,19 +1,19 @@
 "use client"
 
-import { DataTable, Column } from "../../components/data-table"
-import { StatusBadge } from "../../components/status-badge"
-import { ConfirmDialog } from "../../components/confirm-dialog"
+import { DataTable, Column } from "@/components/shared/data-table"
+import { StatusBadge } from "@/components/shared/status-badge"
+import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MockPromotion } from "@/lib/mocks/mock-data"
+import { Promotion, PromotionDiscount } from "@/core/promotion/promotion.vendor"
 import { Edit, Trash2, ToggleLeft, ToggleRight, Calendar } from "lucide-react"
 import { useState } from "react"
 
 interface PromotionTableProps {
-	promotions: MockPromotion[]
-	onEditPromotion: (promotion: MockPromotion) => void
-	onDeletePromotion: (promotionId: number) => void
-	onTogglePromotionStatus: (promotionId: number) => void
+	promotions: Promotion[]
+	onEditPromotion: (promotion: Promotion) => void
+	onDeletePromotion: (promotionId: string) => void
+	onTogglePromotionStatus: (promotionId: string) => void
 }
 
 export function PromotionTable({
@@ -23,7 +23,7 @@ export function PromotionTable({
 	onTogglePromotionStatus,
 }: PromotionTableProps) {
 	const [deleteConfirm, setDeleteConfirm] = useState<{
-		id: number
+		id: string
 		name: string
 	} | null>(null)
 
@@ -34,29 +34,20 @@ export function PromotionTable({
 		}
 	}
 
-	const getDiscountText = (promotion: MockPromotion) => {
-		const { discount } = promotion
-		if (promotion.type === "Discount") {
-			if (discount.discount_percent) {
-				return `${discount.discount_percent}% off`
+	const getDiscountText = (promotion: Promotion) => {
+		if (promotion.type === "Discount" && "discount_percent" in promotion) {
+			const discountPromo = promotion as PromotionDiscount
+			if (discountPromo.discount_percent) {
+				return `${discountPromo.discount_percent}% off`
 			}
-			if (discount.discount_price) {
-				return `$${discount.discount_price} off`
+			if (discountPromo.discount_price) {
+				return `$${discountPromo.discount_price} off`
 			}
 		}
-		if (promotion.type === "BuyXGetY") {
-			return "Buy X Get Y"
-		}
-		if (promotion.type === "Bundle") {
-			return "Bundle Deal"
-		}
-		if (promotion.type === "Cashback") {
-			return "Cashback"
-		}
-		return "Special Offer"
+		return promotion.type || "Special Offer"
 	}
 
-	const promotionColumns: Column<MockPromotion>[] = [
+	const promotionColumns: Column<Promotion>[] = [
 		{
 			key: "code",
 			label: "Code",
@@ -73,14 +64,18 @@ export function PromotionTable({
 			render: (value: string) => <StatusBadge status={value} />,
 		},
 		{
-			key: "ref_type",
+			key: "refs",
 			label: "Target",
-			render: (value: string) => <Badge variant="outline">{value}</Badge>,
+			render: (refs: Promotion["refs"]) => (
+				<Badge variant="outline">
+					{refs.length > 0 ? `${refs[0].ref_type}` : "All"}
+				</Badge>
+			),
 		},
 		{
-			key: "discount",
+			key: "type",
 			label: "Discount",
-			render: (_, row: MockPromotion) => (
+			render: (_, row: Promotion) => (
 				<span className="text-sm font-medium">{getDiscountText(row)}</span>
 			),
 		},
@@ -105,13 +100,13 @@ export function PromotionTable({
 		},
 	]
 
-	const renderExpandedRow = (promotion: MockPromotion) => (
+	const renderExpandedRow = (promotion: Promotion) => (
 		<div className="space-y-4">
 			<div className="grid grid-cols-2 gap-4">
 				<div>
 					<h4 className="font-medium mb-2">Description</h4>
 					<p className="text-sm text-muted-foreground">
-						{promotion.description}
+						{promotion.description || "No description"}
 					</p>
 				</div>
 				<div>
@@ -120,25 +115,25 @@ export function PromotionTable({
 				</div>
 			</div>
 
-			{promotion.discount && (
+			{promotion.type === "Discount" && "min_spend" in promotion && (
 				<div>
 					<h4 className="font-medium mb-2">Discount Details</h4>
 					<div className="grid grid-cols-3 gap-4 text-sm">
 						<div>
 							<span className="text-muted-foreground">Min Spend:</span>
-							<p>${promotion.discount.min_spend}</p>
+							<p>${(promotion as PromotionDiscount).min_spend}</p>
 						</div>
 						<div>
 							<span className="text-muted-foreground">Max Discount:</span>
-							<p>${promotion.discount.max_discount || "No limit"}</p>
+							<p>${(promotion as PromotionDiscount).max_discount || "No limit"}</p>
 						</div>
 						<div>
 							<span className="text-muted-foreground">Discount:</span>
 							<p>
-								{promotion.discount.discount_percent
-									? `${promotion.discount.discount_percent}%`
-									: promotion.discount.discount_price
-									? `$${promotion.discount.discount_price}`
+								{(promotion as PromotionDiscount).discount_percent
+									? `${(promotion as PromotionDiscount).discount_percent}%`
+									: (promotion as PromotionDiscount).discount_price
+									? `$${(promotion as PromotionDiscount).discount_price}`
 									: "N/A"}
 							</p>
 						</div>
@@ -206,3 +201,4 @@ export function PromotionTable({
 		</>
 	)
 }
+

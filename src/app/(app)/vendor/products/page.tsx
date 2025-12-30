@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { PageHeader } from "../components/page-header"
-import { EmptyState } from "../components/empty-state"
+import { PageHeader } from "@/components/shared/page-header"
+import { EmptyState } from "@/components/shared/empty-state"
 import { ProductTable } from "./components/product-table"
 // import { SPUForm } from "./components/spu-form" // Now using dedicated edit page
 import { SKUForm } from "./components/sku-form"

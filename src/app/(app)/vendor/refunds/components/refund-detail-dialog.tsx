@@ -12,15 +12,16 @@ import {
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { StatusBadge } from "../../components/status-badge"
+import { StatusBadge } from "@/components/shared/status-badge"
 import { Badge } from "@/components/ui/badge"
-import { MockRefund } from "@/lib/mocks/mock-data"
+import { TRefund } from "@/core/order/refund.vendor"
+import { Status } from "@/core/common/status.type"
 import { AlertTriangle } from "lucide-react"
 
 interface RefundDetailDialogProps {
-	refund: MockRefund
-	onUpdateStatus: (refundId: number, status: MockRefund["status"]) => void
-	onCreateDispute: (refundId: number, reason: string) => void
+	refund: TRefund
+	onUpdateStatus: (refundId: string, status: Status) => void
+	onCreateDispute: (refundId: string, reason: string) => void
 	onClose: () => void
 }
 

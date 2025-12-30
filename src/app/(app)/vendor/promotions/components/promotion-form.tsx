@@ -21,11 +21,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select"
-import { MockPromotion } from "@/lib/mocks/mock-data"
+import { Promotion, PromotionDiscount } from "@/core/promotion/promotion.vendor"
 
 interface PromotionFormProps {
-	promotion: MockPromotion | null
-	onSave: (promotionData: Partial<MockPromotion>) => void
+	promotion: Promotion | null
+	onSave: (promotionData: Partial<PromotionDiscount>) => void
 	onCancel: () => void
 }
 
@@ -38,8 +38,8 @@ export function PromotionForm({
 		code: "",
 		title: "",
 		description: "",
-		type: "Discount" as MockPromotion["type"],
-		ref_type: "All" as MockPromotion["ref_type"],
+		type: "Discount" as string,
+		ref_type: "All",
 		ref_id: "",
 		is_active: true,
 		auto_apply: false,
@@ -48,25 +48,31 @@ export function PromotionForm({
 		discount: {
 			min_spend: 0,
 			max_discount: 0,
-			discount_percent: 0,
-			discount_price: 0,
+			discount_percent: 0 as number | null,
+			discount_price: 0 as number | null,
 		},
 	})
 
 	useEffect(() => {
 		if (promotion) {
+			const discountPromo = promotion as PromotionDiscount
 			setFormData({
 				code: promotion.code,
 				title: promotion.title,
 				description: promotion.description || "",
 				type: promotion.type,
-				ref_type: promotion.ref_type,
-				ref_id: promotion.ref_id?.toString() || "",
+				ref_type: promotion.refs?.[0]?.ref_type || "All",
+				ref_id: promotion.refs?.[0]?.ref_id || "",
 				is_active: promotion.is_active,
 				auto_apply: promotion.auto_apply,
 				date_started: promotion.date_started,
 				date_ended: promotion.date_ended || "",
-				discount: { ...promotion.discount },
+				discount: {
+					min_spend: discountPromo.min_spend || 0,
+					max_discount: discountPromo.max_discount || 0,
+					discount_percent: discountPromo.discount_percent || 0,
+					discount_price: discountPromo.discount_price || 0,
+				},
 			})
 		} else {
 			setFormData({

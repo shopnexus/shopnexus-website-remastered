@@ -1,7 +1,7 @@
 "use client"
 
-import { DataTable, Column } from "../../components/data-table"
-import { StatusBadge } from "../../components/status-badge"
+import { DataTable, Column } from "@/components/shared/data-table"
+import { StatusBadge } from "@/components/shared/status-badge"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"

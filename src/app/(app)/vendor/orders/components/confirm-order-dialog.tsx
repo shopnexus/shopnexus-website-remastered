@@ -18,7 +18,7 @@ interface ConfirmOrderDialogProps {
 	onOpenChange: (open: boolean) => void
 	onConfirm: (specs: Record<string, string>, fromAddress?: string) => void
 	isLoading?: boolean
-	orderItemId: number
+	orderItemId: string
 }
 
 export function ConfirmOrderDialog({

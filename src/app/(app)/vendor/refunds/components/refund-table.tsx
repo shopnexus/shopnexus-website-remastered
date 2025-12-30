@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { DataTable, Column } from "../../components/data-table"
-import { StatusBadge } from "../../components/status-badge"
+import { DataTable, Column } from "@/components/shared/data-table"
+import { StatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -12,14 +12,15 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select"
-import { MockRefund } from "@/lib/mocks/mock-data"
+import { TRefund } from "@/core/order/refund.vendor"
+import { Status } from "@/core/common/status.type"
 import { Eye, AlertTriangle } from "lucide-react"
 
 interface RefundTableProps {
-	refunds: MockRefund[]
-	onViewDetails: (refund: MockRefund) => void
-	onUpdateStatus: (refundId: number, status: MockRefund["status"]) => void
-	onCreateDispute: (refundId: number, reason: string) => void
+	refunds: TRefund[]
+	onViewDetails: (refund: TRefund) => void
+	onUpdateStatus: (refundId: string, status: Status) => void
+	onCreateDispute: (refundId: string, reason: string) => void
 }
 
 export function RefundTable({
@@ -34,21 +35,17 @@ export function RefundTable({
 		(refund) => statusFilter === "all" || refund.status === statusFilter
 	)
 
-	const refundColumns: Column<MockRefund>[] = [
+	const refundColumns: Column<TRefund>[] = [
 		{
 			key: "id",
 			label: "Refund ID",
-			render: (value: number) => `#${value}`,
+			render: (value: string) => `#${value}`,
 			className: "w-20",
 		},
 		{
-			key: "customer_name",
-			label: "Customer",
-			sortable: true,
-		},
-		{
-			key: "product_name",
-			label: "Product",
+			key: "order_id",
+			label: "Order ID",
+			render: (value: string) => `#${value}`,
 			sortable: true,
 		},
 		{
@@ -59,7 +56,7 @@ export function RefundTable({
 		{
 			key: "status",
 			label: "Status",
-			render: (value: string) => <StatusBadge status={value} />,
+			render: (value: Status) => <StatusBadge status={value} />,
 		},
 		{
 			key: "reason",
@@ -102,8 +99,8 @@ export function RefundTable({
 			<DataTable
 				data={filteredRefunds}
 				columns={refundColumns}
-				searchKey="customer_name"
-				searchPlaceholder="Search by customer name..."
+				searchKey="reason"
+				searchPlaceholder="Search by reason..."
 				actions={(refund) => (
 					<div className="flex items-center gap-1">
 						<Button
@@ -119,7 +116,7 @@ export function RefundTable({
 							<Select
 								value=""
 								onValueChange={(value) =>
-									onUpdateStatus(refund.id, value as MockRefund["status"])
+									onUpdateStatus(refund.id, value as Status)
 								}
 							>
 								<SelectTrigger className="w-32 h-8">

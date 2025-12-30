@@ -1,80 +1,78 @@
 "use client"
 
 import { useState } from "react"
-import { PageHeader } from "../components/page-header"
+import { PageHeader } from "@/components/shared/page-header"
 import { PromotionTable } from "./components/promotion-table"
 import { PromotionForm } from "./components/promotion-form"
-import { mockPromotions, MockPromotion } from "@/lib/mocks/mock-data"
+import {
+	useListPromotionVendor,
+	useUpdateDiscount,
+	useDeletePromotion,
+	Promotion,
+	PromotionDiscount,
+} from "@/core/promotion/promotion.vendor"
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
 import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
 
 export default function PromotionsPage() {
-	const [promotions, setPromotions] = useState<MockPromotion[]>(mockPromotions)
+	const promotionsQuery = useListPromotionVendor({ limit: 20 })
+	const { items: promotions } = useInfiniteScroll(promotionsQuery)
+	const updatePromotionMutation = useUpdateDiscount()
+	const deletePromotionMutation = useDeletePromotion()
+
 	const [showForm, setShowForm] = useState(false)
-	const [editingPromotion, setEditingPromotion] =
-		useState<MockPromotion | null>(null)
+	const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(null)
 
 	const handleCreatePromotion = () => {
 		setEditingPromotion(null)
 		setShowForm(true)
 	}
 
-	const handleEditPromotion = (promotion: MockPromotion) => {
+	const handleEditPromotion = (promotion: Promotion) => {
 		setEditingPromotion(promotion)
 		setShowForm(true)
 	}
 
-	const handleSavePromotion = (promotionData: Partial<MockPromotion>) => {
+	const handleSavePromotion = async (promotionData: Partial<PromotionDiscount>) => {
 		if (editingPromotion) {
-			// Update existing promotion
-			setPromotions((prev) =>
-				prev.map((promo) =>
-					promo.id === editingPromotion.id
-						? { ...promo, ...promotionData }
-						: promo
-				)
-			)
-			toast.success("Promotion updated successfully")
-		} else {
-			// Create new promotion
-			const newPromotion: MockPromotion = {
-				id: Math.max(...promotions.map((p) => p.id)) + 1,
-				code: promotionData.code || "",
-				title: promotionData.title || "",
-				description: promotionData.description || "",
-				type: promotionData.type || "Discount",
-				ref_type: promotionData.ref_type || "All",
-				ref_id: promotionData.ref_id,
-				is_active: promotionData.is_active ?? true,
-				auto_apply: promotionData.auto_apply ?? false,
-				date_started:
-					promotionData.date_started || new Date().toISOString().split("T")[0],
-				date_ended: promotionData.date_ended,
-				discount: promotionData.discount || {
-					min_spend: 0,
-					max_discount: 0,
-				},
+			try {
+				await updatePromotionMutation.mutateAsync({
+					id: editingPromotion.id,
+					...promotionData,
+				})
+				toast.success("Promotion updated successfully")
+			} catch (error) {
+				toast.error("Failed to update promotion")
 			}
-			setPromotions((prev) => [...prev, newPromotion])
-			toast.success("Promotion created successfully")
 		}
+		// Note: Creation is handled in PromotionForm component
 		setShowForm(false)
 		setEditingPromotion(null)
 	}
 
-	const handleDeletePromotion = (promotionId: number) => {
-		setPromotions((prev) => prev.filter((promo) => promo.id !== promotionId))
-		toast.success("Promotion deleted successfully")
+	const handleDeletePromotion = async (promotionId: string) => {
+		try {
+			await deletePromotionMutation.mutateAsync(promotionId)
+			toast.success("Promotion deleted successfully")
+		} catch (error) {
+			toast.error("Failed to delete promotion")
+		}
 	}
 
-	const handleTogglePromotionStatus = (promotionId: number) => {
-		setPromotions((prev) =>
-			prev.map((promo) =>
-				promo.id === promotionId
-					? { ...promo, is_active: !promo.is_active }
-					: promo
-			)
-		)
-		toast.success("Promotion status updated")
+	const handleTogglePromotionStatus = async (promotionId: string) => {
+		const promotion = promotions.find((p) => p.id === promotionId)
+		if (!promotion) return
+
+		try {
+			await updatePromotionMutation.mutateAsync({
+				id: promotionId,
+				is_active: !promotion.is_active,
+			})
+			toast.success("Promotion status updated")
+		} catch (error) {
+			toast.error("Failed to update promotion status")
+		}
 	}
 
 	return (
@@ -88,12 +86,31 @@ export default function PromotionsPage() {
 						onAction={handleCreatePromotion}
 					/>
 
-					<PromotionTable
-						promotions={promotions}
-						onEditPromotion={handleEditPromotion}
-						onDeletePromotion={handleDeletePromotion}
-						onTogglePromotionStatus={handleTogglePromotionStatus}
-					/>
+					{promotionsQuery.isLoading && promotions.length === 0 ? (
+						<div className="text-center py-8">
+							<p className="text-muted-foreground">Loading promotions...</p>
+						</div>
+					) : (
+						<>
+							<PromotionTable
+								promotions={promotions}
+								onEditPromotion={handleEditPromotion}
+								onDeletePromotion={handleDeletePromotion}
+								onTogglePromotionStatus={handleTogglePromotionStatus}
+							/>
+							{promotionsQuery.hasNextPage && (
+								<div className="flex justify-center mt-4">
+									<Button
+										variant="outline"
+										onClick={() => promotionsQuery.fetchNextPage()}
+										disabled={promotionsQuery.isFetchingNextPage}
+									>
+										{promotionsQuery.isFetchingNextPage ? "Loading..." : "Load More"}
+									</Button>
+								</div>
+							)}
+						</>
+					)}
 
 					{showForm && (
 						<PromotionForm

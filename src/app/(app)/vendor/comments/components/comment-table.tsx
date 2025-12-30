@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { DataTable, Column } from "../../components/data-table"
+import { DataTable, Column } from "@/components/shared/data-table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
@@ -13,7 +13,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select"
-import { MockComment } from "@/lib/mocks/mock-data"
+import { TComment } from "@/core/catalog/comment.customer"
 import {
 	MessageSquare,
 	Flag,
@@ -25,7 +25,7 @@ import {
 import { toast } from "sonner"
 
 interface CommentTableProps {
-	comments: MockComment[]
+	comments: TComment[]
 	onFlagComment: (commentId: number) => void
 	onHideComment: (commentId: number) => void
 	onRespondToComment: (commentId: number, response: string) => void
@@ -75,15 +75,18 @@ export function CommentTable({
 		return "bg-red-100 text-red-800"
 	}
 
-	const commentColumns: Column<MockComment>[] = [
+	const commentColumns: Column<TComment>[] = [
 		{
-			key: "product_name",
-			label: "Product",
-			sortable: true,
-		},
-		{
-			key: "customer_name",
+			key: "account",
 			label: "Customer",
+			render: (account: TComment["account"]) => (
+				<div>
+					<div className="font-medium">{account.name}</div>
+					{account.verified && (
+						<span className="text-xs text-muted-foreground">Verified</span>
+					)}
+				</div>
+			),
 			sortable: true,
 		},
 		{
@@ -108,7 +111,7 @@ export function CommentTable({
 		{
 			key: "upvote",
 			label: "Votes",
-			render: (_, row: MockComment) => (
+			render: (_, row: TComment) => (
 				<div className="flex items-center gap-2">
 					<div className="flex items-center gap-1 text-green-600">
 						<ThumbsUp className="h-3 w-3" />
@@ -129,27 +132,28 @@ export function CommentTable({
 		},
 	]
 
-	const renderExpandedRow = (comment: MockComment) => (
+	const renderExpandedRow = (comment: TComment) => (
 		<div className="space-y-4">
 			<div className="space-y-2">
 				<Label className="text-sm font-medium">Full Comment</Label>
 				<p className="text-sm p-3 bg-muted rounded-md">{comment.body}</p>
 			</div>
 
-			<div className="grid grid-cols-2 gap-4 text-sm">
-				<div>
-					<Label className="text-sm font-medium text-muted-foreground">
-						Reference Type
-					</Label>
-					<p>{comment.ref_type}</p>
+			{comment.resources && comment.resources.length > 0 && (
+				<div className="space-y-2">
+					<Label className="text-sm font-medium">Images</Label>
+					<div className="flex gap-2">
+						{comment.resources.map((resource, idx) => (
+							<img
+								key={idx}
+								src={resource.url}
+								alt={`Comment image ${idx + 1}`}
+								className="w-20 h-20 object-cover rounded"
+							/>
+						))}
+					</div>
 				</div>
-				<div>
-					<Label className="text-sm font-medium text-muted-foreground">
-						Reference ID
-					</Label>
-					<p>#{comment.ref_id}</p>
-				</div>
-			</div>
+			)}
 
 			<div className="space-y-2">
 				<Label className="text-sm font-medium">Respond to Comment</Label>
@@ -195,8 +199,8 @@ export function CommentTable({
 			<DataTable
 				data={filteredComments}
 				columns={commentColumns}
-				searchKey="customer_name"
-				searchPlaceholder="Search by customer name..."
+				searchKey="body"
+				searchPlaceholder="Search by comment content..."
 				expandable
 				renderExpandedRow={renderExpandedRow}
 				actions={(comment) => (

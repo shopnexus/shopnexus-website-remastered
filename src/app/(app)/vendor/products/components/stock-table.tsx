@@ -1,24 +1,24 @@
 "use client"
 
-import { DataTable, Column } from "../../components/data-table"
-import { StatusBadge } from "../../components/status-badge"
+import { DataTable, Column } from "@/components/shared/data-table"
+import { StatusBadge } from "@/components/shared/status-badge"
 import { Badge } from "@/components/ui/badge"
-import { MockStock, MockStockHistory } from "@/lib/mocks/mock-data"
-import { useState } from "react"
+import { Stock, StockHistory } from "@/core/inventory/inventory.vendor"
 
 interface StockTableProps {
-	stock: MockStock[]
+	stock: Stock[]
 }
 
 export function StockTable({ stock }: StockTableProps) {
-	const stockColumns: Column<MockStock>[] = [
+	const stockColumns: Column<Stock>[] = [
 		{
-			key: "sku_name",
-			label: "Product SKU",
+			key: "ref_id",
+			label: "SKU ID",
+			render: (value: string) => `SKU #${value}`,
 			sortable: true,
 		},
 		{
-			key: "current_stock",
+			key: "stock",
 			label: "Current Stock",
 			render: (value: number) => (
 				<Badge variant={value > 0 ? "default" : "destructive"}>{value}</Badge>
@@ -26,20 +26,20 @@ export function StockTable({ stock }: StockTableProps) {
 			sortable: true,
 		},
 		{
-			key: "sold",
+			key: "taken",
 			label: "Sold",
 			render: (value: number) => <Badge variant="secondary">{value}</Badge>,
 			sortable: true,
 		},
 		{
-			key: "last_updated",
+			key: "date_created",
 			label: "Last Updated",
 			render: (value: string) => new Date(value).toLocaleDateString(),
 			sortable: true,
 		},
 	]
 
-	const historyColumns: Column<MockStockHistory>[] = [
+	const historyColumns: Column<StockHistory>[] = [
 		{
 			key: "change",
 			label: "Change",
@@ -56,15 +56,18 @@ export function StockTable({ stock }: StockTableProps) {
 		},
 	]
 
-	const renderExpandedRow = (item: MockStock) => (
+	// Note: Stock history would need to be fetched separately for each expanded row
+	// For now, showing basic info. In a real implementation, you'd fetch history
+	// when a row is expanded using a state-based approach
+	const renderExpandedRow = (item: Stock) => (
 		<div className="space-y-4">
-			<h4 className="font-medium">Stock History for {item.sku_name}</h4>
-
-			<DataTable
-				data={item.history}
-				columns={historyColumns}
-				className="max-h-60 overflow-y-auto"
-			/>
+			<h4 className="font-medium">Stock History for {item.ref_id}</h4>
+			<p className="text-sm text-muted-foreground">
+				Stock: {item.stock} | Sold: {item.taken}
+			</p>
+			<p className="text-xs text-muted-foreground">
+				Note: Detailed history can be fetched when row is expanded
+			</p>
 		</div>
 	)
 
@@ -72,8 +75,8 @@ export function StockTable({ stock }: StockTableProps) {
 		<DataTable
 			data={stock}
 			columns={stockColumns}
-			searchKey="sku_name"
-			searchPlaceholder="Search by SKU name..."
+			searchKey="ref_id"
+			searchPlaceholder="Search by SKU ID..."
 			expandable
 			renderExpandedRow={renderExpandedRow}
 		/>

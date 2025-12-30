@@ -97,3 +97,4 @@ export function StatusBadge({ status, variant, className }: StatusBadgeProps) {
 		</Badge>
 	)
 }
+

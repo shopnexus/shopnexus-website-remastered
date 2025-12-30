@@ -12,17 +12,10 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select"
 
 interface ImportStockDialogProps {
 	skuId: number
-	skuName: string
+	skuName?: string
 	onImport: (skuId: number, quantity: number) => void
 	onCancel: () => void
 }
@@ -42,15 +35,16 @@ export function ImportStockDialog({
 		}
 	}
 
+	const description = skuName
+		? `Import new inventory for ${skuName}. Serial numbers will be generated automatically by the server.`
+		: `Import new inventory. Serial numbers will be generated automatically by the server.`
+
 	return (
 		<Dialog open onOpenChange={onCancel}>
 			<DialogContent className="sm:max-w-md">
 				<DialogHeader>
 					<DialogTitle>Import Stock</DialogTitle>
-					<DialogDescription>
-						Import new inventory for {skuName}. Serial numbers will be generated
-						automatically by the server.
-					</DialogDescription>
+					<DialogDescription>{description}</DialogDescription>
 				</DialogHeader>
 
 				<form onSubmit={handleSubmit} className="space-y-4">
@@ -85,3 +79,4 @@ export function ImportStockDialog({
 		</Dialog>
 	)
 }
+
