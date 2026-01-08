@@ -5,7 +5,7 @@ import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface SkuDetail {
-	id: number
+	id: string
 	price: number
 	original_price: number
 	attributes: { name: string; value: string }[]
@@ -81,28 +81,96 @@ export function ProductOptions({
 		return {}
 	})
 
-	// Tìm SKUs khả dụng dựa trên selections hiện tại
-	const availableSkus = useMemo(() => {
-		return skus.filter((sku) => {
-			return Object.entries(selections).every(([key, value]) => {
-				if (!selections[key]) return true
-				const attr = sku.attributes.find((a) => a.name === key)
-				return attr?.value === value
-			})
-		})
-	}, [skus, selections])
+	// Build Inverted Index: Attribute Name -> Attribute Value -> Set of SKU Indices
+	// This allows O(1) lookup of which SKUs have a specific attribute value
+	const skuAttributeIndex = useMemo(() => {
+		const index: Record<string, Record<string, Set<number>>> = {}
 
-	// Kiểm tra option có khả dụng không
-	const isOptionAvailable = (section: string, value: string) => {
-		const testSelections = { ...selections, [section]: value }
-		return skus.some((sku) => {
-			return Object.entries(testSelections).every(([key, val]) => {
-				if (!testSelections[key]) return true
-				const attr = sku.attributes.find((a) => a.name === key)
-				return attr?.value === val
+		skus.forEach((sku, idx) => {
+			sku.attributes.forEach((attr) => {
+				if (!index[attr.name]) {
+					index[attr.name] = {}
+				}
+				if (!index[attr.name][attr.value]) {
+					index[attr.name][attr.value] = new Set()
+				}
+				index[attr.name][attr.value].add(idx)
 			})
 		})
-	}
+
+		return index
+	}, [skus])
+
+	// Pre-compute available options based on current selections using Set intersections
+	const availableOptions = useMemo(() => {
+		const result: Record<string, Set<string>> = {}
+		const allSkuIndices = new Set(skus.map((_, i) => i))
+
+		sections.forEach((section) => {
+			const otherSelections = { ...selections }
+			delete otherSelections[section]
+
+			let validSkuIndices: Set<number> | null = null
+
+			// Find intersection of SKUs that match all *other* selections
+			const keys = Object.keys(otherSelections)
+			if (keys.length === 0) {
+				// No other filters, all SKUs are potential candidates
+				validSkuIndices = allSkuIndices
+			} else {
+				// We need SKUs that match ALL other selection criteria
+				// Sort keys by selectivity (smallest set first) could be an optimization,
+				// but for now simple iteration is fine.
+				keys.forEach((key) => {
+					const value = otherSelections[key]
+					// Get set of SKUs having this attribute value
+					const skuIndices = skuAttributeIndex[key]?.[value]
+
+					if (!skuIndices) {
+						// If any selection has no matching SKUs, then NO SKUs match
+						validSkuIndices = new Set()
+						return
+					}
+
+					if (validSkuIndices === null) {
+						// First filter initializes the set
+						validSkuIndices = new Set(skuIndices) // Copy to allow mutation/intersections safely if needed
+					} else {
+						// Intersect with existing set
+						const nextSet = new Set<number>()
+						for (const idx of validSkuIndices) {
+							if (skuIndices.has(idx)) {
+								nextSet.add(idx)
+							}
+						}
+						validSkuIndices = nextSet
+					}
+				})
+			}
+
+			// If validSkuIndices is null here, it means keys.length > 0 but loop didn't run or logic error.
+			// However with initialization logic above:
+			// - if keys.length 0 -> validSkuIndices = all
+			// - if keys.length > 0 -> initialized on first key
+			// - if any key missing in index -> validSkuIndices becomes empty Set
+			// So validSkuIndices should generally be a Set (possibly empty).
+			// Safety fallback:
+			const finalIndices = validSkuIndices || new Set<number>()
+
+			// Now collect available values for the current 'section' from these valid SKUs
+			const availableValues = new Set<string>()
+			for (const idx of finalIndices) {
+				const sku = skus[idx]
+				const attr = sku.attributes.find((a) => a.name === section)
+				if (attr) {
+					availableValues.add(attr.value)
+				}
+			}
+			result[section] = availableValues
+		})
+
+		return result
+	}, [skus, sections, selections, skuAttributeIndex])
 
 	// Handle selection change
 	const handleSelectionChange = (section: string, value: string) => {
@@ -150,7 +218,7 @@ export function ProductOptions({
 					<div className="grid grid-cols-2 gap-3">
 						{sectionOptions[section].map((value) => {
 							const isSelected = selections[section] === value
-							const isAvailable = isOptionAvailable(section, value)
+							const isAvailable = availableOptions[section]?.has(value)
 							const isDisabled = !isAvailable
 
 							return (

@@ -27,7 +27,7 @@ export function OrderTracking({ order }: OrderTrackingProps) {
 		if (order.items.length > 0 && order.address) {
 			quoteMutation.mutate({
 				address: order.address,
-				skus: order.items.map((item) => ({
+				items: order.items.map((item) => ({
 					sku_id: item.sku_id,
 					quantity: item.quantity,
 					shipment_option: "standard", // TODO: get from order data or shipment API
@@ -173,32 +173,29 @@ export function OrderTracking({ order }: OrderTrackingProps) {
 								<div key={step.id} className="flex space-x-4">
 									<div className="flex flex-col items-center">
 										<div
-											className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${
-												step.completed
-													? "border-primary bg-primary text-primary-foreground"
-													: isActive
+											className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${step.completed
+												? "border-primary bg-primary text-primary-foreground"
+												: isActive
 													? "border-primary bg-background text-primary"
 													: "border-muted bg-background text-muted-foreground"
-											}`}
+												}`}
 										>
 											<Icon className="h-5 w-5" />
 										</div>
 										{index < trackingSteps.length - 1 && (
 											<div
-												className={`mt-2 h-8 w-0.5 ${
-													step.completed ? "bg-primary" : "bg-muted"
-												}`}
+												className={`mt-2 h-8 w-0.5 ${step.completed ? "bg-primary" : "bg-muted"
+													}`}
 											/>
 										)}
 									</div>
 									<div className="flex-1 pb-8">
 										<div className="flex items-center justify-between">
 											<h4
-												className={`font-medium ${
-													step.completed || isActive
-														? "text-foreground"
-														: "text-muted-foreground"
-												}`}
+												className={`font-medium ${step.completed || isActive
+													? "text-foreground"
+													: "text-muted-foreground"
+													}`}
 											>
 												{step.title}
 											</h4>
@@ -209,11 +206,10 @@ export function OrderTracking({ order }: OrderTrackingProps) {
 											)}
 										</div>
 										<p
-											className={`text-sm ${
-												step.completed || isActive
-													? "text-muted-foreground"
-													: "text-muted-foreground/60"
-											}`}
+											className={`text-sm ${step.completed || isActive
+												? "text-muted-foreground"
+												: "text-muted-foreground/60"
+												}`}
 										>
 											{step.description}
 										</p>
@@ -276,11 +272,11 @@ export function OrderTracking({ order }: OrderTrackingProps) {
 								<>
 									<div className="flex justify-between text-sm">
 										<span>Subtotal:</span>
-										<span>${quoteMutation.data.subtotal.toFixed(2)}</span>
+										<span>${quoteMutation.data.product_cost.toFixed(2)}</span>
 									</div>
 									<div className="flex justify-between text-sm">
 										<span>Shipping:</span>
-										<span>${quoteMutation.data.shipping.toFixed(2)}</span>
+										<span>${quoteMutation.data.ship_cost.toFixed(2)}</span>
 									</div>
 								</>
 							) : null}

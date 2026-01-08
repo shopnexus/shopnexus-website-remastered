@@ -19,7 +19,7 @@ interface RatingDetail {
 }
 
 interface SkuDetail {
-	id: number
+	id: string
 	price: number
 	original_price: number
 	attributes: { name: string; value: string }[]
@@ -28,7 +28,7 @@ interface SkuDetail {
 interface ProductMainSectionProps {
 	name: string
 	resources: Resource[]
-	promoId?: number
+	promoId?: string
 	rating: RatingDetail
 	sold: number
 	skus: SkuDetail[]
@@ -129,7 +129,7 @@ export function ProductMainSection({
 						<span className="text-3xl font-bold text-red-600">
 							$
 							{selectedSku?.price
-								? (selectedSku.price / 100).toFixed(2)
+								? (selectedSku.price).toFixed(2)
 								: "0.00"}
 						</span>
 						{selectedSku?.original_price &&

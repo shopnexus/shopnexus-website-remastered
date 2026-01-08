@@ -2,20 +2,17 @@ import { customFetchStandard } from "@/lib/queryclient/custom-fetch"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { getQueryClient } from "@/lib/queryclient/query-client"
 import { Resource } from "../common/resource.type"
+import qs from "qs"
+
+import { ProductSku } from "../catalog/product.vendor"
 
 // ===== Types =====
 
 export type CartItem = {
-  sku_id: string
   spu_id: string
-  name: string
-  sku_name: string
-  original_price: number
-  price: number
+  sku: ProductSku
   quantity: number
-  resources: Resource[]
-  category: string
-  promotions: number[]
+  resource: Resource
 }
 
 export type Cart = CartItem[]
@@ -57,3 +54,16 @@ export const useClearCart = () =>
     },
   })
 
+
+export const useListCheckoutCart = (params: {
+  sku_ids?: string[]
+  buy_now_sku_id?: string | null
+  buy_now_quantity?: number
+}) =>
+  useQuery({
+    queryKey: ['checkout', 'cart', params],
+    queryFn: async () =>
+      customFetchStandard<Cart>(
+        `order/cart-checkout?${qs.stringify(params, { arrayFormat: 'repeat' })}`
+      ),
+  })

@@ -1,8 +1,8 @@
-import { useQuery } from "@tanstack/react-query"
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
 import { customFetchStandard } from "@/lib/queryclient/custom-fetch"
 import { useInfiniteQueryPagination } from "@/lib/queryclient/use-infinite-query"
 import qs from "qs"
-import { PaginationParams } from "@/lib/queryclient/response.type"
+import { PaginationParams, SuccessPaginationRes, SuccessResponse } from "@/lib/queryclient/response.type"
 import { Resource } from "../common/resource.type"
 
 // ===== Types =====

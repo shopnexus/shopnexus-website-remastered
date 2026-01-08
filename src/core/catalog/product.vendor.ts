@@ -25,8 +25,8 @@ export type ProductSpecification = {
 }
 
 export type ProductSku = {
-  id: number
-  spu_id: number
+  id: string
+  spu_id: string
   price: number
   can_combine: boolean
   date_created: string
@@ -35,17 +35,21 @@ export type ProductSku = {
   package_details: PackageDetails
 }
 
+export function getProductSkuName(spuName: string, sku: ProductSku) {
+  return `${spuName} - ${sku.attributes.map((attr) => attr.value).join(', ')}`
+}
+
 export type ProductSPU = {
-  id: number
+  id: string
   code: string
   category: {
-    id: number
+    id: string
     name: string
     description: string
     parent_id: string
   }
   brand: {
-    id: number
+    id: string
     code: string
     name: string
     description: string

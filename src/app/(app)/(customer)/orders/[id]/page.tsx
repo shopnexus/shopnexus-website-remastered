@@ -8,9 +8,9 @@ import Link from "next/link"
 
 export default function OrderDetailPage() {
 	const params = useParams()
-	const orderId = params?.id ? parseInt(params.id as string, 10) : null
+	const orderId = params?.id as string
 
-	const { data: order, isLoading, isError } = useGetOrder(orderId || 0)
+	const { data: order, isLoading, isError } = useGetOrder(orderId || "")
 
 	if (!orderId) {
 		return (

@@ -44,8 +44,8 @@ export const useQuote = () => useMutation({
     }>
   }) => customFetchStandard<{
     total: number
-    subtotal: number
-    shipping: number
+    product_cost: number
+    ship_cost: number
   }>(`order/quote`, {
     method: 'POST',
     body: JSON.stringify(params),

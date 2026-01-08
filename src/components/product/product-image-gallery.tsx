@@ -15,7 +15,7 @@ import { Resource } from "@/core/common/resource.type"
 interface ProductImageGalleryProps {
 	resources: Resource[]
 	productName: string
-	promoId?: number
+	promoId?: string
 }
 
 export function ProductImageGallery({

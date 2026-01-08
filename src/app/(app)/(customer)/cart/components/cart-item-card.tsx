@@ -21,6 +21,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { CartItemProps } from "./cart-types"
 import { useCurrency } from "@/components/currency/currency-context"
+import { getProductSkuName, useGetProductSPU } from "@/core/catalog/product.vendor"
 
 export function CartItemCard({
 	item,
@@ -39,26 +40,27 @@ export function CartItemCard({
 		) {
 			return item.bulk_price
 		}
-		return item.price
+		return item.sku.price
 	}
 
 	const currentPrice = getItemPrice()
-	const isDiscounted = currentPrice < item.price
+	const isDiscounted = currentPrice < item.sku.price
 	const totalPrice = currentPrice * item.quantity
-	const savings = isDiscounted ? (item.price - currentPrice) * item.quantity : 0
+	const savings = isDiscounted ? (item.sku.price - currentPrice) * item.quantity : 0
+	const { data: spu } = useGetProductSPU(item.sku.spu_id)
+	const skuName = getProductSkuName(spu?.name || "", item.sku)
 
 	const handleRemove = () => {
 		setIsRemoving(true)
 		setTimeout(() => {
-			onRemoveItem(item.sku_id)
+			onRemoveItem(item.sku.id)
 		}, 200)
 	}
 
 	return (
 		<div
-			className={`transition-all duration-200 ${
-				isRemoving ? "opacity-0 scale-95" : "opacity-100 scale-100"
-			}`}
+			className={`transition-all duration-200 ${isRemoving ? "opacity-0 scale-95" : "opacity-100 scale-100"
+				}`}
 		>
 			<div className="flex flex-col sm:flex-row gap-4 p-4 rounded-lg hover:bg-muted/30 transition-colors">
 				{/* Checkbox */}
@@ -67,7 +69,7 @@ export function CartItemCard({
 						<Checkbox
 							checked={item.selected || false}
 							onCheckedChange={(checked) =>
-								onToggleSelect(item.sku_id, checked as boolean)
+								onToggleSelect(item.sku.id, checked as boolean)
 							}
 							className="mt-1 border-gray-300"
 						/>
@@ -77,8 +79,8 @@ export function CartItemCard({
 				{/* Product Image */}
 				<div className="relative h-32 w-full sm:h-24 sm:w-24 lg:h-28 lg:w-28 overflow-hidden rounded-md border bg-muted/20 flex-shrink-0">
 					<Image
-						src={item.resources[0]?.url || "/placeholder.svg"}
-						alt={item.name}
+						src={item.resource.url || "/placeholder.svg"}
+						alt={item.sku.id}
 						fill
 						className="object-cover hover:scale-105 transition-transform duration-200"
 					/>
@@ -95,7 +97,7 @@ export function CartItemCard({
 						<div className="space-y-2">
 							<div className="flex items-start gap-2">
 								<h3 className="font-medium text-base line-clamp-2 leading-tight">
-									{item.name}
+									{skuName}
 								</h3>
 								<Link
 									href={`/products/${item.spu_id}`}
@@ -105,12 +107,12 @@ export function CartItemCard({
 								</Link>
 							</div>
 							<div className="text-sm text-muted-foreground">
-								{item.sku_name}
+								{skuName}
 							</div>
 
 							<div className="flex items-center gap-2">
 								<Badge variant="outline" className="text-xs">
-									{item.category}
+									{spu?.category.name}
 								</Badge>
 								{/* <span className="text-xs text-muted-foreground">
 									Min order: {item.minOrderQuantity} items
@@ -142,8 +144,8 @@ export function CartItemCard({
 									<AlertDialogHeader>
 										<AlertDialogTitle>Remove Item</AlertDialogTitle>
 										<AlertDialogDescription>
-											Are you sure you want to remove &quot;{item.name} (
-											{item.sku_name})&quot; from your cart?
+											Are you sure you want to remove &quot;{skuName} (
+											{skuName})&quot; from your cart?
 										</AlertDialogDescription>
 									</AlertDialogHeader>
 									<AlertDialogFooter>
@@ -170,7 +172,7 @@ export function CartItemCard({
 								</span>
 								{isDiscounted && (
 									<span className="text-sm text-muted-foreground line-through">
-										{formatCurrency(item.price)}
+										{formatCurrency(item.sku.price)}
 									</span>
 								)}
 							</div>
@@ -192,9 +194,9 @@ export function CartItemCard({
 									size="sm"
 									className="h-9 w-9 p-0 hover:bg-muted"
 									onClick={() =>
-										onUpdateQuantity(item.sku_id, item.quantity - 1)
+										onUpdateQuantity(item.sku.id, item.quantity - 1)
 									}
-									// disabled={item.quantity <= item.minOrderQuantity}
+								// disabled={item.quantity <= item.minOrderQuantity}
 								>
 									<Minus className="h-3 w-3" />
 								</Button>
@@ -203,19 +205,19 @@ export function CartItemCard({
 									value={item.quantity}
 									onChange={(e) =>
 										onUpdateQuantity(
-											item.sku_id,
+											item.sku.id,
 											Number.parseInt(e.target.value)
 										)
 									}
 									className="w-16 h-9 text-center border-0 focus-visible:ring-0"
-									// min={item.minOrderQuantity}
+								// min={item.minOrderQuantity}
 								/>
 								<Button
 									variant="ghost"
 									size="sm"
 									className="h-9 w-9 p-0 hover:bg-muted"
 									onClick={() =>
-										onUpdateQuantity(item.sku_id, item.quantity + 1)
+										onUpdateQuantity(item.sku.id, item.quantity + 1)
 									}
 								>
 									<Plus className="h-3 w-3" />

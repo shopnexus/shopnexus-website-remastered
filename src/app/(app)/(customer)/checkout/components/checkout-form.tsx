@@ -49,7 +49,7 @@ import {
 } from "lucide-react"
 import { useCheckout, useQuote } from "@/core/order/order.customer"
 import { toast } from "sonner"
-import { useGetCart, useListCheckoutSkus } from "@/core/order/cart"
+import { useGetCart, useListCheckoutCart } from "@/core/order/cart"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useCurrency } from "@/components/currency/currency-context"
 import { useMemo } from "react"
@@ -91,9 +91,10 @@ function Checkout() {
 		useState<string>("")
 	const [shipmentOption, setShipmentOption] = useState("")
 	const [quoteData, setQuoteData] = useState<{
-		subtotal: number
-		shipping: number
-	} | null>(null)
+		total: number
+		product_cost: number
+		ship_cost: number
+	}>()
 	const { mutateAsync: mutateCheckout } = useCheckout()
 	const { mutateAsync: mutateQuote } = useQuote()
 
@@ -107,18 +108,12 @@ function Checkout() {
 	const buyNowSkuId = searchParams.get("sku_id")
 	const buyNowQuantity = searchParams.get("quantity")
 
-	const { data: cartItems = [] } = useGetCart()
-	const { data: buyNowItems = [] } = useListCheckoutSkus(
-		buyNow
-			? {
-					sku_id: Number(buyNowSkuId),
-					quantity: Number(buyNowQuantity),
-			  }
-			: undefined
-	)
-
-	// Determine which items to use
-	const allCartItems = buyNow ? buyNowItems : cartItems
+	const { data: allCartItems = [] } = useListCheckoutCart({
+		buy_now_quantity: buyNow ? Number(buyNowQuantity) : undefined,
+		buy_now_sku_id: buyNow ? buyNowSkuId : undefined,
+		sku_ids:
+			!buyNow && selectedItemIds.length > 0 ? selectedItemIds : undefined,
+	})
 
 	const { data: paymentOptions = [], isLoading: isLoadingPayment } =
 		useListServiceOption({
@@ -167,8 +162,8 @@ function Checkout() {
 	const items =
 		selectedItemIds.length > 0
 			? allCartItems.filter((item) =>
-					selectedItemIds.includes(String(item.sku_id))
-			  )
+				selectedItemIds.includes(String(item.sku.id))
+			)
 			: allCartItems
 
 	const [formData, setFormData] = useState({
@@ -244,10 +239,10 @@ function Checkout() {
 			try {
 				const quote = await mutateQuote({
 					address: fullAddress,
-					skus: items.map((item) => ({
-						sku_id: item.sku_id,
+					items: items.map((item) => ({
+						sku_id: item.sku.id,
 						quantity: item.quantity,
-						promotion_ids: item.promotions,
+						promotion_ids: [],
 						shipment_option: shipmentOption,
 					})),
 				})
@@ -260,7 +255,6 @@ function Checkout() {
 		const timeoutId = setTimeout(fetchQuote, 500) // Debounce
 		return () => clearTimeout(timeoutId)
 	}, [fullAddress, shipmentOption, mutateQuote])
-	console.log(quoteData)
 
 	// Load Google Maps script
 	useEffect(() => {
@@ -276,12 +270,13 @@ function Checkout() {
 	}, [])
 
 	const subtotal =
-		quoteData?.subtotal ??
-		items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-	const shippingCost = quoteData?.shipping ?? 0
+		quoteData?.product_cost ??
+		items.reduce((sum, item) => sum + item.sku.price * item.quantity, 0)
+	const shippingCost = quoteData?.ship_cost ?? 0
 	const total = buyNow
-		? allCartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+		? allCartItems.reduce((sum, item) => sum + item.sku.price * item.quantity, 0)
 		: subtotal + shippingCost
+
 
 	// Initialize Google Places Autocomplete
 	const initializeAutocomplete = (inputId: string) => {
@@ -326,13 +321,15 @@ function Checkout() {
 				address: fullAddress,
 				payment_option: selectedPaymentOptionId,
 				buy_now: buyNow,
-				skus: items.map((item) => ({
-					sku_id: item.sku_id,
+				items: items.map((item) => ({
+					sku_id: item.sku.id,
 					quantity: item.quantity,
-					promotion_ids: item.promotions,
+					promotion_ids: [],
 					shipment_option: shipmentOption,
 					note: formData.specialInstructions || undefined,
+					data: {},
 				})),
+
 			})
 
 			toast.success("Order placed successfully!")
@@ -611,7 +608,7 @@ function Checkout() {
 						additionalInfo={() =>
 							quoteData ? (
 								<p className="text-sm text-blue-700 font-medium">
-									Shipping cost: {formatCurrency(quoteData.shipping)}
+									Shipping cost: {formatCurrency(quoteData.ship_cost)}
 								</p>
 							) : null
 						}
@@ -660,12 +657,12 @@ function Checkout() {
 						providerIconMap={providerIconMap}
 						groupByProvider={true}
 						loading={isLoadingPayment}
-						// additionalInfo={() => (
-						// 	<div className="flex items-center space-x-2 text-xs text-blue-600 mt-2">
-						// 		<span>🔒</span>
-						// 		<span>SSL Encrypted • Secure Payment</span>
-						// 	</div>
-						// )}
+					// additionalInfo={() => (
+					// 	<div className="flex items-center space-x-2 text-xs text-blue-600 mt-2">
+					// 		<span>🔒</span>
+					// 		<span>SSL Encrypted • Secure Payment</span>
+					// 	</div>
+					// )}
 					/>
 
 					<Button
@@ -677,10 +674,10 @@ function Checkout() {
 						{isLoading
 							? "Processing Order..."
 							: !shipmentOption
-							? "Please select a shipping method"
-							: !selectedPaymentOptionId
-							? "Please select a payment method"
-							: `Complete Order - ${formatCurrency(total)}`}
+								? "Please select a shipping method"
+								: !selectedPaymentOptionId
+									? "Please select a payment method"
+									: `Complete Order - ${formatCurrency(total)}`}
 					</Button>
 				</form>
 			</div>
@@ -695,65 +692,37 @@ function Checkout() {
 					</CardHeader>
 					<CardContent className="space-y-4">
 						{items.map((item) => {
-							const isDiscounted = item.original_price > item.price
-							const discountPercentage = isDiscounted
-								? Math.round(
-										((item.original_price - item.price) / item.original_price) *
-											100
-								  )
-								: 0
-							const itemTotal = item.price * item.quantity
-							const originalTotal = item.original_price * item.quantity
-							const savings = isDiscounted ? originalTotal - itemTotal : 0
+							const itemTotal = item.sku.price * item.quantity
+
+							// Calculate name from attributes
+							const name = item.sku.attributes.map((a) => a.value).join(" - ")
 
 							return (
-								<div key={item.sku_id} className="flex space-x-3">
+								<div key={item.sku.id} className="flex space-x-3">
 									<div className="relative h-16 w-16 overflow-hidden rounded-lg border">
 										<Image
 											width={64}
 											height={64}
-											src={item.resources[0]?.url || "/placeholder.svg"}
-											alt={item.name}
+											src={item.resource?.url || "/placeholder.svg"}
+											alt={name}
 											className="h-full w-full object-cover"
 										/>
-										{isDiscounted && (
-											<div className="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-												-{discountPercentage}%
-											</div>
-										)}
 									</div>
 									<div className="flex-1 space-y-1">
 										<h4 className="text-sm font-medium line-clamp-2">
-											{item.name}
+											{name}
 										</h4>
-										<div className="text-sm text-muted-foreground">
-											{item.sku_name}
-										</div>
 										<span className="text-muted-foreground text-sm">
 											Qty: {item.quantity}
 										</span>
 										<div className="flex flex-col gap-1">
 											<div className="flex justify-between items-center text-sm ">
 												<div className="flex items-center gap-2">
-													{isDiscounted && (
-														<span className="text-xs text-muted-foreground line-through">
-															{formatCurrency(originalTotal)}
-														</span>
-													)}
-													<span
-														className={`font-medium ${
-															isDiscounted ? "text-red-600" : ""
-														}`}
-													>
+													<span className="font-medium">
 														{formatCurrency(itemTotal)}
 													</span>
 												</div>
 											</div>
-											{isDiscounted && savings > 0 && (
-												<div className="text-xs text-green-600 font-medium text-right">
-													Save {formatCurrency(savings)}
-												</div>
-											)}
 										</div>
 									</div>
 								</div>

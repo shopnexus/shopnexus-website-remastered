@@ -19,7 +19,7 @@ export function CartSummary({ items, selectedItems }: CartSummaryProps) {
 		itemsToCalculate.reduce((sum, item) => sum + item.quantity, 0)
 
 	const getSubtotal = () =>
-		itemsToCalculate.reduce((sum, item) => sum + item.price * item.quantity, 0)
+		itemsToCalculate.reduce((sum, item) => sum + item.sku.price * item.quantity, 0)
 
 	const totalItems = getTotalItems()
 	const subtotal = getSubtotal()
@@ -104,13 +104,12 @@ export function CartSummary({ items, selectedItems }: CartSummaryProps) {
 					disabled={selectedItems && selectedItems.length === 0}
 				>
 					<Link
-						href={`/checkout${
-							selectedItems && selectedItems.length > 0
+						href={`/checkout${selectedItems && selectedItems.length > 0
 								? `?selected=${selectedItems
-										.map((item) => item.sku_id)
-										.join(",")}`
+									.map((item) => item.sku.id)
+									.join(",")}`
 								: ""
-						}`}
+							}`}
 					>
 						<CreditCard className="h-5 w-5 mr-2" />
 						Checkout

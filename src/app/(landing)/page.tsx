@@ -3,7 +3,7 @@
 import { HeroSection } from "./components/hero-section"
 import { FeaturedCategories } from "./components/featured-categories"
 import { ProductGrid } from "@/components/product/product-grid"
-import { useListProductCardsRecommended } from "@/core/catalog/product.customer"
+import { TProductCard, useListProductCardsRecommended } from "@/core/catalog/product.customer"
 import { useGetMe } from "@/core/account/account"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,6 +22,9 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { redirect } from "next/navigation"
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
+import { useEffect, useState } from "react"
+import { useInView } from "react-intersection-observer"
 
 export default function HomePage() {
 	const { data: account } = useGetMe()
@@ -30,10 +33,25 @@ export default function HomePage() {
 		redirect("/vendor/products")
 	}
 
+  const [products, setProducts] = useState<TProductCard[]>([])
+
 	const recommendedProductsQuery = useListProductCardsRecommended({
 		limit: 8,
 	})
-	const products = recommendedProductsQuery.data ?? []
+  const { ref, inView } = useInView()
+
+  useEffect(() => {
+    if (inView && !recommendedProductsQuery.isFetching) {
+      recommendedProductsQuery.refetch()
+    }
+  }, [inView, recommendedProductsQuery])
+
+  useEffect(() => {
+    // add to products
+    if (recommendedProductsQuery.data) {
+      setProducts((prev) => [...prev, ...recommendedProductsQuery.data])
+    }
+  }, [recommendedProductsQuery.data])
 
 	return (
 		<div className="min-h-screen flex flex-col">
@@ -63,6 +81,8 @@ export default function HomePage() {
 						<div className="sm:px-16 lg:px-32 xl:px-48">
 							<ProductGrid products={products} />
 						</div>
+            <div ref={ref}>
+            </div>
 
 						{/* Additional CTA for logged in users */}
 						{isLoggedIn && (
